@@ -149,7 +149,7 @@ function ErrorCard({ item, onRetry }: { item: Item; onRetry: () => void }) {
       </div>
       <section>
         <Eyebrow className="mb-2 px-1">The ad so far</Eyebrow>
-        <div className="overflow-hidden rounded-[26px] bg-card ring-1 ring-line/60">
+        <div className="overflow-hidden rounded-[26px] bg-card shadow-soft">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {photo && <img src={photo} alt="" className="aspect-[16/10] w-full object-cover" />}
           <div className="space-y-2 p-4">

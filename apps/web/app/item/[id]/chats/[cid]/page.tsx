@@ -19,7 +19,7 @@ export default function ChatPage() {
       <div className="flex-1 pt-3">
         {error && !item && <p className="rounded-2xl bg-alert-soft p-4 text-[14px] text-alert">Can&apos;t load this chat: {error}</p>}
         {!item && !error && <div className="skeleton h-60 rounded-[22px]" />}
-        {item && !c && <p className="rounded-2xl bg-card p-4 text-[14px] text-ink-2 ring-1 ring-line/60">This chat isn&apos;t there anymore.</p>}
+        {item && !c && <p className="rounded-2xl bg-card p-4 text-[14px] text-ink-2 shadow-soft">This chat isn&apos;t there anymore.</p>}
         {item && c && <Negotiation item={item} c={c} />}
       </div>
       <NavBar />

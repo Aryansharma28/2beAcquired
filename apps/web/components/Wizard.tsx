@@ -213,7 +213,7 @@ function IsThisIt(p: {
       {p.attrs.length > 0 && (
         <section className="mt-5">
           <Eyebrow className="mb-2 px-1">Details</Eyebrow>
-          <ul className="overflow-hidden rounded-[22px] bg-card ring-1 ring-line/60">
+          <ul className="overflow-hidden rounded-[22px] bg-card shadow-soft">
             {p.attrs.map((a, i) => (
               <li key={i} className="border-b border-line/70 last:border-0">
                 {editing === i ? (
@@ -271,7 +271,7 @@ function WhenGone({ goal, setGoal }: { goal: Goal; setGoal: (g: Goal) => void })
       <Title>When should it be gone?</Title>
       <Segmented<Goal> value={goal} onChange={setGoal} options={GOALS.map((x) => ({ value: x.value, label: x.label }))} />
       <p key={goal} className="mt-4 animate-fade px-1 font-display text-[22px] font-bold leading-tight tracking-[-0.02em]">{g.hint}</p>
-      <div className="mt-6 space-y-3 rounded-[24px] bg-card p-4 ring-1 ring-line/60">
+      <div className="mt-6 space-y-3 rounded-[24px] bg-card p-4 shadow-soft">
         <Meter label="Speed" value={speed} tone="bg-cobalt" />
         <Meter label="Price" value={price} tone="bg-tag" />
       </div>
@@ -300,7 +300,7 @@ function Minimum({ item, floor, setFloor }: { item: Item; floor: number; setFloo
   return (
     <div>
       <Title>What&apos;s your minimum?</Title>
-      <div className="flex items-center justify-between gap-3 rounded-[28px] bg-card px-4 py-6 ring-1 ring-line/60">
+      <div className="flex items-center justify-between gap-3 rounded-[28px] bg-card px-4 py-6 shadow-soft">
         <Step label="Lower" onClick={() => setFloor(Math.max(5, floor - 5))} disabled={floor <= 5}>
           <path d="M6 12h12" />
         </Step>
@@ -381,7 +381,7 @@ function Delivery({ city, setCity }: { city: string; setCity: (s: string) => voi
           <p className="mt-2 px-1 text-[13px] text-mute">The exact address is only shared with the buyer once there&apos;s a deal.</p>
         </div>
         {["Shipping", "Both"].map((o) => (
-          <div key={o} aria-disabled className="flex items-center gap-3 rounded-[24px] bg-card/60 p-4 text-mute ring-1 ring-line/60">
+          <div key={o} aria-disabled className="flex items-center gap-3 rounded-[24px] bg-card/60 p-4 text-mute shadow-soft">
             <span className="size-6 rounded-full border-2 border-line" />
             <span className="font-display text-[20px] font-bold tracking-[-0.02em]">{o}</span>
             <Soon className="ml-auto" />

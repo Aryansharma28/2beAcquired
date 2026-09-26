@@ -34,7 +34,7 @@ export function Overview({ item }: { item: Item }) {
   return (
     <div className="space-y-4">
       {/* Item card */}
-      <div className="flex items-center gap-3.5 rounded-[26px] bg-card p-2.5 pr-4 ring-1 ring-line/60">
+      <div className="flex items-center gap-3.5 rounded-[26px] bg-card p-2.5 pr-4 shadow-soft">
         <div className="size-[76px] shrink-0 overflow-hidden rounded-[18px] bg-paper">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {photo && <img src={photo} alt="" className="size-full object-cover" />}
@@ -66,7 +66,7 @@ export function Overview({ item }: { item: Item }) {
       {numbers.length > 0 && (
         <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${numbers.length}, 1fr)` }}>
           {numbers.map(([k, v]) => (
-            <div key={k} className="rounded-[20px] bg-card px-3 py-3 ring-1 ring-line/60">
+            <div key={k} className="rounded-[20px] bg-card px-3 py-3 shadow-soft">
               <p key={v} className="tabular animate-fade font-mono text-[26px] font-bold leading-none tracking-[-0.04em]">{v}</p>
               <p className="mt-1 text-[12.5px] text-mute">{k}</p>
             </div>

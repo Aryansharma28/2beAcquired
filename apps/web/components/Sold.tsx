@@ -139,7 +139,7 @@ export function PickupCard({ pickup, done, light }: { pickup: Pickup; done?: boo
   return (
     <section className={cx(
       "relative flex animate-pop items-center gap-4 rounded-3xl bg-white p-3 pr-4 text-ink",
-      light ? "ring-1 ring-line/60" : "shadow-[0_18px_40px_-18px_rgba(0,0,0,0.5)] [animation-delay:550ms]",
+      light ? "shadow-soft" : "shadow-[0_18px_40px_-18px_rgba(0,0,0,0.5)] [animation-delay:550ms]",
     )}>
       <div className="w-[64px] shrink-0 overflow-hidden rounded-2xl text-center ring-1 ring-line">
         <div className="bg-alert py-0.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-white">{w.month}</div>

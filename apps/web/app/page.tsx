@@ -132,7 +132,7 @@ function AdCard({ item }: { item: ItemSummary }) {
   return (
     <Link
       href={`/item/${item.id}`}
-      className="relative flex items-center gap-3.5 rounded-[26px] bg-card p-2.5 pr-4 ring-1 ring-line/60 transition active:scale-[0.98]"
+      className="relative flex items-center gap-3.5 rounded-[26px] bg-card p-2.5 pr-4 shadow-soft transition active:scale-[0.98]"
     >
       <div className="relative size-[76px] shrink-0 overflow-hidden rounded-[18px] bg-paper">
         {/* eslint-disable-next-line @next/next/no-img-element */}

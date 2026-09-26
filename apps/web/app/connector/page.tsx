@@ -51,7 +51,7 @@ export default function ConnectorPage() {
 
       <ol className="mt-6 space-y-2.5">
         {STEPS.map((s, i) => (
-          <li key={s.title} className="flex gap-3.5 rounded-[22px] bg-card p-4 ring-1 ring-line/60">
+          <li key={s.title} className="flex gap-3.5 rounded-[22px] bg-card p-4 shadow-soft">
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-ink font-mono text-[13px] font-bold text-white">{i + 1}</span>
             <div>
               <p className="font-display text-[18px] font-bold leading-tight tracking-[-0.02em]">{s.title}</p>

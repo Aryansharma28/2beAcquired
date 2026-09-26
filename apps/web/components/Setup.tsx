@@ -44,7 +44,7 @@ export function Looking({ item }: { item: Item }) {
         <h2 className="font-display text-[30px] font-extrabold leading-none tracking-[-0.04em]">Looking at your photos…</h2>
         <p className="mt-1.5 text-[15px] text-ink-2">About a minute. Then two quick questions.</p>
       </div>
-      <ol className="space-y-1 rounded-[26px] bg-card p-2 ring-1 ring-line/60">
+      <ol className="space-y-1 rounded-[26px] bg-card p-2 shadow-soft">
         {item.events.map((e, i) => (
           <li key={`${e.ts}-${i}`} className="flex animate-rise items-start gap-3 rounded-2xl px-3 py-2">
             <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-cobalt text-white"><Tick className="size-3.5" /></span>
@@ -111,7 +111,7 @@ export function Writing({ item }: { item: Item }) {
         </div>
       </div>
 
-      <ol className="rounded-[28px] bg-card p-2 ring-1 ring-line/60">
+      <ol className="rounded-[28px] bg-card p-2 shadow-soft">
         {steps.map((s) => (
           <li key={s.key} className={cx("flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors", s.state === "running" && "bg-cobalt-soft/60")}>
             {s.state === "done" && <span className="grid size-7 shrink-0 animate-pop place-items-center rounded-full bg-cobalt text-white"><Tick className="size-4" /></span>}
@@ -138,7 +138,7 @@ export function Writing({ item }: { item: Item }) {
       </p>
 
       {item.priceRange && (
-        <div className="animate-rise rounded-[24px] bg-card px-4 pb-3 pt-4 ring-1 ring-line/60">
+        <div className="animate-rise rounded-[24px] bg-card px-4 pb-3 pt-4 shadow-soft">
           <Eyebrow>The market</Eyebrow>
           <p className="mt-1 text-[15px] text-ink-2">
             Similar ones sell for <b className="font-mono text-ink">{eur(item.priceRange.low)}</b> to <b className="font-mono text-ink">{eur(item.priceRange.high)}</b>
@@ -170,7 +170,7 @@ export function CompsSheet({ item, open, onClose }: { item: Item; open: boolean;
       <ul className="space-y-2">
         {comps.map((c, i) => (
           <li key={i}>
-            <a href={c.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5 ring-1 ring-line/60">
+            <a href={c.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5 shadow-soft">
               <PlatformLogo platform={c.platform ?? "marktplaats"} />
               <span className="min-w-0 flex-1 truncate text-[14.5px]">{c.title}</span>
               <PriceTag amount={c.price} size="sm" tilt={0} />

@@ -58,10 +58,10 @@ function ErrorDetails({ meta }: { meta?: Record<string, unknown> }) {
 export function AgentLog({ item, limit }: { item: Item; limit?: number }) {
   const events = [...item.events].reverse().slice(0, limit);
   if (!events.length) {
-    return <p className="rounded-3xl bg-card p-6 text-center text-ink-2 ring-1 ring-line/60">Nothing yet. Every step your agent takes shows up here.</p>;
+    return <p className="rounded-3xl bg-card p-6 text-center text-ink-2 shadow-soft">Nothing yet. Every step your agent takes shows up here.</p>;
   }
   return (
-    <ol className="relative rounded-[26px] bg-card px-3 py-2 ring-1 ring-line/60">
+    <ol className="relative rounded-[26px] bg-card px-3 py-2 shadow-soft">
       <span className="absolute bottom-7 left-[27px] top-7 w-px bg-line" aria-hidden />
       {events.map((e, i) => {
         const k = KIND[e.type] ?? KIND.step;

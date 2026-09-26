@@ -56,7 +56,7 @@ export function AdReview({ item, onApproved }: { item: Item; onApproved: (patch:
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-[26px] bg-card ring-1 ring-line/60">
+      <div className="overflow-hidden rounded-[26px] bg-card shadow-soft">
         {/* Title */}
         <Field label="Title" onEdit={() => setEditing("title")} editing={editing === "title"}>
           {editing === "title" ? (
@@ -106,7 +106,7 @@ export function AdReview({ item, onApproved }: { item: Item; onApproved: (patch:
       {/* Where */}
       <section>
         <Eyebrow className="mb-2 px-1">Where</Eyebrow>
-        <ul className="overflow-hidden rounded-[26px] bg-card ring-1 ring-line/60">
+        <ul className="overflow-hidden rounded-[26px] bg-card shadow-soft">
           <li className="flex items-center gap-3 border-b border-line/70 px-4 py-3.5">
             <PlatformLogo platform="marktplaats" className="!size-7 !rounded-lg !text-[15px]" />
             <span className="flex-1 text-[16px] font-semibold">Marktplaats</span>

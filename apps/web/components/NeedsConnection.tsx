@@ -45,7 +45,7 @@ export function NeedsConnection({ item, onApproved }: { item: Item; onApproved: 
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-[26px] bg-card ring-1 ring-line/60">
+      <div className="overflow-hidden rounded-[26px] bg-card shadow-soft">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {photo && <img src={photo} alt="" className="aspect-[16/10] w-full object-cover" />}
         <div className="flex items-start justify-between gap-3 p-4">

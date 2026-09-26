@@ -89,7 +89,7 @@ export function ConnectMarktplaats({
       {error && <p className="rounded-2xl bg-alert-soft p-3 text-[14px] text-alert">Couldn&apos;t get a code: {error}</p>}
 
       <section>
-        <ol className="overflow-hidden rounded-[24px] bg-card ring-1 ring-line/60">
+        <ol className="overflow-hidden rounded-[24px] bg-card shadow-soft">
           {[
             <>Install <Link href="/connector" className="font-bold text-cobalt underline decoration-cobalt/30 underline-offset-2">poof Connector</Link> in Chrome</>,
             <>Log in to <b>marktplaats.nl</b> as usual</>,
@@ -146,7 +146,7 @@ function PhoneLoginCard() {
   };
 
   return (
-    <section className="rounded-[28px] bg-card p-5 ring-1 ring-line/60">
+    <section className="rounded-[28px] bg-card p-5 shadow-soft">
       <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-mute">
         <PlatformLogo platform="marktplaats" className="!size-4 !text-[9px]" /> On this phone
       </p>

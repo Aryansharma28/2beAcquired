@@ -18,7 +18,7 @@ export function GoingLive({ item }: { item: Item }) {
         </h2>
       </div>
 
-      <ul className="overflow-hidden rounded-[26px] bg-card ring-1 ring-line/60">
+      <ul className="overflow-hidden rounded-[26px] bg-card shadow-soft">
         <li className="border-b border-line/70 px-4 py-4">
           <div className="flex items-center gap-3">
             <PlatformLogo platform="marktplaats" className="!size-8 !rounded-lg !text-[16px]" />

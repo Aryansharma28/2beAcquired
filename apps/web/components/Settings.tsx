@@ -54,7 +54,7 @@ export function SettingsSheet({ open, onClose, account, onChange }: {
             skipLabel="Cancel"
           />
         ) : (
-          <div className="flex items-center gap-3 rounded-[22px] bg-card p-4 ring-1 ring-line/60">
+          <div className="flex items-center gap-3 rounded-[22px] bg-card p-4 shadow-soft">
             <PlatformLogo platform="marktplaats" muted={!account.mpConnected} className="!size-9 !rounded-xl !text-[17px]" />
             <div className="min-w-0 flex-1">
               <p className="text-[15.5px] font-bold">{account.mpConnected ? `Connected as ${account.mpName ?? "you"}` : "Not connected"}</p>

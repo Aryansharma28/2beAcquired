@@ -33,14 +33,14 @@ export function ChatList({ item }: { item: Item }) {
         <section>
           <button
             onClick={() => setOpenFolded((o) => !o)}
-            className="flex w-full items-center justify-between rounded-[22px] bg-card/60 px-4 py-3.5 text-left ring-1 ring-line/60"
+            className="flex w-full items-center justify-between rounded-[22px] bg-card/60 px-4 py-3.5 text-left shadow-soft"
             aria-expanded={openFolded}
           >
             <span className="text-[15px] font-semibold text-ink-2">Lowballers and scams ({folded.length})</span>
             <svg viewBox="0 0 24 24" className={cx("size-5 text-mute transition-transform", openFolded && "rotate-180")} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
           </button>
           {openFolded && (
-            <ul className="mt-2 animate-fade overflow-hidden rounded-[22px] bg-card opacity-80 ring-1 ring-line/60">
+            <ul className="mt-2 animate-fade overflow-hidden rounded-[22px] bg-card opacity-80 shadow-soft">
               {folded.map((c) => <ChatRow key={c.id} item={item} c={c} />)}
             </ul>
           )}
@@ -59,7 +59,7 @@ function Group({ title, item, convs }: { title: string; item: Item; convs: Conve
   return (
     <section>
       <Eyebrow className="mb-2 px-1">{title}</Eyebrow>
-      <ul className="overflow-hidden rounded-[22px] bg-card ring-1 ring-line/60">
+      <ul className="overflow-hidden rounded-[22px] bg-card shadow-soft">
         {convs.map((c) => <ChatRow key={c.id} item={item} c={c} />)}
       </ul>
     </section>
@@ -170,7 +170,7 @@ export function Thread({ c }: { c: Conversation }) {
   const typing = c.state !== "declined" && c.messages.at(-1)?.from === "buyer";
 
   return (
-    <section className="space-y-2.5 rounded-[26px] bg-card p-3 ring-1 ring-line/60">
+    <section className="space-y-2.5 rounded-[26px] bg-card p-3 shadow-soft">
       {c.messages.map((m, i) => {
         const chip = offerIn(m, c);
         const agent = m.from === "agent";

@@ -79,7 +79,7 @@ export default function Welcome() {
                 ["It haggles", "It answers every buyer and never goes below your minimum."],
                 ["poof, sold", "It plans the pickup and takes the ad down once it's sold."],
               ].map(([t, d], i) => (
-                <li key={t} className="flex gap-3.5 rounded-[22px] bg-card p-4 ring-1 ring-line/60 animate-rise" style={{ animationDelay: `${120 + i * 80}ms` }}>
+                <li key={t} className="flex gap-3.5 rounded-[22px] bg-card p-4 shadow-soft animate-rise" style={{ animationDelay: `${120 + i * 80}ms` }}>
                   <span className="grid size-8 shrink-0 place-items-center rounded-full bg-tag font-mono text-[13px] font-bold">{i + 1}</span>
                   <div>
                     <p className="font-display text-[18px] font-bold leading-tight tracking-[-0.02em]">{t}</p>
