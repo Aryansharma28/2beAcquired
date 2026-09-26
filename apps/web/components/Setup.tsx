@@ -5,20 +5,20 @@ import { eur } from "@/lib/format";
 import { coverFirst } from "@/lib/useItem";
 import type { Item } from "@/lib/types";
 import { RangeBar } from "./Wizard";
-import { Eyebrow, PlatformLogo, PriceTag, Sheet, Tick, cx } from "./ui";
+import { Eyebrow, PlatformLogo, PoofTag, PriceTag, Sheet, Tick, cx } from "./ui";
 
 /** Cover photo with the scanning sweep. */
 export function ScanPhoto({ item, scanning, className }: { item: Item; scanning: boolean; className?: string }) {
   const photo = coverFirst(item)[0];
   return (
-    <div className={cx("relative overflow-hidden rounded-[28px] bg-ink", className)}>
+    <div className={cx("relative overflow-hidden rounded-[20px] bg-limetint", className)}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {photo && <img src={photo} alt="" className="size-full object-cover" />}
       {scanning && (
         <>
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(43,59,255,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(43,59,255,0.10)_1px,transparent_1px)] bg-[size:28px_28px]" />
-          <div className="pointer-events-none absolute inset-x-0 h-24 -translate-y-full animate-scan bg-gradient-to-b from-transparent to-cobalt/45">
-            <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white shadow-[0_0_12px_2px_rgba(43,59,255,0.9)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(215,245,122,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(215,245,122,0.16)_1px,transparent_1px)] bg-[size:28px_28px]" />
+          <div className="pointer-events-none absolute inset-x-0 h-24 -translate-y-full animate-scan bg-gradient-to-b from-transparent to-lime/50">
+            <div className="absolute inset-x-0 bottom-0 h-[2px] bg-lime shadow-[0_0_12px_2px_rgba(215,245,122,0.9)]" />
           </div>
         </>
       )}
@@ -34,24 +34,24 @@ export function Looking({ item }: { item: Item }) {
       <div className="relative">
         <ScanPhoto item={item} scanning className="aspect-[4/3.4]" />
         {name && (
-          <div className="absolute inset-x-3 bottom-3 animate-pop rounded-2xl bg-card/95 px-3.5 py-2 text-ink shadow-lg backdrop-blur">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cobalt">Looks like</p>
-            <p className="font-display text-[20px] font-bold leading-tight tracking-[-0.02em]">{name}</p>
+          <div className="absolute inset-x-3 bottom-3 animate-pop rounded-[16px] bg-card px-3.5 py-2.5 text-ink shadow-float">
+            <p className="flex items-center gap-2 text-[12px] font-bold text-moss"><PoofTag /> Looks like</p>
+            <p className="mt-1 text-[20px] font-extrabold leading-tight tracking-[-0.02em]">{name}</p>
           </div>
         )}
       </div>
-      <div className="px-1">
-        <h2 className="font-display text-[30px] font-extrabold leading-none tracking-[-0.04em]">Looking at your photos…</h2>
-        <p className="mt-1.5 text-[15px] text-ink-2">About a minute. Then two quick questions.</p>
+      <div>
+        <h2 className="text-[26px] font-extrabold leading-tight tracking-[-0.02em]">Looking at your photos…</h2>
+        <p className="mt-1 text-[15px] text-moss">About a minute. Then two quick questions.</p>
       </div>
-      <ol className="space-y-1 rounded-[26px] bg-card p-2 shadow-soft">
+      <ol className="overflow-hidden rounded-[20px] bg-card shadow-soft">
         {item.events.map((e, i) => (
-          <li key={`${e.ts}-${i}`} className="flex animate-rise items-start gap-3 rounded-2xl px-3 py-2">
-            <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-cobalt text-white"><Tick className="size-3.5" /></span>
-            <p className="text-[15px] font-medium leading-snug">{e.text}</p>
+          <li key={`${e.ts}-${i}`} className="flex animate-rise items-start gap-3 border-b border-line px-4 py-3.5">
+            <span className="mt-px grid size-[26px] shrink-0 place-items-center rounded-full bg-ink text-white"><Tick className="size-3.5" /></span>
+            <p className="text-[15px] font-semibold leading-snug">{e.text}</p>
           </li>
         ))}
-        <li className="flex items-center gap-3 px-3 py-2.5">
+        <li className="flex items-center gap-3 bg-limetint px-4 py-3.5">
           <Running />
           <span className="skeleton h-3.5 w-2/3 rounded-full" />
         </li>
@@ -62,9 +62,9 @@ export function Looking({ item }: { item: Item }) {
 
 function Running() {
   return (
-    <span className="relative grid size-6 shrink-0 place-items-center">
-      <span className="absolute size-6 animate-ping rounded-full bg-cobalt/30" />
-      <span className="size-2.5 rounded-full bg-cobalt" />
+    <span className="relative grid size-[26px] shrink-0 place-items-center">
+      <span className="absolute size-[26px] animate-ping rounded-full bg-lime/60" />
+      <span className="size-[26px] rounded-full bg-lime" />
     </span>
   );
 }
@@ -103,29 +103,25 @@ export function Writing({ item }: { item: Item }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-4 px-1">
-        <ScanPhoto item={item} scanning className="size-[84px] shrink-0 !rounded-[22px]" />
-        <div>
-          <Eyebrow>Setting up</Eyebrow>
-          <h2 className="font-display text-[30px] font-extrabold leading-[0.95] tracking-[-0.04em]">Your agent is on it</h2>
+      <div className="flex items-center gap-4 pt-6">
+        <ScanPhoto item={item} scanning className="sticker size-[72px] shrink-0 !rounded-[12px]" />
+        <div className="min-w-0">
+          <p className="truncate text-[13px] font-semibold text-moss">{item.recognition?.name ?? "Setting up"}</p>
+          <h2 className="text-[26px] font-extrabold leading-tight tracking-[-0.02em]">Poof is on it</h2>
         </div>
       </div>
 
-      <ol className="rounded-[28px] bg-card p-2 shadow-soft">
+      <ol className="overflow-hidden rounded-[20px] bg-card shadow-soft">
         {steps.map((s) => (
-          <li key={s.key} className={cx("flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors", s.state === "running" && "bg-cobalt-soft/60")}>
-            {s.state === "done" && <span className="grid size-7 shrink-0 animate-pop place-items-center rounded-full bg-cobalt text-white"><Tick className="size-4" /></span>}
-            {s.state === "running" && (
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-card text-cobalt ring-2 ring-cobalt">
-                <svg viewBox="0 0 24 24" className="size-4 animate-spin" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M20 12a8 8 0 11-3-6.2" /><path d="M20 4v4h-4" /></svg>
-              </span>
-            )}
-            {s.state === "next" && <span className="size-7 shrink-0 rounded-full border-2 border-dashed border-line" />}
-            <span className={cx("min-w-0 flex-1 text-[15.5px] leading-snug", s.state === "next" ? "text-mute" : "font-semibold", s.key === "price" && s.state === "done" && "font-bold")}>
+          <li key={s.key} className={cx("flex items-center gap-3 border-b border-line px-4 py-3.5 transition-colors last:border-0", s.state === "running" && "rounded-[16px] border-transparent bg-limetint")}>
+            {s.state === "done" && <span className="grid size-[26px] shrink-0 animate-pop place-items-center rounded-full bg-ink text-white"><Tick className="size-3.5" /></span>}
+            {s.state === "running" && <span className="size-[26px] shrink-0 animate-blink rounded-full bg-lime" />}
+            {s.state === "next" && <span className="size-[26px] shrink-0 rounded-full bg-line" />}
+            <span className={cx("min-w-0 flex-1 text-[15px] font-bold leading-snug", s.state === "next" && "font-semibold text-moss")}>
               {s.text}
             </span>
             {s.action && (
-              <button onClick={s.action.onClick} className="shrink-0 rounded-full bg-paper px-3 py-1 text-[13px] font-semibold text-cobalt">
+              <button onClick={s.action.onClick} className="h-[34px] shrink-0 rounded-full border border-ink px-3.5 text-[13px] font-bold text-ink">
                 {s.action.label}
               </button>
             )}
@@ -133,14 +129,14 @@ export function Writing({ item }: { item: Item }) {
         ))}
       </ol>
 
-      <p className="flex items-center justify-center gap-2 text-[14px] text-mute">
-        <span className="size-1.5 animate-blink rounded-full bg-cobalt" /> About 20 seconds
+      <p className="flex items-center justify-center gap-2 text-[13px] font-semibold text-moss">
+        <span className="size-1.5 animate-blink rounded-full bg-ink" /> About 20 seconds
       </p>
 
       {item.priceRange && (
-        <div className="animate-rise rounded-[24px] bg-card px-4 pb-3 pt-4 shadow-soft">
+        <div className="animate-rise rounded-[20px] bg-card px-4 pb-3 pt-4 shadow-soft">
           <Eyebrow>The market</Eyebrow>
-          <p className="mt-1 text-[15px] text-ink-2">
+          <p className="mt-1 text-[15px] text-moss">
             Similar ones sell for <b className="font-mono text-ink">{eur(item.priceRange.low)}</b> to <b className="font-mono text-ink">{eur(item.priceRange.high)}</b>
           </p>
           <RangeBar
@@ -162,7 +158,7 @@ export function CompsSheet({ item, open, onClose }: { item: Item; open: boolean;
   return (
     <Sheet open={open} onClose={onClose} title={`${n} similar listings`}>
       {item.priceRange && (
-        <p className="-mt-1 mb-3 text-[14px] text-ink-2">
+        <p className="-mt-1 mb-3 text-[14px] text-moss">
           Most sell for <b className="font-mono">{eur(item.priceRange.low)}</b> to <b className="font-mono">{eur(item.priceRange.high)}</b>
           {comps.length < n && <> · showing {comps.length}</>}
         </p>
@@ -170,9 +166,9 @@ export function CompsSheet({ item, open, onClose }: { item: Item; open: boolean;
       <ul className="space-y-2">
         {comps.map((c, i) => (
           <li key={i}>
-            <a href={c.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2.5 shadow-soft">
-              <PlatformLogo platform={c.platform ?? "marktplaats"} />
-              <span className="min-w-0 flex-1 truncate text-[14.5px]">{c.title}</span>
+            <a href={c.url} target="_blank" rel="noreferrer" className="flex min-h-[52px] items-center gap-3 rounded-[16px] bg-card px-3.5 py-2.5 shadow-soft">
+              <PlatformLogo platform={c.platform ?? "marktplaats"} className="!size-7" />
+              <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold">{c.title}</span>
               <PriceTag amount={c.price} size="sm" tilt={0} />
             </a>
           </li>
