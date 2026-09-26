@@ -107,3 +107,40 @@ const server = http.createServer((req, res) => {
   });
 });
 server.listen(PORT, () => console.log(`poof local runner on http://localhost:${PORT}`));
+
+// --- Real-time chat watcher --------------------------------------------------------------------------------
+// Marktplaats has no push for sellers. Every 15 s, ask its unread-message counter (the bell on the site, one small
+// request, from this laptop with the owner's session); when it goes up, poke n8n's inbox workflow right away.
+const WATCH_STORE = process.env.WATCH_MP_STORE || process.env.DEMO_MP_STORE;
+const N8N = process.env.N8N_BASE_URL;
+const APP_KEY = process.env.POOF_APP_KEY;
+if (WATCH_STORE && N8N && APP_KEY) {
+  let session = null, loadedAt = 0, lastCount = null, lastPoke = 0;
+  const loadSession = async () => {
+    const r = await fetch(`${API}/key-value-stores/${await storeId(WATCH_STORE)}/records/state`, { headers: apifyHeaders });
+    if (r.ok) { session = await r.json(); loadedAt = Date.now(); }
+  };
+  const tick = async () => {
+    if (!session || Date.now() - loadedAt > 5 * 60_000) await loadSession(); // runs write refreshed cookies back
+    if (!session) return;
+    const cookie = session.cookies.filter((c) => c.domain.includes("marktplaats.nl")).map((c) => `${c.name}=${c.value}`).join("; ");
+    const r = await fetch("https://www.marktplaats.nl/header/messages/message-count", {
+      headers: { Cookie: cookie, Accept: "application/json", "X-Requested-With": "XMLHttpRequest", Referer: "https://www.marktplaats.nl/",
+        "User-Agent": session.meta?.userAgent || "Mozilla/5.0" },
+    });
+    if (r.status !== 200) return console.warn(`watcher: message-count HTTP ${r.status}`);
+    const count = Number((await r.json()).unreadMessagesCount ?? 0);
+    const rose = lastCount !== null && count > lastCount;
+    lastCount = count;
+    if (rose && Date.now() - lastPoke > 20_000) {
+      lastPoke = Date.now();
+      console.log(`
+✉ ${count} unread on Marktplaats → running the inbox now`);
+      await fetch(`${N8N}/webhook/tba/inbox-now`, { method: "POST", headers: { "X-Poof-Key": APP_KEY, "Content-Type": "application/json" }, body: "{}" })
+        .catch((e) => console.warn("watcher: poke failed", e.message));
+    }
+  };
+  const loop = () => tick().catch((e) => console.warn("watcher:", e.message)).finally(() => setTimeout(loop, 15_000));
+  loop();
+  console.log(`chat watcher on for '${WATCH_STORE}' (every 15 s)`);
+}

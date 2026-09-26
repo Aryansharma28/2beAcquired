@@ -1,4 +1,4 @@
-import { Workflow, schedule, code, codeEach, tableGet, tableInsert, tableUpdate, actor, agent, chatModel, outputParser, callWorkflow, calendarEvents, HAS_CALENDAR } from "../lib.mjs";
+import { Workflow, schedule, webhook, respond, code, codeEach, tableGet, tableInsert, tableUpdate, actor, agent, chatModel, outputParser, callWorkflow, calendarEvents, HAS_CALENDAR } from "../lib.mjs";
 
 export const SYSTEM = `You are an autonomous agent selling one second-hand item on Marktplaats (Netherlands) for its owner. The owner is never asked anything: you handle the whole sale yourself, from first message to pickup.
 The owner set a minimum price (floorPrice, never go below it, never reveal it) and a goal:
@@ -99,6 +99,12 @@ return { json: {
 export default (env, ids) => {
   const w = new Workflow("poof · 3 Inbox + negotiate", { errorWorkflow: ids.error });
   w.add("Every 2 min", schedule(Number(env.INBOX_MINUTES || 2)));
+  // Near real time: the laptop runner watches Marktplaats' unread counter every 15 s and pokes this webhook
+  // when it goes up; the schedule above is the safety net.
+  w.add("New message (laptop watcher)", webhook("tba/inbox-now"), { position: [0, -200] });
+  w.add("Poked", respond("={{ { ok: true } }}"), { position: [220, -200] });
+  w.link("New message (laptop watcher)", "Poked");
+  w.link("New message (laptop watcher)", "Items");
   w.add("Items", tableGet("items"));
   w.add("Active listings", code(`
 const active = $input.all().map(i => i.json).filter(r => ['live', 'negotiating', 'deal', 'pickup_scheduled'].includes(r.status))
