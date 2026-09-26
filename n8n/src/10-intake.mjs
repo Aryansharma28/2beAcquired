@@ -2,7 +2,7 @@ import { Workflow, webhook, respond, code, tableInsert, tableUpdate, llm, ARGS, 
 
 // W1 · Intake (screens 01→02): photos → Google Lens + vision → real comparables → "Is this it?" + market range.
 export default (env, ids) => {
-  const w = new Workflow("TBA · 1 Intake", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · 1 Intake", { errorWorkflow: ids.error });
   const photoUrl = `https://api.apify.com/v2/key-value-stores/${env.APIFY_PHOTO_STORE}/records/`;
 
   w.add("Photos in", webhook("tba/intake"));

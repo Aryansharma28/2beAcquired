@@ -2,7 +2,7 @@ import { Workflow, webhook, respond, code, tableGet } from "../lib.mjs";
 
 // Read API for the app: GET /tba/item?id=… and GET /tba/items
 export default (env, ids) => {
-  const w = new Workflow("TBA · API (read)", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · API (read)", { errorWorkflow: ids.error });
 
   w.add("GET item", webhook("tba/item", "GET"));
   w.add("Item row", tableGet("items", { itemId: "={{ $json.query.id }}" }), { executeOnce: true });

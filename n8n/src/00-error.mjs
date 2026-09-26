@@ -3,7 +3,7 @@ import { Workflow, errorTrigger, code, tableInsert, tableUpdate, ntfy, ifTrue, a
 // W0 · Error handler: every TBA workflow reports here. Classifies the failure, tells the item log, and
 // only pings a human when a human is actually needed (expired Marktplaats session / captcha).
 export default (env) => {
-  const w = new Workflow("TBA · 0 Error handler");
+  const w = new Workflow("poof · 0 Error handler");
   w.add("On any failure", errorTrigger());
   // Apify's run-sync error hides the actor's reason; fetch the run's status message (e.g. SESSION_EXPIRED).
   w.add("Actor run?", code(`

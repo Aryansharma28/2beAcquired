@@ -1,6 +1,6 @@
-# 2beAcquired
+# poof
 
-Your stuff, sold. An autonomous second-hand selling agent: snap a photo, set a goal and a floor price, and the agent prices, lists, negotiates and delists on Marktplaats and eBay. You only step in when an offer is below your floor.
+Snap it. poof. Sold. An autonomous second-hand selling agent for Marktplaats: snap a photo, confirm what it is, pick how fast it should go and set a minimum. The agent prices it from real listings, writes the ad, negotiates with buyers, books the pickup in your calendar and takes the ad down. After you approve the ad, nobody asks you anything.
 
 Built at Build Weekend 2026 with **n8n** (the brain) and **Apify** (eyes and hands).
 

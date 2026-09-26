@@ -3,7 +3,7 @@ import { Workflow, schedule, code, codeEach, tableGet, tableUpdate, actor, ifTru
 // W4 · Reprice + wrap-up: hourly. Lower the price of listings that are not moving (never below the minimum),
 // and mark items sold once their pickup time has passed.
 export default (env, ids) => {
-  const w = new Workflow("TBA · 4 Reprice + wrap-up", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · 4 Reprice + wrap-up", { errorWorkflow: ids.error });
   const fastH = Number(env.REPRICE_FAST_HOURS || 4), slowH = Number(env.REPRICE_SLOW_HOURS || 24);
   w.add("Every hour", schedule(Number(env.REPRICE_MINUTES || 60)));
   w.add("Items", tableGet("items"));

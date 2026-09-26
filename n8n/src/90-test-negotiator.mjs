@@ -5,7 +5,7 @@ import { SYSTEM, SCHEMA, GUARDRAILS } from "./30-inbox.mjs";
 // without touching Marktplaats. POST /tba/test-negotiator
 // { item: {title, askPrice, floorPrice, goal}, stage?, messages: [{from: 'buyer'|'seller', text}], lastOffer? }
 export default (env, ids) => {
-  const w = new Workflow("TBA · Test negotiator (no side effects)", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · Test negotiator (no side effects)", { errorWorkflow: ids.error });
   w.add("Simulated chat", webhook("tba/test-negotiator"));
   w.add("Needs a reply", code(`
 const b = $json.body || {};

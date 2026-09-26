@@ -2,7 +2,7 @@ import { Workflow, subTrigger, code, tableGet, tableUpdate, actor } from "../lib
 
 // W2 · Publish: put the ad live on Marktplaats with our own Apify actor (logged-in browser), and show it in the app.
 export default (env, ids) => {
-  const w = new Workflow("TBA · 2 Publish", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · 2 Publish", { errorWorkflow: ids.error });
   w.add("Called with itemId", subTrigger());
   w.add("Get item", tableGet("items", { itemId: "={{ $json.itemId }}" }), { executeOnce: true });
   w.add("Mark publishing", code(`

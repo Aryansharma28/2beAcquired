@@ -1,6 +1,6 @@
 // Build every workflow in n8n/src, write JSON to n8n/workflows, and upsert + activate on n8n Cloud.
 // Usage: node n8n/deploy.mjs [fileFilter]
-import { readdirSync, writeFileSync, mkdirSync } from "node:fs";
+import { readdirSync, writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { loadEnv } from "./lib.mjs";
@@ -28,10 +28,12 @@ for (const file of files) mods.push({ file, build: (await import(pathToFileURL(j
 const key = (file) => file.replace(/^\d+-/, "").replace(/\.mjs$/, "");
 
 // Pass 1: make sure every workflow exists so sub-workflow calls can reference real ids.
+// Match by the id we deployed before (ids.json) so renames update in place; fall back to the name.
+const known = existsSync(join(here, "ids.json")) ? JSON.parse(readFileSync(join(here, "ids.json"), "utf8")) : {};
 const ids = {};
 for (const { file, build } of mods) {
   const { name } = build(env, new Proxy({}, { get: () => "pending" }));
-  let found = existing.find((w) => w.name === name);
+  let found = existing.find((w) => w.id === known[key(file)]) ?? existing.find((w) => w.name === name);
   if (!found) {
     found = await api("POST", "/workflows", { name, nodes: [], connections: {}, settings: { executionOrder: "v1" } });
     existing.push(found);
@@ -51,7 +53,7 @@ for (let round = 0; queue.length && round < 5; round++) {
     const problems = lintWorkflow(json);
     if (problems.length) { console.log(problems.map((p) => `LINT ${p}`).join("\n")); process.exit(1); }
     writeFileSync(join(here, "workflows", m.file.replace(".mjs", ".json")), JSON.stringify(json, null, 2));
-    const found = existing.find((w) => w.name === json.name);
+    const found = existing.find((w) => w.id === ids[key(m.file)]);
     try {
       if (round === 0) {
         if (found.active) await api("POST", `/workflows/${found.id}/deactivate`).catch(() => {});

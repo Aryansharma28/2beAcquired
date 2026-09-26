@@ -4,7 +4,7 @@ import { Workflow, subTrigger, codeEach, code, tableUpsert, tableUpdate, tableIn
 // Saves conversation state, moves the item status forward, sends the message on the platform, stores it,
 // and hands booked pickups to W5.
 export default (env, ids) => {
-  const w = new Workflow("TBA · Send reply", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · Send reply", { errorWorkflow: ids.error });
   w.add("Reply to send", subTrigger());
   w.add("Prep", codeEach(`
 const j = $json;

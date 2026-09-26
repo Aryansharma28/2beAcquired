@@ -2,7 +2,7 @@ import { Workflow, webhook, respond, code, tableGet, tableUpdate, callWorkflow }
 
 // Screen 07 "Approve and sell": apply the owner's edits (if any) and hand over to the agent for good.
 export default (env, ids) => {
-  const w = new Workflow("TBA · 1c Approve → publish", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · 1c Approve → publish", { errorWorkflow: ids.error });
   w.add("Approve and sell", webhook("tba/approve"));
   w.add("OK", respond("={{ { ok: true } }}"));
   w.add("Get item", tableGet("items", { itemId: "={{ $('Approve and sell').first().json.body.itemId }}" }), { executeOnce: true });

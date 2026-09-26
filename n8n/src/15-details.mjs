@@ -3,7 +3,7 @@ import { Workflow, webhook, respond, code, tableGet, tableUpdate, llm, ARGS } fr
 // W1b · Details (screens 02–05 → 06 → 07): owner confirmed what it is, picked when it should be gone, set a minimum
 // and pickup. The agent prices it for that goal, plans future price drops, and writes the ad.
 export default (env, ids) => {
-  const w = new Workflow("TBA · 1b Details → ad", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · 1b Details → ad", { errorWorkflow: ids.error });
   w.add("Owner details", webhook("tba/details"));
   w.add("OK", respond("={{ { ok: true } }}"));
   w.add("Get item", tableGet("items", { itemId: "={{ $('Owner details').first().json.body.itemId }}" }), { executeOnce: true });

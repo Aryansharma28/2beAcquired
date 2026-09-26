@@ -70,7 +70,7 @@ return { json: {
 
 // W3 · Inbox: every few minutes read Marktplaats chats, let the agent decide and act, log everything.
 export default (env, ids) => {
-  const w = new Workflow("TBA · 3 Inbox + negotiate", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · 3 Inbox + negotiate", { errorWorkflow: ids.error });
   w.add("Every 2 min", schedule(Number(env.INBOX_MINUTES || 2)));
   w.add("Items", tableGet("items"));
   w.add("Active listings", code(`

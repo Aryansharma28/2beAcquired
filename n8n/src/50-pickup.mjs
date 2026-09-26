@@ -2,7 +2,7 @@ import { Workflow, subTrigger, codeEach, code, tableGet, tableUpdate, actor, cal
 
 // W5 · Close the deal: pickup booked → put it in the owner's calendar, record the sale, delist everywhere.
 export default (env, ids) => {
-  const w = new Workflow("TBA · 5 Pickup + delist", { errorWorkflow: ids.error });
+  const w = new Workflow("poof · 5 Pickup + delist", { errorWorkflow: ids.error });
   w.add("Pickup booked", subTrigger());
   w.add("Get item", tableGet("items", { itemId: "={{ $json.itemId }}" }));
   w.add("Record sale", codeEach(`
