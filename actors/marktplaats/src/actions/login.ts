@@ -66,7 +66,7 @@ export async function login(input: Input) {
     });
 
     let inputLock: Promise<unknown> = Promise.resolve(); // apply inputs strictly in arrival order
-    const handleInput = async (msg: { type: string; x?: number; y?: number; text?: string; key?: string; dy?: number }) => {
+    const handleInput = async (msg: { type: string; x?: number; y?: number; text?: string; key?: string; count?: number; dy?: number }) => {
         if (state !== 'ready') return { focus: false };
         if (msg.type === 'tap' && typeof msg.x === 'number' && typeof msg.y === 'number') {
             await page.mouse.click(msg.x * VIEWPORT.width, msg.y * VIEWPORT.height);
@@ -74,7 +74,7 @@ export async function login(input: Input) {
         } else if (msg.type === 'text' && msg.text) {
             await page.keyboard.type(msg.text.slice(0, 200), { delay: 25 });
         } else if (msg.type === 'key' && msg.key && ['Backspace', 'Enter', 'Tab'].includes(msg.key)) {
-            await page.keyboard.press(msg.key);
+            for (let i = 0; i < Math.min(Math.max(Number(msg.count) || 1, 1), 60); i++) await page.keyboard.press(msg.key);
         } else if (msg.type === 'scroll' && typeof msg.dy === 'number') {
             await page.mouse.wheel(0, Math.max(-2000, Math.min(2000, msg.dy)));
         } else if (msg.type === 'back') {
@@ -83,15 +83,22 @@ export async function login(input: Input) {
             await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
         }
         // Tell the viewer whether a text field has focus, so it can keep the phone keyboard open.
-        const focus = await page
+        // Which kind of field has focus, so the viewer's own input box can match it (password dots, number pad).
+        const kind = await page
             .evaluate(() => {
                 const el = document.activeElement as HTMLElement | null;
-                if (!el) return false;
-                if (el.isContentEditable) return true;
-                return el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !['button', 'submit', 'checkbox', 'radio'].includes((el as HTMLInputElement).type));
+                if (!el) return null;
+                if (el.isContentEditable || el.tagName === 'TEXTAREA') return 'text';
+                if (el.tagName !== 'INPUT') return null;
+                const input = el as HTMLInputElement;
+                if (['button', 'submit', 'checkbox', 'radio', 'hidden'].includes(input.type)) return null;
+                if (input.type === 'password') return 'password';
+                if (input.type === 'email') return 'email';
+                if (['tel', 'number'].includes(input.type) || /numeric|decimal/.test(input.inputMode) || input.autocomplete === 'one-time-code') return 'number';
+                return 'text';
             })
-            .catch(() => false);
-        return { focus };
+            .catch(() => null);
+        return { focus: !!kind, kind };
     };
 
     const server = http.createServer((req, res) => {
@@ -227,8 +234,8 @@ function viewerHtml(poofUrl: string): string {
 header{display:flex;align-items:center;gap:8px;padding:8px 12px;font-weight:700}
 header .lock{font-size:11.5px;text-align:right;font-weight:600;color:var(--mute);margin-left:auto}
 #wrap{position:relative;margin:0 auto;max-width:440px;padding:0 8px}
-#screen{display:block;width:auto;max-width:100%;max-height:calc(100dvh - 104px);margin:0 auto;border-radius:14px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.08),0 8px 30px rgba(0,0,0,.08);touch-action:none;user-select:none;-webkit-user-select:none}
-#kb{position:fixed;left:-1000px;top:0;opacity:0;width:10px;height:10px;font-size:16px}
+#screen{display:block;width:auto;max-width:100%;max-height:calc(100dvh - 190px);margin:0 auto;border-radius:14px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.08),0 8px 30px rgba(0,0,0,.08);touch-action:none;user-select:none;-webkit-user-select:none}
+#type{display:flex;gap:6px;max-width:440px;margin:8px auto 0;padding:0 8px}#type input{flex:1;min-width:0;border:2px solid #d9d2c6;border-radius:12px;padding:10px 12px;font:600 16px system-ui;background:#fff;color:var(--ink)}#type input:focus{outline:none;border-color:#2f5bff}#type button{border:0;border-radius:12px;background:var(--ink);color:#fff;font:700 15px system-ui;padding:0 14px}#hint{max-width:440px;margin:4px auto 0;padding:0 14px;font-size:12.5px;color:var(--mute)}
 #bar{display:flex;gap:8px;justify-content:center;padding:8px}
 #bar button{border:0;border-radius:999px;background:#fff;padding:9px 14px;font:600 14px system-ui;color:var(--ink);box-shadow:0 1px 0 rgba(0,0,0,.08)}
 #msg{position:fixed;inset:0;display:none;place-items:center;background:rgba(246,242,234,.94);text-align:center;padding:24px}
@@ -238,8 +245,9 @@ header .lock{font-size:11.5px;text-align:right;font-weight:600;color:var(--mute)
 </style></head><body>
 <header>Log in to Marktplaats<span class="lock">🔒 poof never sees your password</span></header>
 <div id="wrap"><img id="screen" alt="Marktplaats login"></div>
-<div id="bar"><button id="back">← Back</button><button id="key">⌨ Keyboard</button><button id="restart">↻ Start over</button></div>
-<textarea id="kb" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+<form id="type" autocomplete="off"><input id="kb" type="text" placeholder="Tap a field above, then type here" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"><button type="button" id="bs" aria-label="Delete">⌫</button><button type="submit">↵</button></form>
+<p id="hint">Typing here goes into the field you tapped in the Marktplaats screen.</p>
+<div id="bar"><button id="back">← Back</button><button id="restart">↻ Start over</button></div>
 <div id="msg" class="show"><div><div class="spin"></div><p>Opening Marktplaats…</p></div></div>
 <script>
 const t=new URLSearchParams(location.search).get('t'),img=document.getElementById('screen'),kb=document.getElementById('kb'),msg=document.getElementById('msg');
@@ -257,17 +265,24 @@ es.addEventListener('state',e=>{const s=JSON.parse(e.data);
  else if(s.state==='done'){show('<h2>✓ Connected'+(s.name?' as '+s.name.replace(/</g,''):'')+'</h2><p>poof can now sell for you on Marktplaats.</p><a href="${poofUrl}/" target="_top">Back to poof</a>');try{parent.postMessage({poof:'connected'},'*')}catch(_){}}
  else if(s.state==='failed'){show('<h2>That didn\\'t work</h2><p>'+(s.detail||'').replace(/</g,'')+'</p><a href="${poofUrl}/" target="_top">Back to poof</a>');try{parent.postMessage({poof:'failed'},'*')}catch(_){}}
 });
-let sy=null,moved=0;
-img.addEventListener('pointerdown',e=>{sy=e.clientY;moved=0;kb.focus({preventScroll:true})});
+let sy=null,moved=0,prev='';
+const hint=document.getElementById('hint');
+// Mirror the visible box into the remote field by diff: works with autocorrect, predictive text, paste and Android IMEs.
+const reset=()=>{kb.value='';prev=''};
+const setKind=(k)=>{kb.type=k==='password'?'password':'text';kb.inputMode=k==='number'?'numeric':k==='email'?'email':'text';
+ kb.placeholder=k==='password'?'Type your password here':k==='number'?'Type the code here':k?'Type here':'Tap a field above, then type here';
+ hint.textContent=k?'Typing here goes into the field you tapped.':'Tap a field in the Marktplaats screen first.'};
+img.addEventListener('pointerdown',e=>{sy=e.clientY;moved=0});
 img.addEventListener('pointermove',e=>{if(sy===null)return;const d=sy-e.clientY;if(Math.abs(d)>12){moved+=d;post({type:'scroll',dy:d*2});sy=e.clientY}});
 img.addEventListener('pointerup',async e=>{const was=moved;sy=null;if(Math.abs(was)>12)return;const r=img.getBoundingClientRect();
- const res=await post({type:'tap',x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height});if(!res.focus)kb.blur()});
-kb.addEventListener('beforeinput',e=>{e.preventDefault();
- if(e.inputType==='deleteContentBackward')post({type:'key',key:'Backspace'});
- else if(e.inputType==='insertLineBreak'||e.inputType==='insertParagraph')post({type:'key',key:'Enter'});
- else if(e.data)typeText(e.data)});
-kb.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();post({type:'key',key:'Enter'})}else if(e.key==='Tab'){e.preventDefault();post({type:'key',key:'Tab'})}});
-document.getElementById('key').onclick=()=>kb.focus();
+ const res=await post({type:'tap',x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height});
+ reset();setKind(res.kind||null);if(res.focus)kb.focus()});
+kb.addEventListener('input',()=>{const cur=kb.value;let i=0;while(i<prev.length&&i<cur.length&&prev[i]===cur[i])i++;
+ const del=prev.length-i,add=cur.slice(i);prev=cur;
+ if(del>0)post({type:'key',key:'Backspace',count:del});if(add)typeText(add)});
+document.getElementById('type').addEventListener('submit',e=>{e.preventDefault();post({type:'key',key:'Enter'});reset()});
+document.getElementById('bs').onclick=()=>{if(kb.value){kb.value=kb.value.slice(0,-1);kb.dispatchEvent(new Event('input'))}else post({type:'key',key:'Backspace'})};
+kb.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!kb.value){e.preventDefault();post({type:'key',key:'Backspace'})}else if(e.key==='Tab'){e.preventDefault();post({type:'key',key:'Tab'});reset()}});
 document.getElementById('back').onclick=()=>post({type:'back'});
 document.getElementById('restart').onclick=()=>post({type:'restart'});
 </script></body></html>`;
