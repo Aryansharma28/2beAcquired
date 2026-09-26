@@ -213,17 +213,32 @@ export const llm = (env, { system, content, tool, maxTokens = 1500, vision = fal
 ];
 
 // Our Marktplaats Apify actor, run synchronously; returns one n8n item per dataset item.
-export const actor = (env, inputExpr, { timeout = 280, soft = false } = {}) => [
-  "n8n-nodes-base.httpRequest", 4.2,
-  {
-    method: "POST",
-    url: `https://api.apify.com/v2/acts/${env.APIFY_ACTOR || "USER~marktplaats"}/run-sync-get-dataset-items?timeout=${timeout}`,
-    authentication: "genericCredentialType", genericAuthType: "httpHeaderAuth",
-    sendBody: true, specifyBody: "json", jsonBody: inputExpr,
-    options: { timeout: (timeout + 30) * 1000 },
-  },
-  { ...cred("apify", "httpHeaderAuth"), ...(soft ? { onError: "continueRegularOutput" } : {}) },
-];
+// { local: true } (actions on the user's Marktplaats session): with LOCAL_RUNNER_URL set, run on the owner's
+// laptop instead (actors/marktplaats/local-runner.mjs); Marktplaats hides ads posted from the cloud server.
+export const actor = (env, inputExpr, { timeout = 280, soft = false, local = false } = {}) =>
+  local && env.LOCAL_RUNNER_URL
+    ? [
+        "n8n-nodes-base.httpRequest", 4.2,
+        {
+          method: "POST",
+          url: `${env.LOCAL_RUNNER_URL.replace(/\/+$/, "")}/run?timeout=${timeout}`,
+          sendHeaders: true, headerParameters: { parameters: [{ name: "X-Runner-Key", value: env.RUNNER_KEY || "" }] },
+          sendBody: true, specifyBody: "json", jsonBody: inputExpr,
+          options: { timeout: (timeout + 60) * 1000 },
+        },
+        soft ? { onError: "continueRegularOutput" } : {},
+      ]
+    : [
+        "n8n-nodes-base.httpRequest", 4.2,
+        {
+          method: "POST",
+          url: `https://api.apify.com/v2/acts/${env.APIFY_ACTOR || "USER~marktplaats"}/run-sync-get-dataset-items?timeout=${timeout}`,
+          authentication: "genericCredentialType", genericAuthType: "httpHeaderAuth",
+          sendBody: true, specifyBody: "json", jsonBody: inputExpr,
+          options: { timeout: (timeout + 30) * 1000 },
+        },
+        { ...cred("apify", "httpHeaderAuth"), ...(soft ? { onError: "continueRegularOutput" } : {}) },
+      ];
 
 // Apify REST call (generic)
 export const apify = (method, url, extra = {}) => [

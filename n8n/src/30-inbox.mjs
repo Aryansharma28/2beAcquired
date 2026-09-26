@@ -116,7 +116,7 @@ for (const r of $('Items').all().map(i => i.json)) {
 return Object.entries(byStore).map(([store, listingIds]) => ({ json: { store, listingIds } }));`));
   w.add("Known messages", tableGet("messages"), { executeOnce: true });
   w.add("Conversations", tableGet("conversations"), { executeOnce: true });
-  w.add("Read inbox (Apify)", actor(env, "={{ JSON.stringify({ action: 'inbox', useProxy: true, sellingOnly: true, includeBids: true, sessionStore: $json.store, listingIds: $json.listingIds, sinceHours: 72 }) }}", { timeout: 120 }));
+  w.add("Read inbox (Apify)", actor(env, "={{ JSON.stringify({ action: 'inbox', useProxy: true, sellingOnly: true, includeBids: true, sessionStore: $json.store, listingIds: $json.listingIds, sinceHours: 72 }) }}", { local: true, timeout: 120 }));
   w.add("Users", tableGet("users"), { executeOnce: true });
   w.chain("Every 2 min", "Items", "Known messages", "Conversations", "Users", "Active listings", "Read inbox (Apify)");
 

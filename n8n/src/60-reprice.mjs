@@ -37,7 +37,7 @@ return { json: { itemId: c.itemId, listingId: c.listing.listingId, old: it.askPr
   w.add("Lower price?", ifTrue("={{ $json.change }}"));
   w.chain("Candidates", "Views (Apify)", "Decide", "Lower price?");
 
-  w.add("Update price (Apify)", actor(env, "={{ JSON.stringify({ action: 'update_price', sessionStore: $json.item.mpStore, listingId: $json.listingId, price: $json.next, dryRun: " + (env.MP_DRY_RUN === "1") + " }) }}"));
+  w.add("Update price (Apify)", actor(env, "={{ JSON.stringify({ action: 'update_price', sessionStore: $json.item.mpStore, listingId: $json.listingId, price: $json.next, dryRun: " + (env.MP_DRY_RUN === "1") + " }) }}", { local: true }));
   w.add("New price", codeEach(`
 const d = $('Decide').item.json, it = d.item;
 it.askPrice = d.next;

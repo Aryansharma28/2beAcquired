@@ -21,7 +21,7 @@ return { json: { ...j, text: j.text || '', lastOffer: j.lastOffer ?? null, itemS
   w.add("Has a reply?", ifTrue("={{ !!$('Prep').item.json.text }}"));
   w.chain("Reply to send", "Prep", "Save conversation", "Item status", "Has a reply?");
 
-  w.add("Send on Marktplaats (Apify)", actor(env, "={{ JSON.stringify({ action: 'reply', useProxy: true, sessionStore: $('Prep').item.json.sessionStore, conversationId: $('Prep').item.json.conversationId, text: $('Prep').item.json.text }) }}", { timeout: 90 }));
+  w.add("Send on Marktplaats (Apify)", actor(env, "={{ JSON.stringify({ action: 'reply', useProxy: true, sessionStore: $('Prep').item.json.sessionStore, conversationId: $('Prep').item.json.conversationId, text: $('Prep').item.json.text }) }}", { local: true, timeout: 90 }));
   w.add("Agent message", codeEach(`
 const p = $('Prep').item.json;
 return { json: { itemId: p.itemId, conversationId: p.conversationId, platform: p.platform, buyer: p.buyer,
