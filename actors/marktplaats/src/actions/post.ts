@@ -92,6 +92,15 @@ export interface PostResult {
     screenshots: { step: string; url: string }[];
 }
 
+/** `word` occurs in `text` as a whole word (no letter/digit right before or after). */
+function hasWord(text: string, word: string): boolean {
+    const wordChar = (c: string | undefined) => !!c && /[a-z0-9]/.test(c);
+    for (let i = text.indexOf(word); i >= 0; i = text.indexOf(word, i + 1)) {
+        if (!wordChar(text[i - 1]) && !wordChar(text[i + word.length])) return true;
+    }
+    return false;
+}
+
 async function selectByText(select: Locator, wanted: string): Promise<string | null> {
     const options = (await select.locator('option').allInnerTexts()).map((t) => t.trim());
     const w = wanted.trim().toLowerCase();
@@ -320,6 +329,16 @@ export async function post(input: Input): Promise<PostResult> {
                 }
                 if (!f.required || f.value) continue;
                 if (f.kind === 'select') {
+                    // An option named in the title or description (brand "Apple", colour "wit") beats "Overige".
+                    const text = `${title} ${description}`.toLowerCase();
+                    const named = f.options
+                        .filter((o: string) => o.length >= 3 && !/overig|anders|other|onbekend|geen/i.test(o))
+                        .sort((a: string, b: string) => b.length - a.length)
+                        .find((o: string) => hasWord(text, o.toLowerCase()));
+                    if (named) {
+                        await control.selectOption({ label: named });
+                        continue;
+                    }
                     const fallback = f.options.find((o: string) => /overig|anders|other|onbekend|geen/i.test(o));
                     if (fallback) {
                         await control.selectOption({ label: fallback });
