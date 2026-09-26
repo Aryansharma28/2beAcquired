@@ -241,13 +241,14 @@ export const actor = (env, inputExpr, { timeout = 280, soft = false, local = fal
         { ...cred("apify", "httpHeaderAuth"), ...(soft ? { onError: "continueRegularOutput" } : {}) },
       ];
 
-// Stripe REST call (form-encoded body built by a Code node; test mode with an sk_test_ key from .env at deploy time).
-export const stripe = (env, method, urlExpr, formExpr) => [
+// Stripe REST call: form fields as [name, value] pairs (values may be n8n expressions). Test mode with an sk_test_ key
+// from .env at deploy time.
+export const stripe = (env, method, urlExpr, fields) => [
   "n8n-nodes-base.httpRequest", 4.2,
   {
     method, url: urlExpr,
     sendHeaders: true, headerParameters: { parameters: [{ name: "Authorization", value: `Bearer ${env.STRIPE_SECRET_KEY || ""}` }] },
-    ...(formExpr ? { sendBody: true, contentType: "raw", rawContentType: "application/x-www-form-urlencoded", body: formExpr } : {}),
+    ...(fields ? { sendBody: true, contentType: "form-urlencoded", specifyBody: "keypair", bodyParameters: { parameters: fields.map(([name, value]) => ({ name, value })) } } : {}),
     options: { timeout: 30000 },
   },
 ];

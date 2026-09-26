@@ -1,17 +1,24 @@
-import { Workflow, subTrigger, codeEach, code, tableGet, tableUpdate, tableInsert, actor, stripe, calendarCreate, HAS_CALENDAR } from "../lib.mjs";
+import { Workflow, subTrigger, webhook, respond, codeEach, code, tableGet, tableUpdate, tableInsert, actor, stripe, calendarCreate, HAS_CALENDAR } from "../lib.mjs";
 
 // W5 · Close the deal: pickup booked → put it in the owner's calendar, record the sale, delist everywhere.
 export default (env, ids) => {
   const w = new Workflow("poof · 5 Pickup + delist", { errorWorkflow: ids.error });
   w.add("Pickup booked", subTrigger());
+  // Test entrance (X-Poof-Key): same flow for a given {itemId, price, buyer, conversationId, pickup}. Used to test
+  // payments end to end on an item without Marktplaats listings.
+  w.add("Test pickup", webhook("tba/test-pickup"), { position: [0, 250] });
+  w.add("Test OK", respond("={{ { ok: true } }}"), { position: [260, 400] });
+  w.link("Test pickup", "Test OK");
+  w.add("Deal", code(`return $input.all().map(i => ({ json: i.json.body && i.json.headers ? i.json.body : i.json }));`));
+  w.link("Test pickup", "Deal");
   w.add("Get item", tableGet("items", { itemId: "={{ $json.itemId }}" }));
   w.add("Record sale", codeEach(`
-const deal = $('Pickup booked').item.json;
+const deal = $('Deal').item.json;
 const item = JSON.parse($json.data);
 item.sale = { price: deal.price, platform: deal.platform, buyer: deal.buyer, conversationId: deal.conversationId, ts: new Date().toISOString() };
 item.pickup = { start: deal.pickup.start, end: deal.pickup.end, label: deal.pickup.label, buyer: deal.buyer, platform: deal.platform };
 return { json: { itemId: $json.itemId, item, price: deal.price, buyer: deal.buyer, pickup: deal.pickup, title: item.title } };`));
-  w.chain("Pickup booked", "Get item", "Record sale");
+  w.chain("Pickup booked", "Deal", "Get item", "Record sale");
   let last = "Record sale";
 
   if (HAS_CALENDAR) {
@@ -50,12 +57,20 @@ return $('${last}').all().map(i => {
   // Payment: once the pickup is booked the buyer gets a payment link for the agreed price (cash at pickup stays
   // possible). Stripe Payment Links (STRIPE_SECRET_KEY; test mode needs no KvK). Paid → W6 marks it sold.
   if (env.STRIPE_SECRET_KEY) {
-      w.add("Price (Stripe)", stripe(env, "POST", "https://api.stripe.com/v1/prices",
-        `={{ 'currency=eur&unit_amount=' + Math.round(Number($('${last}').item.json.price) * 100) + '&product_data[name]=' + encodeURIComponent($('${last}').item.json.title.slice(0, 80)) + '&metadata[itemId]=' + $('${last}').item.json.itemId }}`),
-        { onError: "continueRegularOutput" });
-      w.add("Payment link (Stripe)", stripe(env, "POST", "https://api.stripe.com/v1/payment_links",
-        `={{ 'line_items[0][price]=' + $json.id + '&line_items[0][quantity]=1&metadata[itemId]=' + $('${last}').item.json.itemId + '&after_completion[type]=hosted_confirmation&after_completion[hosted_confirmation][custom_message]=' + encodeURIComponent('Betaald! Tot bij het ophalen.') }}`),
-        { onError: "continueRegularOutput" });
+      const deal = `$('${last}').item.json`;
+      w.add("Price (Stripe)", stripe(env, "POST", "https://api.stripe.com/v1/prices", [
+        ["currency", "eur"],
+        ["unit_amount", `={{ Math.round(Number(${deal}.price) * 100) }}`],
+        ["product_data[name]", `={{ String(${deal}.title || ${deal}.item.name || "Item").slice(0, 80) }}`],
+        ["metadata[itemId]", `={{ ${deal}.itemId }}`],
+      ]), { onError: "continueRegularOutput" });
+      w.add("Payment link (Stripe)", stripe(env, "POST", "https://api.stripe.com/v1/payment_links", [
+        ["line_items[0][price]", "={{ $json.id }}"],
+        ["line_items[0][quantity]", "1"],
+        ["metadata[itemId]", `={{ ${deal}.itemId }}`],
+        ["after_completion[type]", "hosted_confirmation"],
+        ["after_completion[hosted_confirmation][custom_message]", "Betaald! Tot bij het ophalen."],
+      ]), { onError: "continueRegularOutput" });
       w.link("Save pickup", "Price (Stripe)");
       w.link("Price (Stripe)", "Payment link (Stripe)");
     const linkNode = "Payment link (Stripe)";
