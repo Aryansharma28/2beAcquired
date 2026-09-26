@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>poof wireframes</title>
+<style>
+/* Low-fidelity contract: grayscale only, system font, plain borders.
+   No photos or colour: images are crossed placeholder boxes. Layout first. */
+:root{
+  --ink:#1a1a1a; --ink-2:#444; --ink-3:#6b6b6b;
+  --line:#c9c9c9; --line-2:#e3e3e3;
+  --fill:#f2f2f2; --fill-2:#e6e6e6; --fill-3:#d6d6d6;
+  --page:#f5f5f5; --s:1;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--ink);background:var(--page)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+[hidden]{display:none !important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+p{margin:0}
+
+/* ---------- page chrome ---------- */
+.top{position:sticky;top:0;z-index:20;background:var(--page);border-bottom:1px solid var(--line);padding:16px}
+.top h1{font-size:20px;margin:0 0 4px}
+.intro{margin:0 0 12px;max-width:900px;color:var(--ink-2);font-size:14px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--ink);border-radius:6px;overflow:hidden}
+.seg button{min-height:40px;padding:0 14px;border:0;background:#fff;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.tool-btn{min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer}
+.toolbar .play-only{display:none}
+body.play .toolbar .play-only{display:inline-flex}
+body.play .intro{display:none}
+.toolbar label{display:inline-flex;align-items:center;gap:6px;min-height:40px}
+.toolbar select{min-height:40px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:0 8px;max-width:240px}
+
+.flow{display:flex;flex-wrap:wrap;gap:56px 48px;padding:24px 16px 96px}
+.screen{width:calc(390px * var(--s))}
+.label{margin-bottom:10px}
+.label .num{font-size:13px;color:var(--ink-3);font-weight:600}
+.label h2{font-size:17px;margin:2px 0}
+.label p{font-size:14px;color:var(--ink-2)}
+.phone-wrap{width:calc(390px * var(--s));height:calc(844px * var(--s))}
+.notes{list-style:none;margin:12px 0 0;padding:0;font-size:14px;color:var(--ink-2)}
+.notes li{border:1px dashed #999;border-radius:6px;padding:8px 10px;margin-top:8px;background:#fff}
+.notes li.simli{border:0;padding:0;background:none}
+.notes b{color:var(--ink)}
+.sim{display:block;width:100%;min-height:44px;border:1px dashed var(--ink);border-radius:6px;background:#fff;cursor:pointer;text-align:left;padding:0 10px}
+body.nonotes .notes{display:none}
+body.play .flow{justify-content:center;padding-top:16px}
+body.play .screen{display:none}
+body.play .screen.current{display:block}
+.flash .phone{outline:4px solid var(--ink);outline-offset:6px}
+
+/* ---------- phone shell ---------- */
+.phone{position:relative;width:390px;height:844px;transform:scale(var(--s));transform-origin:top left;
+  background:#fff;border:1.5px solid #8a8a8a;border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;gap:10px;padding:14px 16px 6px;min-height:64px;flex:none}
+.bar .grow{flex:1;min-width:0}
+.bar-title{font-weight:600;font-size:16px;margin:0}
+.icon-btn{width:44px;height:44px;flex:none;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;padding:0}
+.icon-btn.plain{border-color:transparent}
+.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.body{flex:1;overflow-y:auto;padding:4px 20px 24px}
+.foot{flex:none;padding:12px 20px 20px;border-top:1px solid var(--line-2);background:#fff;display:flex;flex-direction:column;gap:6px}
+.foot .hint{font-size:13px;color:var(--ink-3);text-align:center}
+
+/* type */
+.q{font-size:28px;line-height:1.15;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--ink-2);margin-bottom:20px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.sec{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:22px 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+.sec a,.sec button{font-size:13px;letter-spacing:0;text-transform:none;color:var(--ink);text-decoration:underline;background:none;border:0;padding:0;cursor:pointer;font-weight:600}
+.muted{color:var(--ink-3)}
+.small{font-size:14px}
+.xs{font-size:13px}
+.num-big{font-variant-numeric:tabular-nums}
+
+/* placeholders */
+.ph{display:block;position:relative;background:var(--fill-2);border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none}
+.ph::before,.ph::after{content:"";position:absolute;inset:0;background:linear-gradient(to top right,transparent calc(50% - .6px),var(--line) calc(50% - .6px),var(--line) calc(50% + .6px),transparent calc(50% + .6px))}
+.ph::after{background:linear-gradient(to top left,transparent calc(50% - .6px),var(--line) calc(50% - .6px),var(--line) calc(50% + .6px),transparent calc(50% + .6px))}
+.ph .ph-label{position:absolute;z-index:1;left:8px;top:8px;background:#fff;border:1px solid var(--ink-2);border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:0 5px}
+.ph .ph-note{position:absolute;z-index:1;right:8px;bottom:8px;background:#fff;border-radius:4px;font-size:12px;padding:1px 6px;border:1px solid var(--line)}
+.lines{display:flex;flex-direction:column;gap:7px}
+.lines i{display:block;height:9px;border-radius:3px;background:var(--fill-3)}
+.avatar{width:40px;height:40px;flex:none;border-radius:50%;background:var(--fill-2);border:1px solid var(--line);display:grid;place-items:center;font-weight:700;position:relative;font-size:15px}
+.avatar .pl{position:absolute;right:-5px;bottom:-5px;width:20px;height:20px;border-radius:5px;border:1px solid var(--ink-2);background:#fff;font-size:10px;display:grid;place-items:center}
+.logo{width:34px;height:34px;flex:none;border:1px solid var(--ink-2);border-radius:8px;display:grid;place-items:center;font-weight:700;font-size:14px;background:#fff}
+
+/* shared bits */
+.btn{min-height:50px;width:100%;border-radius:10px;border:1.5px solid var(--ink);background:var(--ink);color:#fff;font-weight:600;cursor:pointer;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.secondary{background:#fff;color:var(--ink)}
+.btn.ghost{background:none;border-color:transparent;text-decoration:underline;min-height:44px}
+.btn.small{width:auto;min-height:40px;padding:0 12px;font-size:14px;border-radius:8px}
+.btn:disabled{background:var(--fill-3);border-color:var(--fill-3);color:#555;cursor:not-allowed}
+.row{display:flex;align-items:center;gap:12px}
+.row .grow{flex:1;min-width:0}
+.card{border:1px solid var(--line);border-radius:12px;background:#fff}
+.pad{padding:14px}
+.divided > *{border-top:1px solid var(--line-2)}
+.divided > *:first-child{border-top:0}
+.tag{display:inline-flex;align-items:center;font-size:11px;line-height:1.5;border:1px solid var(--ink);border-radius:4px;padding:0 5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.tag.solid{background:var(--ink);color:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;border:1px solid var(--ink-2);border-radius:999px;padding:1px 8px;font-weight:600;white-space:nowrap}
+.chip.solid{background:var(--ink);color:#fff;border-color:var(--ink)}
+.badge{min-width:22px;height:22px;border-radius:11px;background:var(--ink);color:#fff;font-size:12px;font-weight:700;display:inline-grid;place-items:center;padding:0 6px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ink);flex:none}
+.agent{display:flex;gap:10px;align-items:flex-start;border:1px dashed var(--ink-2);border-radius:10px;padding:12px;font-size:14px;background:#fff}
+.chevron{color:var(--ink-3)}
+
+/* wizard header: progress + item context */
+.progress-seg{display:flex;gap:4px;flex:1}
+.progress-seg i{flex:1;height:4px;border-radius:2px;background:var(--fill-3)}
+.progress-seg i.on{background:var(--ink)}
+.step-count{font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.context{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:4px 0 18px}
+.context .ph{width:40px;height:40px;border-radius:6px}
+.context b{display:block;font-size:14px}
+.context span{font-size:13px;color:var(--ink-3)}
+
+/* radio chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.rchip{position:relative}
+.rchip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.rchip span{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--ink-2);border-radius:999px;background:#fff}
+.rchip input:checked + span{background:var(--ink);color:#fff}
+.rchip input:focus-visible + span{outline:3px solid var(--ink);outline-offset:2px}
+
+/* navbar */
+.tabbar{flex:none;display:flex;gap:10px;padding:10px 16px 20px;border-top:1px solid var(--line-2);background:#fff}
+.tabbar .tab{flex:1;min-height:52px;border:1px solid var(--line);border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.tabbar .tab[aria-current="page"]{font-weight:700;border-color:var(--ink)}
+.tabbar .sell{flex:1.6;min-height:52px;border:1.5px solid var(--ink);border-radius:12px;background:var(--ink);color:#fff;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+
+/* 01 camera */
+.cam .bar{justify-content:space-between}
+.viewfinder{position:relative;flex:1;margin:0 12px;border-radius:12px;background:var(--fill-2);border:1px solid var(--line);overflow:hidden}
+.viewfinder::before,.viewfinder::after{content:"";position:absolute;inset:0;background:linear-gradient(to top right,transparent calc(50% - .6px),var(--line) calc(50% - .6px),var(--line) calc(50% + .6px),transparent calc(50% + .6px))}
+.viewfinder::after{background:linear-gradient(to top left,transparent calc(50% - .6px),var(--line) calc(50% - .6px),var(--line) calc(50% + .6px),transparent calc(50% + .6px))}
+.vf-center{position:absolute;inset:0;display:grid;place-items:center;z-index:1}
+.vf-center span{background:#fff;border:1px solid var(--line);border-radius:4px;padding:2px 8px;font-size:13px;color:var(--ink-3)}
+.corner{position:absolute;width:34px;height:34px;border:3px solid var(--ink);z-index:1}
+.corner.tl{top:56px;left:22px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}
+.corner.tr{top:56px;right:22px;border-left:0;border-bottom:0;border-radius:0 8px 0 0}
+.corner.bl{bottom:84px;left:22px;border-right:0;border-top:0;border-radius:0 0 0 8px}
+.corner.br{bottom:84px;right:22px;border-left:0;border-top:0;border-radius:0 0 8px 0}
+.pill{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:2;background:#fff;border:1px solid var(--ink-2);border-radius:999px;padding:5px 12px;font-size:14px;white-space:nowrap}
+.viewfinder .agent{position:absolute;left:12px;right:12px;bottom:12px;z-index:2;border-style:solid;border-color:var(--ink)}
+.slots{display:flex;gap:8px;padding:12px 16px 4px}
+.slot{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;padding:0;cursor:pointer}
+.slot .box{width:100%;aspect-ratio:1;border-radius:8px;border:1.5px dashed var(--ink-3);display:grid;place-items:center;color:var(--ink-3);position:relative}
+.slot.filled .box{border:1.5px solid var(--ink);background:var(--fill-2)}
+.slot.filled .box::after{content:"";position:absolute;inset:0;background:linear-gradient(to top right,transparent calc(50% - .6px),var(--line) calc(50% - .6px),var(--line) calc(50% + .6px),transparent calc(50% + .6px))}
+.slot.next .box{border-color:var(--ink);border-style:solid}
+.slot span{font-size:12px;color:var(--ink-2)}
+.slot .x{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;z-index:1}
+.slot .x .icon{width:12px;height:12px;stroke-width:2.6}
+.cam-count{text-align:center;font-size:13px;color:var(--ink-3);margin:4px 0 0}
+.cam-controls{display:flex;align-items:center;justify-content:space-between;padding:10px 24px 22px}
+.shutter{width:76px;height:76px;border-radius:50%;border:4px solid var(--ink);background:#fff;cursor:pointer;position:relative;padding:0}
+.shutter::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--ink)}
+.shutter:disabled{opacity:.4;cursor:not-allowed}
+
+/* 02 */
+.cover{position:relative;display:block;width:100%;height:230px;border:0;padding:0;background:none;cursor:pointer}
+.cover .ph{width:100%;height:100%;border-radius:12px}
+.thumbs{display:flex;gap:8px;margin-top:8px}
+.thumbs button{flex:1;height:58px;padding:0;border:0;background:none;cursor:pointer}
+.thumbs .ph{width:100%;height:100%;border-radius:8px}
+.thumbs button[aria-pressed="true"] .ph{border:2px solid var(--ink)}
+.recog{margin-top:18px}
+.recog h2{font-size:24px;margin:2px 0 2px}
+.match{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:var(--ink-2)}
+.meter{display:inline-flex;gap:3px}
+.meter i{width:14px;height:6px;border-radius:2px;background:var(--fill-3)}
+.meter i.on{background:var(--ink)}
+.helper{font-size:13px;color:var(--ink-3);margin-top:8px}
+.dl{margin:0}
+.dl div{display:flex;align-items:center;gap:8px;padding:0 4px 0 14px;min-height:50px}
+.dl dt{color:var(--ink-3);width:84px;flex:none}
+.dl dd{margin:0;flex:1;font-weight:600}
+
+/* 03 */
+.tabs{display:flex;border:1px solid var(--ink);border-radius:10px;overflow:hidden}
+.tabs button{flex:1;min-height:50px;border:0;border-left:1px solid var(--ink);background:#fff;cursor:pointer}
+.tabs button:first-child{border-left:0}
+.tabs button[aria-selected="true"]{background:var(--ink);color:#fff;font-weight:600}
+.tradeoff{font-size:18px;font-weight:600;margin:18px 0 12px}
+.meters{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;align-items:center}
+.meters .xs{font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.blocks{display:flex;gap:4px}
+.blocks i{flex:1;height:10px;border-radius:3px;background:var(--fill-2);border:1px solid var(--line)}
+.blocks i.on{background:var(--ink);border-color:var(--ink)}
+.expect div{display:flex;justify-content:space-between;align-items:center;min-height:46px;padding:0 14px}
+.expect b{font-variant-numeric:tabular-nums}
+
+/* 04 */
+.stepper{display:flex;align-items:center;justify-content:space-between;padding:10px 12px}
+.stepper .icon-btn{width:52px;height:52px;border-radius:50%}
+.price-big{font-size:56px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.histo{position:relative;height:120px;display:flex;align-items:flex-end;gap:4px;padding:0 2px;margin-top:26px;border-bottom:1.5px solid var(--ink)}
+.histo i{flex:1;background:var(--fill-3);border-radius:3px 3px 0 0}
+.histo i.below{background:repeating-linear-gradient(45deg,var(--fill-2),var(--fill-2) 3px,#fff 3px,#fff 6px);border:1px solid var(--line);border-bottom:0}
+.histo .marker{position:absolute;top:-22px;bottom:-6px;width:2px;background:var(--ink);transform:translateX(-1px);z-index:1}
+.histo .marker span{position:absolute;top:-2px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:12px;font-weight:700;border:1px solid var(--ink);background:#fff;border-radius:4px;padding:0 6px}
+.axis{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:6px;font-variant-numeric:tabular-nums}
+.stat3{display:grid;grid-template-columns:repeat(3,1fr);margin-top:14px}
+.stat3 div{padding:10px 12px;border-left:1px solid var(--line-2)}
+.stat3 div:first-child{border-left:0}
+.stat3 b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.promise{display:flex;gap:12px;align-items:flex-start;border:1.5px solid var(--ink);border-radius:12px;padding:14px;margin-top:18px}
+.promise b{display:block}
+
+/* 05 */
+.option{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:#fff}
+.option > label{display:flex;align-items:flex-start;gap:12px;padding:14px;cursor:pointer}
+.option > label input{width:22px;height:22px;accent-color:#1a1a1a;margin:2px 0 0;flex:none}
+.option > label .grow{flex:1}
+.option > label b{display:block}
+.option:has(> label input:checked){border:2px solid var(--ink)}
+.option .more{padding:0 14px 14px 48px;display:none;flex-direction:column;gap:12px}
+.option:has(> label input:checked) .more{display:flex}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:13px;color:var(--ink-3)}
+.field input[type=text]{min-height:44px;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:#fff}
+fieldset{border:0;margin:0;padding:0}
+legend{padding:0;font-size:13px;color:var(--ink-3);margin-bottom:6px}
+.more .rchip span{min-height:40px;padding:0 14px}
+
+/* 06 */
+.overall{margin:4px 0 16px}
+.bar-prog{height:6px;background:var(--fill-2);border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.bar-prog i{display:block;height:100%;background:var(--ink)}
+.steps{list-style:none;margin:0;padding:0}
+.step{display:flex;gap:12px;padding:12px 14px}
+.st-ico{width:26px;height:26px;flex:none;border-radius:50%;border:1.5px solid #aaa;display:grid;place-items:center;margin-top:1px}
+.st-ico .icon{width:14px;height:14px;stroke-width:2.6;display:none}
+.step[data-state="done"] .st-ico{background:var(--ink);border-color:var(--ink);color:#fff}
+.step[data-state="done"] .st-ico .icon{display:block}
+.step[data-state="running"] .st-ico{border:2.5px dashed var(--ink)}
+.step[data-state="running"]{background:var(--fill)}
+.step[data-state="next"]{color:var(--ink-3)}
+.step .grow{flex:1;min-width:0}
+.step b{display:block}
+.step .res{font-size:13px;color:var(--ink-2);margin-top:3px}
+.step[data-state="next"] .res{display:none}
+.mini-thumbs{display:flex;gap:4px;margin-top:6px}
+.mini-thumbs .ph{width:36px;height:36px;border-radius:5px}
+.skeleton{margin-top:18px;border:1px dashed var(--ink-3);border-radius:12px;padding:12px;display:flex;gap:12px}
+.skeleton .ph{width:92px;height:92px}
+.skeleton .lines{flex:1;padding-top:4px}
+.sheet-back{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:4}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:80%;background:#fff;border-top:1.5px solid var(--ink);border-radius:16px 16px 0 0;z-index:5;display:flex;flex-direction:column}
+.sheet header{display:flex;align-items:flex-start;gap:10px;padding:16px 16px 8px}
+.sheet header div{flex:1}
+.sheet h2{margin:0;font-size:20px}
+.sheet ul{list-style:none;margin:0;padding:0 16px 16px;overflow-y:auto}
+.sheet li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line-2)}
+.sheet li .ph{width:52px;height:52px}
+.sheet li .grow{flex:1;min-width:0}
+
+/* 07 */
+.gallery{position:relative}
+.gallery .ph.main{width:100%;height:250px;border-radius:12px}
+.dots{display:flex;gap:5px;justify-content:center;margin-top:8px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--fill-3)}
+.dots i.on{background:var(--ink)}
+.ad-title{font-size:20px;font-weight:700;line-height:1.25;margin-top:14px}
+.price-row{display:flex;align-items:baseline;gap:8px;margin-top:6px;flex-wrap:wrap}
+.price-row .p{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.editable{display:flex;gap:8px;align-items:flex-start}
+.editable .grow{flex:1;min-width:0}
+.editable .icon-btn{margin:-4px -8px 0 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr}
+.grid2 div{padding:10px 14px;border-top:1px solid var(--line-2)}
+.grid2 div:nth-child(-n+2){border-top:0}
+.grid2 div:nth-child(even){border-left:1px solid var(--line-2)}
+.grid2 span{display:block;font-size:12px;color:var(--ink-3)}
+.grid2 b{font-size:14px}
+.plat-toggles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ptog{position:relative}
+.ptog input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.ptog span{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.ptog span .icon{margin-left:auto;visibility:hidden}
+.ptog input:checked + span{border:2px solid var(--ink)}
+.ptog input:checked + span .icon{visibility:visible}
+.ptog input:focus-visible + span{outline:3px solid var(--ink);outline-offset:2px}
+
+/* 08 */
+.live-sum{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.live-sum b{font-size:22px}
+.agents{list-style:none;margin:0;padding:0}
+.agents li{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.agents .grow b{display:block}
+.agents .grow span{font-size:13px;color:var(--ink-3)}
+.previews{display:flex;gap:10px;overflow-x:auto;margin:0 -20px;padding:0 20px 4px;scroll-snap-type:x mandatory}
+.preview{flex:none;width:200px;border:1px solid var(--line);border-radius:10px;overflow:hidden;scroll-snap-align:start;background:#fff}
+.preview header{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;font-size:13px;font-weight:700;border-bottom:1px solid var(--line-2)}
+.preview .ph{width:100%;height:120px;border-radius:0;border:0;border-bottom:1px solid var(--line)}
+.preview .body-p{padding:10px;display:flex;flex-direction:column;gap:6px}
+.close-note{display:flex;gap:10px;align-items:center;justify-content:center;font-size:14px;color:var(--ink-2)}
+
+/* lock screen push */
+.lock{background:var(--fill);align-items:stretch}
+.lock-time{text-align:center;font-size:78px;font-weight:300;margin-top:96px;line-height:1;font-variant-numeric:tabular-nums}
+.lock-date{text-align:center;font-size:18px;margin:6px 0 44px;color:var(--ink-2)}
+.notif{margin:0 12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:flex-start;width:calc(100% - 24px)}
+.notif .app{width:38px;height:38px;flex:none;border:1px solid var(--ink-2);border-radius:9px;display:grid;place-items:center;font-weight:700;font-size:12px}
+.notif .grow{flex:1}
+.notif .meta{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-3)}
+.notif p{margin-top:2px;font-weight:600}
+.notif small{display:block;color:var(--ink-2);font-size:14px;margin-top:2px}
+.lock-foot{position:absolute;bottom:26px;left:0;right:0;text-align:center;font-size:13px;color:var(--ink-3)}
+
+/* in-phone push banner during play */
+.push{position:absolute;top:10px;left:10px;right:10px;z-index:8;background:#fff;border:1.5px dashed var(--ink);border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+.push small{display:block;color:var(--ink-3);font-size:12px}
+
+/* 09 home */
+.home-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.home-head h1{margin:0;font-size:30px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.tile b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.tile span{font-size:13px;color:var(--ink-3)}
+.tile.strong{border:2px solid var(--ink)}
+.attention{display:flex;gap:12px;align-items:center;width:100%;border:2px solid var(--ink);border-radius:12px;padding:12px;background:#fff;text-align:left;cursor:pointer;margin-top:12px}
+.attention .grow b{display:block}
+.attention .grow span{font-size:13px;color:var(--ink-2)}
+.adcard{display:flex;align-items:center;gap:12px;width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px;text-align:left;cursor:pointer;margin-bottom:8px}
+.adcard .ph{width:64px;height:64px}
+.adcard .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.adcard .t{font-weight:600;line-height:1.25}
+.adcard .meta{font-size:13px;color:var(--ink-3)}
+.adcard .side{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.adcard .p{font-weight:700;font-variant-numeric:tabular-nums}
+.adcard.needs{border:2px solid var(--ink)}
+.adcard.sold{color:var(--ink-3)}
+
+/* 10 */
+.item-head{display:flex;gap:12px;align-items:center}
+.item-head .ph{width:72px;height:72px}
+.item-head b{display:block;line-height:1.25}
+.stepline{list-style:none;display:flex;margin:18px 0 4px;padding:0}
+.stepline li{flex:1;text-align:center;font-size:12px;position:relative;padding-top:28px;color:var(--ink-3)}
+.stepline li::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:20px;height:20px;border-radius:50%;border:1.5px solid #aaa;background:#fff;z-index:1}
+.stepline li::after{content:"";position:absolute;top:10px;left:-50%;width:100%;height:2px;background:var(--fill-3)}
+.stepline li:first-child::after{display:none}
+.stepline li.done{color:var(--ink)}
+.stepline li.done::before{background:var(--ink);border-color:var(--ink)}
+.stepline li.done::after,.stepline li.now::after{background:var(--ink)}
+.stepline li.now{color:var(--ink);font-weight:700}
+.stepline li.now::before{border:2.5px dashed var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);width:100%;padding:0;cursor:pointer;text-align:left;margin-top:14px}
+.stats span{padding:10px 12px;border-left:1px solid var(--line-2)}
+.stats span:first-child{border-left:0}
+.stats b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.stats small{display:block;font-size:12px;color:var(--ink-3)}
+.per-platform{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.per-platform th,.per-platform td{text-align:right;padding:6px 4px;border-bottom:1px solid var(--line-2);font-variant-numeric:tabular-nums}
+.per-platform th:first-child,.per-platform td:first-child{text-align:left}
+.now-card{border:1.5px solid var(--ink);border-radius:12px;padding:12px 14px;margin-top:14px}
+.now-card .next{border-top:1px solid var(--line-2);margin-top:10px;padding-top:10px;font-size:14px;color:var(--ink-2)}
+.chat-mini{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.chat-mini .grow{flex:1;min-width:0}
+.chat-mini .grow b{font-size:14px}
+.chat-mini .grow span{display:block;font-size:13px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-mini .grow .chip{display:inline-flex;color:#fff}
+.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.ctrl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;font-size:13px;font-weight:600}
+.ctrl[aria-pressed="true"]{border:2px solid var(--ink)}
+
+/* 11 */
+.chat-sum{display:flex;gap:8px;margin:0 0 4px}
+.chat-row{display:flex;gap:12px;align-items:center;width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px;text-align:left;cursor:pointer;min-height:74px;margin-bottom:8px}
+.chat-row.strong{border:2px solid var(--ink)}
+.chat-row .grow{flex:1;min-width:0}
+.chat-row .top-line{display:flex;align-items:center;gap:6px}
+.chat-row .last{display:block;font-size:14px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-row .side{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.offer-pill{font-weight:700;border:1px solid var(--ink);border-radius:6px;padding:0 6px;font-variant-numeric:tabular-nums}
+details.fold{border:1px dashed var(--ink-3);border-radius:12px;margin-top:14px}
+details.fold summary{min-height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;cursor:pointer;font-weight:600}
+details.fold .inner{padding:0 10px 2px}
+details.fold .chat-row{cursor:default;border-style:dashed}
+
+/* 12 */
+.range-bar{margin:0 16px 8px;flex:none;border:1.5px solid var(--ink);border-radius:12px;padding:10px 12px}
+.range-bar .head{display:flex;justify-content:space-between;font-size:14px;font-weight:600}
+.track{position:relative;height:6px;border-radius:3px;background:var(--fill-2);border:1px solid var(--line);margin:16px 6px 18px}
+.track .band{position:absolute;top:-1px;bottom:-1px;background:var(--ink-3);border-radius:3px}
+.track .pin{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--ink);transform:translate(-50%,-50%)}
+.track .pin.filled{background:var(--ink)}
+.track .pin span{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-size:11px;white-space:nowrap;color:var(--ink-2)}
+.thread{display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.day{align-self:center;font-size:12px;color:var(--ink-3);margin:4px 0}
+.msg{max-width:80%;padding:10px 12px;border-radius:14px;font-size:15px}
+.msg .who{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ink-3);margin-bottom:3px}
+.msg.buyer{align-self:flex-start;background:var(--fill);border-bottom-left-radius:4px}
+.msg.agent-m{align-self:flex-end;border:1px solid var(--ink-2);background:#fff;border-bottom-right-radius:4px}
+.msg.you{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:4px}
+.msg.you .who{color:#ddd}
+.offer-card{border:1.5px solid var(--ink);border-radius:10px;padding:6px 10px;margin:4px 0 6px;background:#fff;color:var(--ink);display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.offer-card small{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:700}
+.offer-card b{font-size:22px;font-variant-numeric:tabular-nums}
+.offer-card.accepted{background:var(--ink);color:#fff}
+.offer-card.accepted small{color:#ddd}
+.deal{border:2px solid var(--ink);border-radius:12px;padding:12px;margin-top:8px;display:flex;gap:12px;align-items:center}
+.deal b{display:block}
+.cal{width:52px;flex:none;border:1px solid var(--ink-2);border-radius:8px;text-align:center;padding:4px 0;line-height:1.1}
+.cal b{display:block;font-size:20px}
+.cal small{font-size:11px;text-transform:uppercase}
+.composer{flex:none;border-top:1px solid var(--line-2);padding:10px 16px 16px;display:flex;flex-direction:column;gap:8px;background:#fff}
+.suggest{border:1px dashed var(--ink-2);border-radius:10px;padding:10px 12px;font-size:14px}
+.composer .row input{flex:1;min-height:44px;border:1px solid var(--line);border-radius:22px;padding:0 14px}
+
+/* 13 */
+.offer-hero{text-align:center;padding:10px 0 4px}
+.offer-hero .big{font-size:52px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.compare{margin-top:16px}
+.buyer{display:flex;gap:12px;align-items:center;padding:12px 14px}
+.buyer .grow span{display:block;font-size:13px;color:var(--ink-3)}
+.why{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.why li{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.why .icon{width:16px;height:16px;margin-top:2px}
+.quote{background:var(--fill);border-radius:12px;padding:12px 14px}
+.decide{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.decide .btn.primary{grid-column:1 / -1}
+
+/* 14 */
+.sold-hero{text-align:center;padding:18px 0 16px}
+.check-circle{width:64px;height:64px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;margin:0 auto 12px}
+.check-circle .icon{width:30px;height:30px;stroke-width:2.2}
+.sold-hero .big{font-size:40px;font-weight:800;line-height:1.05;margin:4px 0}
+.receipt div{display:flex;justify-content:space-between;align-items:center;min-height:44px;padding:0 14px;font-size:14px}
+.receipt div b{font-variant-numeric:tabular-nums}
+.receipt .total{font-size:16px}
+.removed{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.removed div{border:1px solid var(--line);border-radius:10px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;text-align:center}
+.removed .icon{width:16px;height:16px;stroke-width:2.4}
+
+/* round 3: navbar, grid home, product detail, chats per ad */
+.tabbar{flex:none;display:flex;align-items:center;gap:4px;padding:6px 12px 18px;border-top:1px solid var(--line-2);background:#fff}
+.tabbar .tab{flex:1;min-height:54px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;font-size:12px;color:var(--ink-3);border-radius:10px;position:relative}
+.tabbar .tab[aria-current="page"]{color:var(--ink);font-weight:700}
+.tabbar .tab[aria-current="page"]::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:2px;background:var(--ink)}
+.tabbar .ico{position:relative;display:inline-flex}
+.tbadge{position:absolute;top:-6px;right:-10px;min-width:18px;height:18px;border-radius:9px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.tabbar .sell{flex:1.2;min-height:48px;border:1.5px solid var(--ink);border-radius:999px;background:var(--ink);color:#fff;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;margin:0 4px}
+.grid-ads{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:20px 12px}
+.gtile{display:block;width:100%;border:0;background:none;padding:0;text-align:left;cursor:pointer}
+.gtile .ph{width:100%;aspect-ratio:1;border-radius:12px}
+.gtile span.t{display:block;margin-top:8px;font-weight:600;line-height:1.25}
+.hero{position:relative;height:300px;flex:none}
+.hero .ph{width:100%;height:100%;border-radius:0;border:0;border-bottom:1px solid var(--line)}
+.hero .icon-btn{position:absolute;top:14px;z-index:2}
+.hero .icon-btn.l{left:16px}.hero .icon-btn.r{right:16px}
+.seg4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.seg4 i{height:4px;border-radius:2px;background:var(--fill-3)}
+.seg4 i.on{background:var(--ink)}
+.seg4 span{font-size:12px;color:var(--ink-3);margin-top:6px}
+.seg4 span.cur{color:var(--ink);font-weight:700}
+.pchips{display:flex;flex-wrap:wrap;gap:8px}
+.pchips span{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px}
+.now-row{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;border:0;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);background:none;padding:0 2px;cursor:pointer;text-align:left;margin-top:16px}
+.now-row .grow{flex:1;font-weight:600}
+.chip-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip-btn{min-height:44px;border:1px solid var(--line);border-radius:999px;padding:0 16px;background:#fff;cursor:pointer;font-weight:600}
+.chip-btn[aria-pressed="true"]{border:2px solid var(--ink)}
+.actionbar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px 22px;border-top:1px solid var(--line-2);background:#fff}
+.actionbar .btn{width:auto;padding:0 22px}
+.actionbar b{font-size:22px;font-variant-numeric:tabular-nums}
+.group{margin-bottom:22px}
+.group-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:0 0 8px;text-align:left;cursor:pointer}
+.group-head .ph{width:40px;height:40px;border-radius:8px}
+.group-head .grow{flex:1;min-width:0}
+.group-head .grow span{display:block;font-size:13px;color:var(--ink-3)}
+.item-row{flex:none;display:flex;gap:12px;align-items:center;padding:6px 16px 12px;border-bottom:1px solid var(--line-2)}
+.item-row .ph{width:44px;height:44px;border-radius:8px}
+.item-row .grow{flex:1;min-width:0}
+.item-row .grow span{display:block;font-size:13px;color:var(--ink-3)}
+.recap div{display:flex;justify-content:space-between;align-items:center;min-height:46px;padding:0 14px}
+.recap div b{font-variant-numeric:tabular-nums}
+.rchips{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px}
+.rchips span{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px}
+.rchips .icon{width:14px;height:14px;stroke-width:2.4}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:flex;gap:12px;padding:6px 0;position:relative}
+.timeline li::before{content:"";width:18px;height:18px;flex:none;border-radius:50%;border:2px solid var(--ink);margin-top:2px}
+.timeline li.done::before{background:var(--ink)}
+.timeline li b{display:block}
+.timeline li span{font-size:14px;color:var(--ink-3)}
+
+/* ---------- ?figma: one row in flow order, for capture into Figma ---------- */
+body.figma .toolbar,body.figma .sim{display:none}
+body.figma .notes li.simli{display:none}
+body.figma .top{position:static}
+body.figma .flow{flex-wrap:nowrap;gap:0;align-items:flex-start;padding:40px}
+body.figma .screen{flex:none}
+.flow-arrow{flex:none;width:120px;align-self:flex-start;margin-top:430px;text-align:center;font-size:14px;color:var(--ink-2)}
+.flow-arrow svg{display:block;width:100%;height:20px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/></symbol>
+  <symbol id="i-gallery" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M8.8 12l2.2 2.2 4.2-4.4"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></symbol>
+  <symbol id="i-off" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 7.5a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 1 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5v-9z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 7h11l-3-3M17 17H6l3 3"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+</svg>
+
+<header class="top">
+  <h1>poof: mobile wireframes</h1>
+  <p class="intro"><b>Review question:</b> does every screen have exactly one purpose, is the order right, and is it always clear what the agent is doing and what you can do? Flow from the FigJam section "Demo UX flow, detailed". Low fidelity on purpose: no colour, no photos; crossed boxes are image placeholders. Buttons click through; dashed boxes under a phone are notes.</p>
+  <div class="toolbar">
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" id="mode-overview" aria-pressed="true">Overview</button>
+      <button type="button" id="mode-play" aria-pressed="false">Play</button>
+    </div>
+    <button type="button" class="tool-btn play-only" id="prev">&#8249; Prev</button>
+    <label class="play-only"><span class="sr">Screen</span><select id="jump"></select></label>
+    <button type="button" class="tool-btn play-only" id="next">Next &#8250;</button>
+    <label><input type="checkbox" id="show-notes" checked> Show notes</label>
+  </div>
+</header>
+
+<main class="flow" id="flow">
+
+<!-- ================= 01 SNAP IT ================= -->
+<section class="screen" id="s01" aria-labelledby="s01-t">
+  <div class="label"><span class="num">01</span><h2 id="s01-t">Snap it</h2><p>You take 1 to 5 photos.</p></div>
+  <div class="phone-wrap"><div class="phone cam">
+    <div class="bar">
+      <button class="icon-btn" type="button" aria-label="Close" data-go="s09"><svg class="icon"><use href="#i-close"/></svg></button>
+      <h1 class="bar-title">Sell something</h1>
+      <button class="icon-btn" type="button" aria-label="Flash"><svg class="icon"><use href="#i-flash"/></svg></button>
+    </div>
+    <div class="viewfinder">
+      <p class="pill">Show the whole item, good light</p>
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="vf-center"><span>Camera view</span></div>
+      <p class="agent" id="tip01"><span class="tag solid">Agent</span><span><b>Add one of the back?</b><br><span class="muted">Buyers ask about the back most.</span></span></p>
+    </div>
+    <div class="slots" id="slots01" aria-label="Photos, 1 to 5"></div>
+    <p class="cam-count" id="count01"></p>
+    <div class="cam-controls">
+      <button class="icon-btn" type="button" aria-label="Pick from gallery"><svg class="icon"><use href="#i-gallery"/></svg></button>
+      <button class="shutter" type="button" id="shutter01" aria-label="Take photo"></button>
+      <button class="btn small" type="button" id="done01" data-go="s02">Done</button>
+    </div>
+  </div></div>
+  <ul class="notes">
+    <li>Five labelled slots tell you which angles help (front, back, side, detail, label). Tap the shutter to fill the next one, tap a photo to remove it.</li>
+  </ul>
+</section>
+
+<!-- ================= 02 IS THIS IT ================= -->
+<section class="screen" id="s02" aria-labelledby="s02-t">
+  <div class="label"><span class="num">02</span><h2 id="s02-t">Is this it?</h2><p>You say yes, or fix it.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar">
+      <button class="icon-btn" type="button" aria-label="Back" data-go="s01"><svg class="icon"><use href="#i-back"/></svg></button>
+      <div class="progress-seg" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
+      <span class="step-count">1 of 4</span>
+    </div>
+    <div class="body">
+      <h1 class="q">Is this it?</h1>
+      <p class="sub">Your agent recognised it from your photos.</p>
+      <button class="cover" type="button" aria-label="Cover photo"><span class="ph"><span class="ph-label">Cover</span><span class="ph-note">Picked by agent</span></span></button>
+      <div class="thumbs" id="thumbs02" aria-label="Tap a photo to make it the cover">
+        <button type="button" aria-pressed="true" aria-label="Photo 1, cover"><span class="ph"></span></button>
+        <button type="button" aria-pressed="false" aria-label="Photo 2"><span class="ph"></span></button>
+        <button type="button" aria-pressed="false" aria-label="Photo 3"><span class="ph"></span></button>
+      </div>
+      <div class="recog">
+        <p class="eyebrow">What it is</p>
+        <h2>IKEA Strandmon</h2>
+        <p class="muted">Armchair · wingback</p>
+        <p class="match"><span class="meter" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span> Strong match · 23 similar listings</p>
+        <div class="field" id="fix02" hidden style="margin-top:10px"><label for="name02">What is it?</label><input type="text" id="name02" value="IKEA Strandmon armchair"></div>
+      </div>
+      <p class="sec">Condition</p>
+      <div class="chips" role="radiogroup" aria-label="Condition">
+        <label class="rchip"><input type="radio" name="cond02" data-help="Never used, still in the box or with tags."><span>New</span></label>
+        <label class="rchip"><input type="radio" name="cond02" data-help="Used a few times, no visible marks."><span>Like new</span></label>
+        <label class="rchip"><input type="radio" name="cond02" checked data-help="Normal signs of use, everything works."><span>Good</span></label>
+        <label class="rchip"><input type="radio" name="cond02" data-help="Clear marks or wear, still works."><span>Used</span></label>
+      </div>
+      <p class="helper" id="help02">Normal signs of use, everything works.</p>
+      <p class="sec">Details</p>
+      <dl class="dl card divided">
+        <div><dt>Colour</dt><dd>Dark green</dd><button class="icon-btn plain" type="button" aria-label="Edit colour"><svg class="icon"><use href="#i-edit"/></svg></button></div>
+        <div><dt>Brand</dt><dd>IKEA</dd><button class="icon-btn plain" type="button" aria-label="Edit brand"><svg class="icon"><use href="#i-edit"/></svg></button></div>
+      </dl>
+    </div>
+    <div class="foot">
+      <button class="btn" type="button" data-go="s03">Yes, that's it</button>
+      <button class="btn ghost" type="button" id="fixbtn02">Fix it</button>
+    </div>
+  </div></div>
+  <ul class="notes"><li>Cover first, then name, then condition and details. The match meter shows how sure the agent is. "Fix it" opens the name.</li></ul>
+</section>
+
+<!-- ================= 03 WHEN GONE ================= -->
+<section class="screen" id="s03" aria-labelledby="s03-t">
+  <div class="label"><span class="num">03</span><h2 id="s03-t">When should it be gone?</h2><p>You pick one.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar">
+      <button class="icon-btn" type="button" aria-label="Back" data-go="s02"><svg class="icon"><use href="#i-back"/></svg></button>
+      <div class="progress-seg" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+      <span class="step-count">2 of 4</span>
+    </div>
+    <div class="body">
+      <div class="context"><span class="ph"></span><div><b>IKEA Strandmon</b><span>Armchair · Good</span></div></div>
+      <h1 class="q">When should it be gone?</h1>
+      <p class="sub">This sets how your agent prices it and how fast it gives in.</p>
+      <div class="tabs" role="tablist" aria-label="When should it be gone" id="tabs03">
+        <button type="button" role="tab" aria-selected="true">This week</button>
+        <button type="button" role="tab" aria-selected="false">2 weeks</button>
+        <button type="button" role="tab" aria-selected="false">No rush</button>
+      </div>
+      <p class="tradeoff" id="line03" aria-live="polite">Faster sale, slightly lower price</p>
+      <p class="sec">What to expect</p>
+      <div class="card expect divided" aria-live="polite">
+        <div><span>Starts at</span><b id="start03">&euro;90</b></div>
+        <div><span>Likely gone in</span><b id="days03">about 4 days</b></div>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn" type="button" data-go="s04">Next</button>
+      <p class="hint">You can change this later on the ad.</p>
+    </div>
+  </div></div>
+  <ul class="notes">
+    <li>The tab changes the trade-off line and what to expect.</li>
+    <li><b>Open:</b> FigJam has no line for "2 weeks"; placeholder used. Expected numbers are illustrative.</li>
+  </ul>
+</section>
+
+<!-- ================= 04 MINIMUM ================= -->
+<section class="screen" id="s04" aria-labelledby="s04-t">
+  <div class="label"><span class="num">04</span><h2 id="s04-t">What's your minimum?</h2><p>You set your floor.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar">
+      <button class="icon-btn" type="button" aria-label="Back" data-go="s03"><svg class="icon"><use href="#i-back"/></svg></button>
+      <div class="progress-seg" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+      <span class="step-count">3 of 4</span>
+    </div>
+    <div class="body">
+      <div class="context"><span class="ph"></span><div><b>IKEA Strandmon</b><span>Gone this week</span></div></div>
+      <h1 class="q">What's your minimum?</h1>
+      <p class="sub">The lowest price you'd still be happy with.</p>
+      <div class="stepper card">
+        <button class="icon-btn" type="button" id="minus04" aria-label="Lower by 5 euro"><svg class="icon"><use href="#i-minus"/></svg></button>
+        <output class="price-big" id="price04" aria-live="polite">&euro;70</output>
+        <button class="icon-btn" type="button" id="plus04" aria-label="Raise by 5 euro"><svg class="icon"><use href="#i-plus"/></svg></button>
+      </div>
+      <p class="sec">Similar ones sold for 60 to 120</p>
+      <div class="histo" id="histo04" aria-hidden="true"><div class="marker" id="marker04"><span>Your minimum</span></div></div>
+      <div class="axis"><span>&euro;60</span><span>typical &euro;85</span><span>&euro;120</span></div>
+      <div class="promise"><svg class="icon"><use href="#i-shield"/></svg><b>Your agent never accepts less.</b></div>
+    </div>
+    <div class="foot"><button class="btn" type="button" data-go="s05">Next</button></div>
+  </div></div>
+  <ul class="notes"><li>The histogram shows the 23 listings; bars below your minimum are hatched. Minus and plus move the marker.</li></ul>
+</section>
+
+<!-- ================= 05 HANDOVER ================= -->
+<section class="screen" id="s05" aria-labelledby="s05-t">
+  <div class="label"><span class="num">05</span><h2 id="s05-t">How does it get to the buyer?</h2><p>You pick pickup, shipping or both.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar">
+      <button class="icon-btn" type="button" aria-label="Back" data-go="s04"><svg class="icon"><use href="#i-back"/></svg></button>
+      <div class="progress-seg" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+      <span class="step-count">4 of 4</span>
+    </div>
+    <div class="body">
+      <div class="context"><span class="ph"></span><div><b>IKEA Strandmon</b><span>Never below &euro;70</span></div></div>
+      <h1 class="q">How does it get to the buyer?</h1>
+      <p class="sub">Your agent plans the handover with the buyer.</p>
+      <div class="option">
+        <label><input type="radio" name="hand05" checked><span class="grow"><b>Pickup <span class="tag">Agent pick</span></b><span class="small muted">The buyer comes to you. Usual for big items.</span></span><svg class="icon"><use href="#i-pin"/></svg></label>
+        <div class="more">
+          <div class="field"><label for="city05">Postcode or city</label><input type="text" id="city05" value="Amsterdam"></div>
+          <p class="xs muted">Your exact address is only shared after a deal.</p>
+        </div>
+      </div>
+      <div class="option">
+        <label><input type="radio" name="hand05"><span class="grow"><b>Shipping</b><span class="small muted">You send it. The agent makes the label.</span></span><svg class="icon"><use href="#i-box"/></svg></label>
+        <div class="more">
+          <fieldset><legend>Size</legend><div class="chips">
+            <label class="rchip"><input type="radio" name="size05"><span>S</span></label>
+            <label class="rchip"><input type="radio" name="size05" checked><span>M</span></label>
+            <label class="rchip"><input type="radio" name="size05"><span>L</span></label>
+          </div></fieldset>
+          <fieldset><legend>Who pays shipping</legend><div class="chips">
+            <label class="rchip"><input type="radio" name="pay05" checked><span>Buyer</span></label>
+            <label class="rchip"><input type="radio" name="pay05"><span>Me</span></label>
+          </div></fieldset>
+        </div>
+      </div>
+      <div class="option">
+        <label><input type="radio" name="hand05"><span class="grow"><b>Both</b><span class="small muted">The buyer chooses. More buyers, a bit more to arrange.</span></span><svg class="icon"><use href="#i-swap"/></svg></label>
+        <div class="more"><p class="small muted">Pickup in Amsterdam, or shipping size M paid by the buyer.</p></div>
+      </div>
+    </div>
+    <div class="foot"><button class="btn" type="button" data-go="s06">Create my ad</button></div>
+  </div></div>
+  <ul class="notes"><li>Each option says what it means for you. The selected option opens its own fields.</li></ul>
+</section>
+
+<!-- ================= 06 AGENT ON IT ================= -->
+<section class="screen" id="s06" aria-labelledby="s06-t">
+  <div class="label"><span class="num">06</span><h2 id="s06-t">Your agent is on it</h2><p>You just watch.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar"><div class="grow"></div><span class="step-count">About 20 seconds</span></div>
+    <div class="body">
+      <div class="row" style="margin-bottom:14px">
+        <span class="ph" style="width:56px;height:56px"></span>
+        <div class="grow"><p class="eyebrow">IKEA Strandmon</p><h1 class="q" style="margin:0;font-size:26px">Your agent is on it</h1></div>
+      </div>
+      <ol class="steps card divided" id="steps06">
+        <li class="step" data-state="done"><span class="st-ico"><svg class="icon"><use href="#i-check"/></svg></span><div class="grow"><b>Item recognised</b><p class="res">IKEA Strandmon · Armchair · Good</p></div><span class="sr st-sr">done</span></li>
+        <li class="step" data-state="done"><span class="st-ico"><svg class="icon"><use href="#i-check"/></svg></span><div class="grow"><b>23 similar listings found</b><p class="res">Most sold for 60 to 120</p></div><button class="btn secondary small" type="button" id="see06">See them</button><span class="sr st-sr">done</span></li>
+        <li class="step" data-state="running"><span class="st-ico"><svg class="icon"><use href="#i-check"/></svg></span><div class="grow"><b>Price: start at 95, never below 70</b><p class="res">Typical price 85 · you want it gone this week</p></div><span class="sr st-sr">working</span></li>
+        <li class="step" data-state="next"><span class="st-ico"><svg class="icon"><use href="#i-check"/></svg></span><div class="grow"><b>Writing your ad</b><p class="res">Title, description, photo order</p></div><span class="sr st-sr">next</span></li>
+      </ol>
+      <p class="sec">Your ad</p>
+      <div class="skeleton" aria-label="Ad being written">
+        <span class="ph"></span>
+        <div class="lines"><i style="width:80%"></i><i style="width:40%"></i><i></i><i style="width:90%"></i><i style="width:60%"></i></div>
+      </div>
+    </div>
+    <div class="sheet-back" id="sheetback06" hidden></div>
+    <div class="sheet" id="sheet06" role="dialog" aria-modal="true" aria-labelledby="sheet06-t" hidden>
+      <header>
+        <div><h2 id="sheet06-t">23 similar listings</h2><p class="small muted">Most sold for 60 to 120</p></div>
+        <button class="icon-btn" type="button" id="close06" aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button>
+      </header>
+      <ul>
+        <li><span class="ph"></span><div class="grow"><b class="small">IKEA Strandmon, off-white</b><br><span class="xs muted">Marktplaats · sold in 3 days</span></div><b>&euro;85</b></li>
+        <li><span class="ph"></span><div class="grow"><b class="small">Strandmon wingback, grey</b><br><span class="xs muted">Vinted · sold in 6 days</span></div><b>&euro;75</b></li>
+        <li><span class="ph"></span><div class="grow"><b class="small">IKEA Strandmon, green</b><br><span class="xs muted">eBay · sold in 2 days</span></div><b>&euro;120</b></li>
+        <li><span class="ph"></span><div class="grow"><b class="small">Strandmon + footstool</b><br><span class="xs muted">Facebook · for sale</span></div><b>&euro;110</b></li>
+        <li><span class="ph"></span><div class="grow"><b class="small">Wingback armchair, IKEA</b><br><span class="xs muted">Marktplaats · sold in 9 days</span></div><b>&euro;60</b></li>
+      </ul>
+    </div>
+  </div></div>
+  <ul class="notes">
+    <li><b>Moves on by itself</b> once all steps are done (in Play the steps tick off). Every step shows its result, so you see what the agent decided.</li>
+    <li class="simli"><button class="sim" type="button" data-go="s07">Simulate: all steps done &#8594; 07</button></li>
+  </ul>
+</section>
+
+<!-- ================= 07 YOUR AD ================= -->
+<section class="screen" id="s07" aria-labelledby="s07-t">
+  <div class="label"><span class="num">07</span><h2 id="s07-t">Here's your ad</h2><p>You approve, or tap to edit.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar">
+      <button class="icon-btn" type="button" aria-label="Back" data-go="s05"><svg class="icon"><use href="#i-back"/></svg></button>
+      <div class="grow"><p class="eyebrow">Ready for your OK</p><h1 class="bar-title" style="font-size:20px">Here's your ad</h1></div>
+    </div>
+    <div class="body">
+      <div class="gallery">
+        <span class="ph main" style="display:block"><span class="ph-label">Cover</span><span class="ph-note">1 / 3</span></span>
+        <div class="dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+      </div>
+      <div class="editable"><div class="grow"><p class="ad-title">IKEA Strandmon armchair, dark green</p></div><button class="icon-btn plain" type="button" aria-label="Edit title"><svg class="icon"><use href="#i-edit"/></svg></button></div>
+      <div class="editable"><div class="grow price-row"><span class="p">&euro;95</span><span class="muted">never below 70</span><span class="chip">Agent price</span></div><button class="icon-btn plain" type="button" aria-label="Edit price"><svg class="icon"><use href="#i-edit"/></svg></button></div>
+      <p class="sec">Description <button type="button">Edit</button></p>
+      <div class="lines"><i></i><i style="width:92%"></i><i style="width:70%"></i></div>
+      <p class="sec">Details <button type="button">Edit</button></p>
+      <div class="grid2 card">
+        <div><span>Condition</span><b>Good</b></div>
+        <div><span>Colour</span><b>Dark green</b></div>
+        <div><span>Handover</span><b>Pickup, Amsterdam</b></div>
+        <div><span>Brand</span><b>IKEA</b></div>
+      </div>
+      <p class="sec">Where</p>
+      <div class="plat-toggles">
+        <label class="ptog"><input type="checkbox" checked><span><span class="logo">M</span>Marktplaats<svg class="icon"><use href="#i-check"/></svg></span></label>
+        <label class="ptog"><input type="checkbox" checked><span><span class="logo">V</span>Vinted<svg class="icon"><use href="#i-check"/></svg></span></label>
+        <label class="ptog"><input type="checkbox" checked><span><span class="logo">e</span>eBay<svg class="icon"><use href="#i-check"/></svg></span></label>
+        <label class="ptog"><input type="checkbox" checked><span><span class="logo">f</span>Facebook<svg class="icon"><use href="#i-check"/></svg></span></label>
+      </div>
+      <p class="agent" style="margin-top:14px"><span class="tag solid">Agent</span><span>A photo in daylight sells faster.</span></p>
+    </div>
+    <div class="foot">
+      <button class="btn" type="button" data-go="s08">Approve and sell</button>
+      <p class="hint">After this your agent handles buyers, price and pickup.</p>
+    </div>
+  </div></div>
+  <ul class="notes"><li>The only approval in the flow. Shaped like the ad itself: photo, title, price, text, details. Platforms are toggles at the bottom.</li></ul>
+</section>
+
+<!-- ================= 08 GOING LIVE ================= -->
+<section class="screen" id="s08" aria-labelledby="s08-t">
+  <div class="label"><span class="num">08</span><h2 id="s08-t">Going live</h2><p>You watch the platform agents.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar"><div class="grow"><p class="eyebrow">Publishing</p><h1 class="bar-title" style="font-size:20px">Putting it online</h1></div></div>
+    <div class="body">
+      <div class="live-sum"><b id="sum08">2 of 4 live</b><span class="small muted">IKEA Strandmon · &euro;95</span></div>
+      <div class="bar-prog" style="margin-bottom:14px"><i id="overall08" style="width:60%"></i></div>
+      <ul class="agents card divided" id="agents08">
+        <li><div class="row"><span class="logo">M</span><div class="grow"><b>Marktplaats agent</b><span>Live · 1 min ago</span></div><span class="chip solid">Live</span></div></li>
+        <li><div class="row"><span class="logo">e</span><div class="grow"><b>eBay agent</b><span>Live · just now</span></div><span class="chip solid">Live</span></div></li>
+        <li><div class="row"><span class="logo">V</span><div class="grow"><b>Vinted agent</b><span>Uploading photos</span></div><span class="chip">Posting 60%</span></div><div class="bar-prog"><i style="width:60%"></i></div></li>
+        <li><div class="row"><span class="logo">f</span><div class="grow"><b>Facebook agent</b><span>Waits for Vinted</span></div><span class="chip">Queued</span></div></li>
+      </ul>
+      <p class="sec">Preview per platform <span class="xs muted" style="text-transform:none;letter-spacing:0;font-weight:400">Swipe</span></p>
+      <div class="previews" aria-label="The ad on each platform">
+        <article class="preview"><header><span>Marktplaats</span><span class="chip">Live</span></header><span class="ph" style="display:block"></span><div class="body-p"><b>&euro;95</b><div class="lines"><i style="width:85%"></i><i style="width:55%"></i></div></div></article>
+        <article class="preview"><header><span>eBay</span><span class="chip">Live</span></header><span class="ph" style="display:block"></span><div class="body-p"><b>&euro;95</b><div class="lines"><i style="width:85%"></i><i style="width:55%"></i></div></div></article>
+        <article class="preview"><header><span>Vinted</span><span class="chip">Posting</span></header><span class="ph" style="display:block"></span><div class="body-p"><b>&euro;95</b><div class="lines"><i style="width:85%"></i><i style="width:55%"></i></div></div></article>
+      </div>
+    </div>
+    <div class="foot"><p class="close-note"><svg class="icon"><use href="#i-bell"/></svg> You can close the app, we'll let you know.</p></div>
+  </div></div>
+  <ul class="notes">
+    <li>Summary on top, one row per platform agent with its own status, previews below. <b>Push when all are live</b> (next frame).</li>
+    <li class="simli"><button class="sim" type="button" data-go="p1">Simulate: all agents live &#8594; push</button></li>
+  </ul>
+</section>
+
+<!-- ================= P1 PUSH LIVE ================= -->
+<section class="screen" id="p1" aria-labelledby="p1-t">
+  <div class="label"><span class="num">Push</span><h2 id="p1-t">Live on 4 platforms</h2><p>Aha moment: it's out there, without you.</p></div>
+  <div class="phone-wrap"><div class="phone lock">
+    <h1 class="sr">Lock screen with push notification</h1>
+    <p class="lock-time">14:02</p>
+    <p class="lock-date">Saturday 26 September</p>
+    <button class="notif" type="button" data-go="s09">
+      <span class="app">poof</span>
+      <span class="grow"><span class="meta"><span>poof</span><span>now</span></span><p>Your chair is live on 4 platforms</p><small>Your agent answers buyers from here.</small></span>
+    </button>
+    <p class="lock-foot">Tap to open your ads</p>
+  </div></div>
+  <ul class="notes"><li><b>Push notification</b> on the lock screen, between 08 and 09 in the pitch video.</li></ul>
+</section>
+
+<!-- ================= 09 YOUR ADS ================= -->
+<section class="screen" id="s09" aria-labelledby="s09-t">
+  <div class="label"><span class="num">09</span><h2 id="s09-t">Your ads (home)</h2><p>You tap an ad.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="body" style="padding-top:28px">
+      <div class="home-head"><h1>Your ads</h1><span class="avatar">T</span></div>
+      <ul class="grid-ads">
+        <li><button class="gtile" type="button" data-go="s10"><span class="ph"></span><span class="t">IKEA Strandmon armchair</span></button></li>
+        <li><button class="gtile" type="button"><span class="ph"></span><span class="t">Black city bike</span></button></li>
+        <li><button class="gtile" type="button"><span class="ph"></span><span class="t">Vintage record player</span></button></li>
+        <li><button class="gtile" type="button"><span class="ph"></span><span class="t">Desk lamp</span></button></li>
+        <li><button class="gtile" type="button"><span class="ph"></span><span class="t">Denim jacket</span></button></li>
+        <li><button class="gtile" type="button"><span class="ph"></span><span class="t">White sneakers</span></button></li>
+      </ul>
+    </div>
+    <nav class="tabbar" aria-label="Main">
+      <button class="tab" type="button" data-go="s09" aria-current="page"><svg class="icon"><use href="#i-grid"/></svg>Ads</button>
+      <button class="tab" type="button" data-go="s11"><span class="ico"><svg class="icon"><use href="#i-chat"/></svg><span class="tbadge" aria-label="1 needs you">1</span></span>Chats</button>
+      <button class="sell" type="button" data-go="s01"><svg class="icon"><use href="#i-plus"/></svg>Sell</button>
+      <button class="tab" type="button"><svg class="icon"><use href="#i-user"/></svg>Profile</button>
+    </nav>
+  </div></div>
+  <ul class="notes">
+    <li>Just a grid of photos with titles. Status lives on the ad itself (10); what needs you shows as a badge on Chats.</li>
+    <li>Navbar: Ads, Chats (all chats per ad), Sell, Profile. <b>Open:</b> what goes in Profile.</li>
+  </ul>
+</section>
+
+<!-- ================= 10 HOW IT'S GOING ================= -->
+<section class="screen" id="s10" aria-labelledby="s10-t">
+  <div class="label"><span class="num">10</span><h2 id="s10-t">How this ad is going</h2><p>You open the chats.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="body" style="padding:0">
+      <div class="hero">
+        <span class="ph"><span class="ph-note">1 / 3</span></span>
+        <button class="icon-btn l" type="button" aria-label="Back" data-go="s09"><svg class="icon"><use href="#i-back"/></svg></button>
+        <button class="icon-btn r" type="button" aria-label="More"><svg class="icon"><use href="#i-more"/></svg></button>
+      </div>
+      <div style="padding:16px 20px 24px">
+        <p class="xs muted">Amsterdam · listed 2 days ago</p>
+        <h1 class="q" style="font-size:26px;margin-top:2px">IKEA Strandmon armchair</h1>
+        <p class="sec" style="margin-top:14px">Live on</p>
+        <div class="pchips"><span>Marktplaats</span><span>Vinted</span><span>eBay</span><span>Facebook</span></div>
+        <div class="seg4" style="margin-top:20px" aria-label="Status: negotiating">
+          <i class="on"></i><i class="on"></i><i class="on"></i><i></i>
+          <span>Live</span><span>Offers</span><span class="cur">Negotiating</span><span>Sold</span>
+        </div>
+        <div class="tiles" style="margin-top:16px">
+          <div class="tile"><b>142</b><span>views</span></div>
+          <div class="tile"><b>6</b><span>saves</span></div>
+          <div class="tile"><b>3</b><span>chats</span></div>
+        </div>
+        <button class="now-row" type="button" data-go="s11"><span class="dot"></span><span class="grow" id="now10">Answering 1 new message</span><svg class="icon chevron"><use href="#i-right"/></svg></button>
+        <div class="chip-btns">
+          <button class="chip-btn" type="button" data-go="s03">Change goal</button>
+          <button class="chip-btn" type="button" id="pause10" aria-pressed="false"><span>Pause</span></button>
+          <button class="chip-btn" type="button">Take offline</button>
+        </div>
+      </div>
+    </div>
+    <div class="actionbar">
+      <div><p class="xs muted">Asking</p><b>&euro;95</b> <span class="muted">/ min &euro;70</span></div>
+      <button class="btn" type="button" data-go="s11">Open 3 chats</button>
+    </div>
+  </div></div>
+  <ul class="notes">
+    <li>Product detail: photo, where it's live, status, three numbers, what the agent does now, controls. Price and chats stay pinned at the bottom.</li>
+  </ul>
+</section>
+
+<!-- ================= 11 CHATS ================= -->
+<section class="screen" id="s11" aria-labelledby="s11-t">
+  <div class="label"><span class="num">11</span><h2 id="s11-t">Chats</h2><p>You tap a chat.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="body" style="padding-top:28px">
+      <h1 class="q" style="font-size:30px">Chats</h1>
+      <p class="sub" style="margin-bottom:18px">Per ad. What needs you comes first.</p>
+      <div class="group">
+        <button class="group-head" type="button" data-go="s10"><span class="ph"></span><span class="grow"><b>IKEA Strandmon armchair</b><span>3 chats · best offer &euro;80</span></span><svg class="icon chevron"><use href="#i-right"/></svg></button>
+        <button class="chat-row strong" type="button" data-go="s13">
+          <span class="avatar">T<span class="pl">M</span></span>
+          <span class="grow"><span class="top-line"><b>Tom</b><span class="chip solid">Needs you</span></span><span class="last">Would you do 55? I can come tonight.</span></span>
+          <span class="side"><span class="offer-pill">&euro;55</span></span>
+        </button>
+        <button class="chat-row" type="button" data-go="s12">
+          <span class="avatar">M<span class="pl">M</span></span>
+          <span class="grow"><span class="top-line"><b>Mila</b></span><span class="last"><span class="tag">Agent</span> I can do 85.</span></span>
+          <span class="side"><span class="offer-pill">&euro;80</span></span>
+        </button>
+        <button class="chat-row" type="button">
+          <span class="avatar">N<span class="pl">V</span></span>
+          <span class="grow"><span class="top-line"><b>Noor</b></span><span class="last">Is the cover washable?</span></span>
+          <span class="side"><span class="dot" aria-label="unread"></span></span>
+        </button>
+        <details class="fold" style="margin-top:4px">
+          <summary><svg class="icon"><use href="#i-down"/></svg> Lowballers and scams (2)</summary>
+          <div class="inner">
+            <div class="chat-row"><span class="avatar">S<span class="pl">e</span></span><span class="grow"><span class="top-line"><b>Sander</b></span><span class="last">20 euro, today?</span></span><span class="side"><span class="offer-pill">&euro;20</span></span></div>
+            <div class="chat-row"><span class="avatar">J<span class="pl">f</span></span><span class="grow"><span class="top-line"><b>J. Smith</b></span><span class="last">My courier pays, send your bank details</span></span><span class="side"></span></div>
+          </div>
+        </details>
+      </div>
+      <div class="group">
+        <button class="group-head" type="button"><span class="ph"></span><span class="grow"><b>Black city bike</b><span>2 chats · best offer &euro;170</span></span><svg class="icon chevron"><use href="#i-right"/></svg></button>
+        <button class="chat-row" type="button">
+          <span class="avatar">S<span class="pl">M</span></span>
+          <span class="grow"><span class="top-line"><b>Sanne</b></span><span class="last"><span class="tag">Agent</span> I can do 175.</span></span>
+          <span class="side"><span class="offer-pill">&euro;170</span></span>
+        </button>
+      </div>
+    </div>
+    <nav class="tabbar" aria-label="Main">
+      <button class="tab" type="button" data-go="s09"><svg class="icon"><use href="#i-grid"/></svg>Ads</button>
+      <button class="tab" type="button" data-go="s11" aria-current="page"><span class="ico"><svg class="icon"><use href="#i-chat"/></svg><span class="tbadge" aria-label="1 needs you">1</span></span>Chats</button>
+      <button class="sell" type="button" data-go="s01"><svg class="icon"><use href="#i-plus"/></svg>Sell</button>
+      <button class="tab" type="button"><svg class="icon"><use href="#i-user"/></svg>Profile</button>
+    </nav>
+  </div></div>
+  <ul class="notes"><li>A tab of its own: all chats, grouped per ad. Within an ad: needs you, best offers, recent; lowballers and scams folded. Mila opens 12, Tom opens 13.</li></ul>
+</section>
+
+<!-- ================= 12 NEGOTIATING ================= -->
+<section class="screen" id="s12" aria-labelledby="s12-t">
+  <div class="label"><span class="num">12</span><h2 id="s12-t">Negotiating</h2><p>You watch. Take over if you want.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar">
+      <button class="icon-btn" type="button" aria-label="Back" data-go="s11"><svg class="icon"><use href="#i-back"/></svg></button>
+      <div class="grow"><h1 class="bar-title" style="font-size:18px">Mila <span class="chip">Serious buyer</span></h1><span class="xs muted">Marktplaats</span></div>
+    </div>
+    <div class="item-row"><span class="ph"></span><div class="grow"><b class="small">IKEA Strandmon armchair</b><span>&euro;95, never below &euro;70</span></div><button class="btn secondary small" type="button" id="takeover12" aria-expanded="false" aria-controls="composer12">Take over</button></div>
+    <div class="body">
+      <div class="thread" id="thread12">
+        <span class="day">Today</span>
+        <div class="msg buyer"><span class="who">Mila</span>Hi! Is the chair still available?</div>
+        <div class="msg agent-m"><span class="who"><span class="tag">Agent</span></span>Yes! Pickup in Amsterdam.</div>
+        <div class="msg buyer"><div class="offer-card"><small>Offer</small><b>&euro;50</b></div>Would you take 50?</div>
+        <div class="msg agent-m"><span class="who"><span class="tag">Agent</span></span><div class="offer-card"><small>Counter</small><b>&euro;85</b></div>It's in good condition. I can do 85.</div>
+        <div class="msg buyer"><div class="offer-card"><small>Offer</small><b>&euro;80</b></div>80 and I pick it up Saturday?</div>
+        <div class="msg agent-m"><span class="who"><span class="tag">Agent</span></span><div class="offer-card accepted"><small>Accepted</small><b>&euro;80</b></div>Deal! Saturday 14:00 works.</div>
+        <div class="deal"><span class="cal"><small>Sat</small><b>26</b></span><div><b>Deal at 80</b><span class="small muted">Pickup Saturday 14:00 · address shared with Mila</span></div></div>
+      </div>
+    </div>
+    <div class="composer" id="composer12" hidden>
+      <div class="suggest"><span class="tag solid">Agent</span> suggests: "See you Saturday at 14:00! The address is in your messages."</div>
+      <button class="btn" type="button" id="sendsug12">Send suggestion</button>
+      <div class="row"><label for="input12" class="sr">Your message</label><input id="input12" type="text" placeholder="Or type your own message"><button class="icon-btn" type="button" id="send12" aria-label="Send"><svg class="icon"><use href="#i-send"/></svg></button></div>
+      <button class="btn ghost" type="button" id="handback12">Let the agent continue</button>
+    </div>
+  </div></div>
+  <ul class="notes">
+    <li>The item and its limits sit on top, next to Take over. Offers are cards in the chat; agent messages carry the "Agent" tag. Take over opens a suggested reply.</li>
+    <li><b>Deviation:</b> no navbar here, so the chat and composer get the space (FigJam shows the navbar on every screen after going live).</li>
+    <li><b>Push during this chat:</b> "New offer: 50 euro. I countered 85."</li>
+    <li class="simli"><button class="sim" type="button" data-go="s13" data-push="Offer below your minimum. Your call.">Simulate: offer below minimum &#8594; 13</button></li>
+    <li class="simli"><button class="sim" type="button" data-go="s14" data-push="Sold for 80 euro.">Simulate: deal closed &#8594; 14</button></li>
+  </ul>
+</section>
+
+<!-- ================= 13 YOUR CALL ================= -->
+<section class="screen" id="s13" aria-labelledby="s13-t">
+  <div class="label"><span class="num">13 · only if needed</span><h2 id="s13-t">Your call</h2><p>You accept, counter or decline.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar">
+      <button class="icon-btn" type="button" aria-label="Close" data-go="s11"><svg class="icon"><use href="#i-close"/></svg></button>
+      <div class="grow"><p class="eyebrow">Your call</p><p class="xs muted">IKEA Strandmon armchair</p></div>
+    </div>
+    <div class="body">
+      <div class="offer-hero" style="padding:40px 0 8px">
+        <h1 class="sr">55 euro from Tom, your minimum is 70</h1>
+        <p class="big" aria-hidden="true">&euro;55</p>
+        <p style="font-size:18px;margin-top:8px">from Tom on Marktplaats</p>
+        <p class="muted" style="margin-top:2px">Your minimum is 70</p>
+      </div>
+      <div class="quote" style="margin-top:28px">"Would you do 55? I can come tonight."</div>
+      <div class="agent" style="margin-top:12px;display:block">
+        <p class="row" style="gap:8px"><span class="tag solid">Agent</span><b>Seems serious. Counter at 70?</b></p>
+        <p class="small muted" style="margin-top:6px">Replied fast, asked about pickup, good reviews.</p>
+      </div>
+    </div>
+    <div class="foot decide">
+      <button class="btn primary" type="button" data-go="s12">Counter 70</button>
+      <button class="btn secondary" type="button" data-go="s14">Accept 55</button>
+      <button class="btn secondary" type="button" data-go="s11">Decline</button>
+    </div>
+  </div></div>
+  <ul class="notes">
+    <li><b>Only when an offer is below your minimum.</b> Opens from a push ("Offer below your minimum. Your call.") or from Chats. The agent's advice is the primary button.</li>
+  </ul>
+</section>
+
+<!-- ================= 14 SOLD ================= -->
+<section class="screen" id="s14" aria-labelledby="s14-t">
+  <div class="label"><span class="num">14</span><h2 id="s14-t">Sold</h2><p>You enjoy it.</p></div>
+  <div class="phone-wrap"><div class="phone">
+    <div class="bar"><div class="grow"></div><button class="icon-btn" type="button" aria-label="Close" data-go="s09"><svg class="icon"><use href="#i-close"/></svg></button></div>
+    <div class="body">
+      <div class="sold-hero">
+        <span class="check-circle"><svg class="icon"><use href="#i-check"/></svg></span>
+        <h1 class="big">Sold for 80 euro</h1>
+        <p class="muted">IKEA Strandmon, to Mila</p>
+      </div>
+      <div class="card recap divided">
+        <div><span>Time to sell</span><b>2 days</b></div>
+        <div><span>Messages handled</span><b>14</b></div>
+        <div><span>Counter offers</span><b>3</b></div>
+        <div style="display:block;padding:12px 14px"><p class="xs muted" style="margin-bottom:8px">Removed everywhere</p><div class="rchips" style="padding:0"><span><svg class="icon"><use href="#i-check"/></svg>Marktplaats</span><span><svg class="icon"><use href="#i-check"/></svg>Vinted</span><span><svg class="icon"><use href="#i-check"/></svg>eBay</span><span><svg class="icon"><use href="#i-check"/></svg>Facebook</span></div></div>
+      </div>
+      <p class="sec">Next</p>
+      <ol class="timeline" id="next14-pickup">
+        <li class="done"><div><b>Pickup Saturday 14:00</b><span>Address shared with Mila</span></div></li>
+        <li><div><b>Get paid 80 euro</b><span>Mila pays at pickup</span></div></li>
+      </ol>
+      <ol class="timeline" id="next14-ship" hidden>
+        <li class="done"><div><b>Shipping label ready</b><span>Send before Tuesday</span></div></li>
+        <li><div><b>Get paid 80 euro</b><span>When Mila receives it</span></div></li>
+      </ol>
+    </div>
+    <div class="foot"><button class="btn" type="button" data-go="s01">Sell something else</button></div>
+  </div></div>
+  <ul class="notes">
+    <li>Big result, a short recap with proof it's gone everywhere, then what's next. <button class="sim" type="button" id="variant14" aria-pressed="false" style="margin-top:8px">Show shipping variant</button></li>
+    <li class="simli"><button class="sim" type="button" data-go="p2">Show the sold push &#8594;</button></li>
+  </ul>
+</section>
+
+<!-- ================= P2 PUSH SOLD ================= -->
+<section class="screen" id="p2" aria-labelledby="p2-t">
+  <div class="label"><span class="num">Push</span><h2 id="p2-t">Sold</h2><p>The pitch video ends here.</p></div>
+  <div class="phone-wrap"><div class="phone lock">
+    <h1 class="sr">Lock screen with sold notification</h1>
+    <p class="lock-time">16:47</p>
+    <p class="lock-date">Monday 28 September</p>
+    <button class="notif" type="button" data-go="s14">
+      <span class="app">poof</span>
+      <span class="grow"><span class="meta"><span>poof</span><span>now</span></span><p>Sold for 80 euro. Removed everywhere.</p><small>Pickup Saturday 14:00 is in your calendar.</small></span>
+    </button>
+    <p class="lock-foot">Tap to see the sale</p>
+  </div></div>
+  <ul class="notes"><li><b>Push notification</b> on the lock screen. Last shot of the pitch video.</li></ul>
+</section>
+
+</main>
+
+<script>
+(() => {
+  const body = document.body;
+  const screens = [...document.querySelectorAll('.screen')];
+  const ids = screens.map(s => s.id);
+  let current = 0;
+  let timers = [];
+  const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  const isPlay = () => body.classList.contains('play');
+  const $ = id => document.getElementById(id);
+
+  /* ---------- scale phones to the viewport ---------- */
+  function fit() {
+    let s = Math.min(1, (window.innerWidth - 32) / 390);
+    if (isPlay()) {
+      const top = document.querySelector('.top').offsetHeight;
+      s = Math.min(s, (window.innerHeight - top - 110) / 844);
+    }
+    document.documentElement.style.setProperty('--s', Math.max(0.35, s).toFixed(3));
+  }
+  window.addEventListener('resize', fit);
+
+  /* ---------- navigation ---------- */
+  const jump = $('jump');
+  function go(id, opts = {}) {
+    const i = ids.indexOf(id);
+    if (i < 0) return;
+    clearTimers();
+    current = i;
+    jump.value = id;
+    screens.forEach((s, k) => s.classList.toggle('current', k === i));
+    if (isPlay()) { window.scrollTo(0, 0); onEnter(id); }
+    else if (!opts.silent) {
+      const el = screens[i];
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 900);
+    }
+  }
+
+  // Push banner inside the current phone during Play, then continue.
+  function pushThen(text, id) {
+    const phone = screens[current].querySelector('.phone');
+    let banner = phone.querySelector('.push');
+    if (!banner) { banner = document.createElement('div'); banner.className = 'push'; phone.prepend(banner); }
+    banner.innerHTML = '<span class="logo">p</span><span><small>Push notification · poof</small><b></b></span>';
+    banner.querySelector('b').textContent = text;
+    banner.hidden = false;
+    later(() => { banner.hidden = true; go(id); }, 2200);
+  }
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-go]');
+    if (!t) return;
+    e.preventDefault();
+    if (t.dataset.push && isPlay()) pushThen(t.dataset.push, t.dataset.go);
+    else go(t.dataset.go);
+  });
+
+  /* ---------- toolbar ---------- */
+  screens.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id;
+    o.textContent = s.querySelector('.num').textContent + ' ' + s.querySelector('.label h2').textContent;
+    jump.append(o);
+  });
+  jump.addEventListener('change', () => go(jump.value));
+  $('prev').addEventListener('click', () => go(ids[Math.max(0, current - 1)]));
+  $('next').addEventListener('click', () => go(ids[Math.min(ids.length - 1, current + 1)]));
+  function setMode(play) {
+    body.classList.toggle('play', play);
+    $('mode-play').setAttribute('aria-pressed', play);
+    $('mode-overview').setAttribute('aria-pressed', !play);
+    clearTimers();
+    fit();
+    go(ids[current], { silent: !play });
+  }
+  $('mode-play').addEventListener('click', () => setMode(true));
+  $('mode-overview').addEventListener('click', () => setMode(false));
+  $('show-notes').addEventListener('change', e => { body.classList.toggle('nonotes', !e.target.checked); fit(); });
+  document.addEventListener('keydown', e => {
+    if (!isPlay() || e.target.closest?.('input, select, textarea')) return;
+    if (e.key === 'ArrowRight') go(ids[Math.min(ids.length - 1, current + 1)]);
+    if (e.key === 'ArrowLeft') go(ids[Math.max(0, current - 1)]);
+  });
+
+  /* ---------- auto-advancing screens in Play ---------- */
+  function onEnter(id) {
+    if (id === 's06') runSteps();
+    if (id === 's08') runAgents();
+  }
+
+  const steps06 = [...document.querySelectorAll('#steps06 .step')];
+  const srText = { done: 'done', running: 'working', next: 'next' };
+  function setStep(i, state) { steps06[i].dataset.state = state; steps06[i].querySelector('.st-sr').textContent = srText[state]; }
+  function runSteps() {
+    setStep(2, 'running'); setStep(3, 'next');
+    later(() => { setStep(2, 'done'); setStep(3, 'running'); }, 1600);
+    later(() => { setStep(3, 'done'); }, 3200);
+    const leave = () => $('sheet06').hidden ? go('s07') : later(leave, 500);
+    later(leave, 4200);
+  }
+
+  const agents = [...document.querySelectorAll('#agents08 li')];
+  function setAgent(li, label, sub, pct) {
+    const chip = li.querySelector('.chip');
+    chip.textContent = label;
+    chip.classList.toggle('solid', label === 'Live');
+    li.querySelector('.grow span').textContent = sub;
+    let bar = li.querySelector('.bar-prog');
+    if (pct == null) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.className = 'bar-prog'; bar.innerHTML = '<i></i>'; li.append(bar); }
+    bar.firstChild.style.width = pct + '%';
+  }
+  function runAgents() {
+    setAgent(agents[2], 'Posting 60%', 'Uploading photos', 60); setAgent(agents[3], 'Queued', 'Waits for Vinted');
+    $('sum08').textContent = '2 of 4 live'; $('overall08').style.width = '60%';
+    later(() => { setAgent(agents[2], 'Live', 'Live · just now'); setAgent(agents[3], 'Posting 30%', 'Filling in the ad', 30); $('sum08').textContent = '3 of 4 live'; $('overall08').style.width = '80%'; }, 1400);
+    later(() => setAgent(agents[3], 'Posting 80%', 'Uploading photos', 80), 2400);
+    later(() => { setAgent(agents[3], 'Live', 'Live · just now'); $('sum08').textContent = '4 of 4 live'; $('overall08').style.width = '100%'; }, 3300);
+    later(() => go('p1'), 4300);
+  }
+
+  /* ---------- 01 photo slots ---------- */
+  const slotNames = ['Front', 'Back', 'Side', 'Detail', 'Label'];
+  let taken = 1;
+  function renderSlots() {
+    const wrap = $('slots01');
+    wrap.innerHTML = '';
+    slotNames.forEach((name, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'slot' + (i < taken ? ' filled' : i === taken ? ' next' : '');
+      b.setAttribute('aria-label', i < taken ? 'Remove ' + name + ' photo' : name + ', empty');
+      b.innerHTML = '<span class="box">' + (i < taken ? '<span class="x"><svg class="icon"><use href="#i-close"/></svg></span>' : '<svg class="icon"><use href="#i-plus"/></svg>') + '</span><span>' + name + '</span>';
+      if (i < taken) b.addEventListener('click', () => { taken--; renderSlots(); });
+      wrap.append(b);
+    });
+    $('count01').textContent = taken + ' of 5 photos' + (taken ? ' · one is enough' : '');
+    $('tip01').hidden = taken !== 1;
+    $('done01').disabled = taken === 0;
+    $('shutter01').disabled = taken >= 5;
+  }
+  $('shutter01').addEventListener('click', () => { if (taken < 5) { taken++; renderSlots(); } });
+  renderSlots();
+
+  /* ---------- 02 ---------- */
+  const thumbs = [...document.querySelectorAll('#thumbs02 button')];
+  thumbs.forEach(t => t.addEventListener('click', () => thumbs.forEach(x => x.setAttribute('aria-pressed', x === t))));
+  document.querySelectorAll('input[name=cond02]').forEach(r => r.addEventListener('change', () => { $('help02').textContent = r.dataset.help; }));
+  $('fixbtn02').addEventListener('click', () => { const f = $('fix02'); f.hidden = !f.hidden; if (!f.hidden) $('name02').focus(); });
+
+  /* ---------- 03 ---------- */
+  const goals = [
+    { line: 'Faster sale, slightly lower price', speed: 5, price: 3, start: '€90', sold: '€80 to 85', days: 'about 4 days' },
+    { line: 'A good price, sold within two weeks', speed: 3, price: 4, start: '€95', sold: '€85 to 90', days: 'about 9 days' },
+    { line: 'Holds out for the best price', speed: 1, price: 5, start: '€110', sold: '€90 to 100', days: '2 weeks or more' }
+  ];
+  const blocks = (el, n) => { el.innerHTML = [0, 1, 2, 3, 4].map(i => '<i class="' + (i < n ? 'on' : '') + '"></i>').join(''); };
+  const tabs = [...document.querySelectorAll('#tabs03 [role=tab]')];
+  function setGoal(i) {
+    tabs.forEach((t, k) => t.setAttribute('aria-selected', k === i));
+    const g = goals[i];
+    $('line03').textContent = g.line; 
+    $('start03').textContent = g.start; $('days03').textContent = g.days;
+  }
+  tabs.forEach((t, i) => t.addEventListener('click', () => setGoal(i)));
+  setGoal(0);
+
+  /* ---------- 04 ---------- */
+  const counts = [2, 3, 2, 4, 5, 3, 2, 1, 1]; // 23 listings between 60 and 120
+  const histo = $('histo04');
+  counts.forEach(c => { const b = document.createElement('i'); b.style.height = (c / 5 * 100) + '%'; histo.append(b); });
+  let min = 70;
+  function renderMin() {
+    $('price04').textContent = '€' + min;
+    const pct = Math.max(0, Math.min(100, (min - 60) / 60 * 100));
+    $('marker04').style.left = pct + '%';
+    [...histo.querySelectorAll('i')].forEach((b, i) => b.classList.toggle('below', (60 + (i + 1) * 60 / counts.length) <= min));
+  }
+  $('minus04').addEventListener('click', () => { min = Math.max(5, min - 5); renderMin(); });
+  $('plus04').addEventListener('click', () => { min = Math.min(500, min + 5); renderMin(); });
+  renderMin();
+
+  /* ---------- 06 sheet ---------- */
+  const openSheet = open => { $('sheet06').hidden = !open; $('sheetback06').hidden = !open; (open ? $('close06') : $('see06')).focus(); };
+  $('see06').addEventListener('click', () => openSheet(true));
+  $('close06').addEventListener('click', () => openSheet(false));
+  $('sheetback06').addEventListener('click', () => openSheet(false));
+
+  /* ---------- 10 ---------- */
+  $('pause10').addEventListener('click', e => {
+    const paused = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+    e.currentTarget.setAttribute('aria-pressed', paused);
+    e.currentTarget.querySelector('span').textContent = paused ? 'Resume' : 'Pause';
+    $('now10').textContent = paused ? 'Paused. Buyers wait until you resume.' : 'Answering 1 new message';
+  });
+
+  /* ---------- 12 take over ---------- */
+  const composer = $('composer12'), takeover = $('takeover12'), thread = $('thread12');
+  const setTakeover = on => { composer.hidden = !on; takeover.setAttribute('aria-expanded', on); takeover.textContent = on ? 'You’re typing' : 'Take over'; };
+  takeover.addEventListener('click', () => setTakeover(composer.hidden));
+  $('handback12').addEventListener('click', () => setTakeover(false));
+  function sendYou(text) {
+    if (!text.trim()) return;
+    const m = document.createElement('div');
+    m.className = 'msg you';
+    m.innerHTML = '<span class="who">You</span>';
+    m.append(text);
+    thread.append(m);
+    m.scrollIntoView({ block: 'nearest' });
+  }
+  $('sendsug12').addEventListener('click', () => sendYou('See you Saturday at 14:00! The address is in your messages.'));
+  $('send12').addEventListener('click', () => { sendYou($('input12').value); $('input12').value = ''; });
+
+  /* ---------- 14 variant ---------- */
+  $('variant14').addEventListener('click', e => {
+    const ship = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+    e.currentTarget.setAttribute('aria-pressed', ship);
+    e.currentTarget.textContent = ship ? 'Show pickup variant' : 'Show shipping variant';
+    $('next14-pickup').hidden = ship; $('next14-ship').hidden = !ship;
+  });
+
+  /* ---------- ?figma export layout ---------- */
+  if (/[?&]figma\b/.test(location.search)) {
+    body.classList.add('figma');
+    const labels = { s02: 'done', s03: 'yes', s04: 'next', s05: 'next', s06: 'create', s07: 'auto', s08: 'approve',
+      p1: 'all live', s09: 'tap push', s10: 'tap ad', s11: 'open 3 chats', s12: 'tap chat',
+      s13: 'only if offer below minimum', s14: 'accept or deal', p2: 'sold push' };
+    screens.slice(1).forEach(sc => {
+      const a = document.createElement('div');
+      a.className = 'flow-arrow';
+      a.innerHTML = '<span></span><svg viewBox="0 0 120 20" aria-hidden="true"><path d="M8 10h100M100 4l8 6-8 6" fill="none" stroke="#1a1a1a" stroke-width="1.8"/></svg>';
+      a.firstChild.textContent = labels[sc.id] || '';
+      sc.before(a);
+    });
+    document.documentElement.style.setProperty('--s', 1);
+    window.removeEventListener('resize', fit);
+    return;
+  }
+
+  fit();
+  go('s01', { silent: true });
+})();
+</script>
+</body>
+</html>
