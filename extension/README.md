@@ -26,7 +26,7 @@ icon shows a red **!**, Marktplaats logged you out: log in again and poof carrie
 
 ## Pointing it at a poof deployment
 
-- Default: `POOF_URL` in `config.js` (`https://poof-app.vercel.app`). If you change
+- Default: `POOF_URL` in `config.js` (`https://poof-lovat.vercel.app`). If you change
   the host there, also change the matching entry in `host_permissions` in
   `manifest.json` (`npm run check` will complain if they differ).
 - Per browser, no rebuild: popup → **Advanced** → *poof address* → Save. Chrome asks

@@ -28,7 +28,7 @@
   "permissions": ["cookies", "storage", "alarms"],
   "host_permissions": [
     "https://*.marktplaats.nl/*",
-    "https://poof-app.vercel.app/*",
+    "https://poof-lovat.vercel.app/*",
     "http://localhost/*",
     "http://127.0.0.1/*"
   ],
