@@ -9,3 +9,6 @@ storage/
 *.log
 .DS_Store
 n8n/workflows/
+
+# Claude Code local worktrees/settings
+.claude/
