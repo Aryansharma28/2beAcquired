@@ -19,16 +19,16 @@ export default function PrivacyPage() {
         <BackButton href="/" />
       </header>
       <Eyebrow className="mt-4">Privacy</Eyebrow>
-      <h1 className="mt-1 font-display text-[34px] font-extrabold leading-[1.05] tracking-[-0.03em]">How poof handles your data</h1>
+      <h1 className="mt-1 text-[30px] font-extrabold leading-[1.15] tracking-[-0.02em]">How poof handles your data</h1>
       <div className="mt-6 space-y-5">
         {SECTIONS.map((s) => (
           <section key={s.title}>
-            <h2 className="font-display text-[19px] font-bold tracking-[-0.02em]">{s.title}</h2>
-            <p className="mt-1 text-[15px] leading-relaxed text-ink-2">{s.body}</p>
+            <h2 className="text-[17px] font-bold">{s.title}</h2>
+            <p className="mt-1 text-[15px] leading-relaxed text-moss">{s.body}</p>
           </section>
         ))}
       </div>
-      <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.1em] text-mute">Last updated 26 September 2026</p>
+      <p className="mt-8 text-[13px] text-moss">Last updated 26 September 2026</p>
     </main>
   );
 }

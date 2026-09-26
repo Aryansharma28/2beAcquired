@@ -191,7 +191,7 @@ export function Thread({ c }: { c: Conversation }) {
                 agent ? "rounded-br-[6px] bg-lime text-ink" : "rounded-bl-[6px] bg-card text-ink shadow-soft",
               )}
             >
-              {agent && <PoofTag className="mb-1.5 flex w-fit" />}
+              {agent && <div className="mb-1.5"><PoofTag /></div>}
               {m.text}
             </div>
             <span className="px-1 text-[12px] text-moss">{timeAgo(m.ts)}</span>
