@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poof styleguide</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;family=Baloo+2:wght@800&amp;display=swap">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#0F2A18}
+.sg{width:1800px;height:1980px;box-sizing:border-box;padding:64px 72px;background:#F4F6F4;display:flex;flex-direction:column;gap:48px}
+.head{display:flex;align-items:center;gap:14px;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:56px;letter-spacing:-0.02em}
+.head span{font-family:'Figtree',sans-serif;font-weight:500;font-size:18px;color:#4A5F50;letter-spacing:0;margin-left:16px;margin-top:10px}
+.sec{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-top:40px;background:radial-gradient(circle at 50% 0,#E1E8E3 62%,transparent 66%) top left/20px 14px round no-repeat}
+.sh{font-size:22px;font-weight:800}
+.cols{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:14px}
+.c{display:flex;flex-direction:column;gap:6px}
+.c i{height:96px;border-radius:16px;display:block;box-shadow:inset 0 0 0 1px rgba(15,42,24,0.08)}
+.c b{font-size:15px}
+.c span{font-size:13px;color:#4A5F50}
+.types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:48px}
+.tr{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid #E1E8E3}
+.tr em{font-style:normal;font-size:13px;color:#4A5F50}
+.rad{display:flex;gap:28px;align-items:flex-end}
+.r{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;color:#4A5F50}
+.r i{width:88px;height:88px;background:#FFFFFF;display:block;box-shadow:0 0 0 1.5px #0F2A18 inset}
+.sp{display:flex;gap:22px;align-items:flex-end}
+.sp div{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;color:#4A5F50}
+.sp i{background:#D7F57A;border-radius:3px;display:block}
+.sh2{display:flex;gap:28px}
+.sh2 div{width:180px;height:88px;border-radius:20px;background:#FFFFFF;display:flex;align-items:flex-end;padding:12px;box-sizing:border-box;font-size:13px;color:#4A5F50}
+.els{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+.el{display:flex;flex-direction:column;gap:14px}
+.el > b{font-size:13px;font-weight:700;color:#4A5F50}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.b1{height:52px;padding:0 26px;border-radius:26px;border:0;background:#D7F57A;color:#0F2A18;font-weight:800;font:inherit;font-size:16px;font-weight:700}
+.b2{height:52px;padding:0 26px;border-radius:26px;border:0;background:#0F2A18;color:#FFFFFF;font:inherit;font-size:16px;font-weight:800}
+.b3{height:44px;padding:0 16px;border-radius:22px;border:0;background:#FFFFFF;color:#0F2A18;font:inherit;font-size:14px;font-weight:600;box-shadow:0 1px 3px rgba(15,42,24,0.08)}
+.b4{height:34px;padding:0 14px;border-radius:17px;border:1px solid #0F2A18;background:transparent;color:#0F2A18;font:inherit;font-size:13px;font-weight:700}
+.slide{width:340px;height:64px;border-radius:32px;border:0;background:#0F2A18;color:#FFFFFF;display:flex;align-items:center;padding:0 8px;font:inherit}
+.knob{width:48px;height:48px;border-radius:24px;background:#D7F57A;color:#0F2A18;display:flex;align-items:center;justify-content:center}
+.slide span.t{flex-grow:1;text-align:center;font-size:16px;font-weight:700}
+.ch{height:40px;padding:0 14px 0 12px;border-radius:20px;background:#FFFFFF;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;box-shadow:0 1px 3px rgba(15,42,24,0.08)}
+.ch.on{background:#0F2A18;color:#FFFFFF}
+.st{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.st i{width:7px;height:7px;border-radius:4px;background:#0F2A18}
+.need{height:26px;padding:0 10px;border-radius:13px;background:#D7F57A;color:#0F2A18;font-size:12px;font-weight:800;display:inline-flex;align-items:center}
+.un{height:20px;padding:0 7px;border-radius:10px;background:#0F2A18;color:#FFFFFF;font-size:12px;font-weight:700;display:inline-flex;align-items:center}
+.mk{font-size:30px;font-weight:800;letter-spacing:-0.02em}
+.mk span{}
+.seg{display:flex;padding:4px;border-radius:22px;background:#FFFFFF;width:280px}
+.seg div{flex:1;height:38px;border-radius:19px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#4A5F50}
+.seg .on{background:#D7F57A;color:#0F2A18}
+.nav{height:64px;padding:0 8px;border-radius:32px;background:#0F2A18;display:inline-flex;align-items:center;gap:8px;align-self:flex-start;box-shadow:0 10px 30px rgba(15,42,24,0.25)}
+.nav .on{height:48px;padding:0 20px 0 16px;border-radius:24px;background:#D7F57A;color:#0F2A18;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700}
+.nav button{width:48px;height:48px;border-radius:24px;border:0;background:rgba(255,255,255,0.12);color:#FFFFFF;display:flex;align-items:center;justify-content:center;padding:0}
+.ib{width:44px;height:44px;border-radius:22px;border:0;background:#FFFFFF;color:#0F2A18;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 1px 3px rgba(15,42,24,0.08)}
+.bub1{align-self:flex-start;padding:10px 14px;border-radius:18px 18px 18px 6px;background:#FFFFFF;font-size:15px}
+.bub2{align-self:flex-start;padding:10px 14px;border-radius:18px 18px 6px 18px;background:#D7F57A;color:#0F2A18;font-size:15px}
+.agent{height:18px;padding:0 6px;border-radius:4px;background:#0F2A18;color:#D7F57A;font-size:12px;font-weight:800;display:inline-flex;align-items:center}
+.ico{display:flex;gap:12px}
+.pair{display:flex;align-items:center;gap:24px;padding:16px;border-radius:28px;background:#FFFFFF}
+.pk{width:220px;height:72px;border-radius:36px;background:#0F2A18;display:flex;align-items:center;padding:0 10px;box-sizing:border-box;flex-shrink:0}
+.pknob{width:52px;height:52px;border-radius:26px;background:#D7F57A;display:block}
+.pt{font-size:18px;font-weight:800}
+.ps{margin-top:4px;font-size:14px;line-height:1.45;color:#4A5F50;max-width:760px}
+.head .slogan{font-family:'Figtree',sans-serif;font-weight:800;font-size:28px;color:#0F2A18;margin-left:20px;margin-top:6px;letter-spacing:-0.01em}
+.pm{--c:#D7F57A;padding:8px 14px;background:radial-gradient(circle at 50% 100%,var(--c) 68%,transparent 70%) top left/16px 9px repeat-x,radial-gradient(circle at 50% 0,var(--c) 68%,transparent 70%) bottom left/16px 9px repeat-x,linear-gradient(var(--c),var(--c)) center/100% calc(100% - 17px) no-repeat;border-radius:14px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.pu{padding-bottom:10px;background:radial-gradient(circle,#D7F57A 60%,transparent 64%) bottom left/14px 12px round no-repeat}
+.pb{background:#D7F57A;padding:0 12px;border-radius:14px 5px 16px 7px / 9px 15px 7px 13px;display:inline-block;transform:rotate(-1.5deg)}
+.pt{display:inline-flex;align-items:center;gap:10px}
+.pt i{display:block;border-radius:50%;background:#D7F57A}
+.pline{height:14px;background:radial-gradient(circle at 50% 0,#E1E8E3 62%,transparent 66%) top left/20px 14px round no-repeat}
+.pline.lime{background:radial-gradient(circle at 50% 0,#D7F57A 62%,transparent 66%) top left/20px 14px round no-repeat}
+.hl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+.hlc{background:#FFFFFF;border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:16px;min-height:150px}
+.hlc b{font-size:13px;color:#4A5F50}
+.hlc .w{font-size:34px;font-weight:800;letter-spacing:-0.02em;line-height:1.3}
+.hlc .n{font-size:14px;color:#4A5F50;line-height:1.45}
+</style>
+
+<style>html,body{background:#F4F6F4} .sg{margin:0 auto}</style>
+</head>
+<body>
+
+<div class="sg">
+
+<div class="head"><svg width="72" height="61" viewBox="34 24 138 116" aria-hidden="true"><g fill="#0F2A18"><circle cx="66" cy="88" r="32"></circle><circle cx="100" cy="62" r="38"></circle><circle cx="134" cy="84" r="32"></circle><circle cx="150" cy="106" r="22"></circle><circle cx="100" cy="110" r="30"></circle><circle cx="60" cy="112" r="20"></circle></g></svg>Poof<span class="slogan pb">Sell anything</span><span>Styleguide</span></div>
+
+<div class="sec">
+<div class="sh">Colour</div>
+<div style="display: flex; flex-direction: column; gap: 20px">
+<div class="pair"><div class="pk"><span class="pknob"></span></div><div><div class="pt">Core pair: Lime on Ink</div><div class="ps">The signature of Poof. Lime #D7F57A for what you act on, Ink #0F2A18 as its stage: slide button, nav, strong buttons, the app icon.</div></div></div>
+<div class="cols">
+<div class="c"><i style="background: #D7F57A"></i><b>Lime</b><span>#D7F57A</span><span>Primary: buttons, active, marker</span></div>
+<div class="c"><i style="background: #0F2A18"></i><b>Ink</b><span>#0F2A18</span><span>Text, stage for lime, status</span></div>
+<div class="c"><i style="background: #4A5F50"></i><b>Moss</b><span>#4A5F50</span><span>Secondary text</span></div>
+<div class="c"><i style="background: #EEFBC8"></i><b>Lime tint</b><span>#EEFBC8</span><span>Soft highlight, selected</span></div>
+<div class="c"><i style="background: #F4F6F4"></i><b>Page</b><span>#F4F6F4</span><span>Background</span></div>
+<div class="c"><i style="background: #FFFFFF"></i><b>Surface</b><span>#FFFFFF</span><span>Cards, chips</span></div>
+<div class="c"><i style="background: #E1E8E3"></i><b>Line</b><span>#E1E8E3</span><span>Dividers</span></div>
+<div class="c"><i style="background: #D93A3F"></i><b>Alert</b><span>#D93A3F</span><span>Errors only</span></div>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<div class="sh">Typography</div>
+<div class="types">
+<div class="tr"><span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 40px">Poof</span><em>Wordmark, Baloo 2 800</em></div>
+<div class="tr"><span style="font-size: 15px; line-height: 1.45">Body text, calm and readable</span><em>Body 15 / 400</em></div>
+<div class="tr"><span style="font-size: 36px; font-weight: 800; letter-spacing: -0.03em">Display</span><em>Display 36 / 800</em></div>
+<div class="tr"><span style="font-size: 17px; font-weight: 700">Headline</span><em>Headline 17 / 700</em></div>
+<div class="tr"><span style="font-size: 26px; font-weight: 800; letter-spacing: -0.02em">Title</span><em>Title 26 / 800</em></div>
+<div class="tr"><span style="font-size: 13px; color: #4A5F50">Caption</span><em>Caption 13 / 400</em></div>
+<div class="tr"><span style="font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums">€95</span><em>Price 28 / 800 tabular</em></div>
+<div class="tr"><span style="font-size: 12px; font-weight: 700">Label</span><em>Label 12 / 700 minimum</em></div>
+</div>
+</div>
+
+<div class="sec">
+<div class="sh">Corners, space, shadow</div>
+<div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 40px">
+<div class="rad">
+<div class="r"><i style="border-radius: 4px"></i>4 px, tags</div>
+<div class="r"><i style="border-radius: 12px"></i>12 px, thumbs</div>
+<div class="r"><i style="border-radius: 20px"></i>20 px, cards</div>
+<div class="r"><i style="border-radius: 28px"></i>28 px, sheets</div>
+<div class="r"><i style="border-radius: 44px"></i>Full, pills</div>
+</div>
+<div class="sp">
+<div><i style="width: 4px; height: 4px"></i>4</div>
+<div><i style="width: 8px; height: 8px"></i>8</div>
+<div><i style="width: 12px; height: 12px"></i>12</div>
+<div><i style="width: 16px; height: 16px"></i>16</div>
+<div><i style="width: 20px; height: 20px"></i>20</div>
+<div><i style="width: 24px; height: 24px"></i>24</div>
+<div><i style="width: 32px; height: 32px"></i>32</div>
+<div><i style="width: 48px; height: 48px"></i>48</div>
+</div>
+<div class="sh2">
+<div style="box-shadow: 0 1px 3px rgba(15,42,24,0.08)">Soft, chips</div>
+<div style="box-shadow: 0 10px 30px rgba(15,42,24,0.18)">Float, nav</div>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<div class="sh">Highlight and puff lines</div>
+<div style="display: flex; flex-direction: column; gap: 24px">
+<div class="hl" style="grid-template-columns: minmax(0, 1fr)">
+<div class="hlc" style="min-height: 0; flex-direction: row; align-items: center; gap: 48px"><b style="width: 120px">Hand marker</b><div class="w" style="white-space: nowrap">Sold in <span class="pb">2 days</span></div><div class="n">The only highlight: lime, uneven corners, tilted −1.5°, like a real highlighter. Use it for the slogan, one key word per screen and socials.</div></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+<div class="hlc" style="min-height: 0"><b>Puff divider</b><div class="pline"></div><div class="n">Replaces a plain hairline between sections.</div></div>
+<div class="hlc" style="min-height: 0"><b>Puff edge, lime</b><div class="pline lime"></div><div class="n">Top edge of a lime block, sheet or banner, so it reads like a cloud.</div></div>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<div class="sh">Elements</div>
+<div class="els">
+<div class="el"><b>Buttons</b>
+<div class="row"><button class="b1">Primary</button><button class="b2">Strong secondary</button></div>
+<div class="row"><button class="b3">Secondary</button><button class="b4">Small</button></div>
+</div>
+<div class="el"><b>Slide button</b>
+<button class="slide"><span class="knob"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></span><span class="t">Sell something</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 13px; opacity: 0.7"><path d="m6 17 5-5-5-5"></path><path d="m13 17 5-5-5-5"></path></svg></button>
+</div>
+<div class="el"><b>Floating nav</b>
+<div class="nav"><span class="on"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>Ads</span><button aria-label="Sell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button></div>
+</div>
+<div class="el"><b>Chips and segmented control</b>
+<div class="row"><span class="ch on">All 4</span><span class="ch">Needs you 1</span><span class="ch">Sold 2</span></div>
+<div class="seg"><div class="on">Selling</div><div>Sold</div></div>
+</div>
+<div class="el"><b>Status, badge, highlight</b>
+<div class="row"><span class="need">Needs you</span><span class="un">1 new</span><span class="st"><i></i>Live</span><span class="st" style="color: #4A5F50"><i style="background: #4A5F50"></i>Sold</span></div>
+<div class="mk">Almost <span class="pb">gone</span></div>
+</div>
+<div class="el"><b>Chat and agent</b>
+<div class="bub1">Would you take €50?</div>
+<div class="row"><span class="agent">AGENT</span><div class="bub2">I can do €85.</div></div>
+</div>
+<div class="el"><b>Icon buttons and icons (Lucide, 2 px)</b>
+<div class="ico">
+<button class="ib" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+<button class="ib" aria-label="Search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></button>
+<button class="ib" aria-label="Price"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg></button>
+<button class="ib" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg></button>
+<button class="ib" aria-label="Done"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></button>
+</div>
+</div>
+<div class="el"><b>Mark</b>
+<div class="row" style="gap: 20px">
+<div style="width: 88px; height: 88px; border-radius: 22px; background: #D7F57A; display: flex; align-items: center; justify-content: center"><svg width="62" height="52" viewBox="34 24 138 116" aria-hidden="true"><g fill="#0F2A18"><circle cx="66" cy="88" r="32"></circle><circle cx="100" cy="62" r="38"></circle><circle cx="134" cy="84" r="32"></circle><circle cx="150" cy="106" r="22"></circle><circle cx="100" cy="110" r="30"></circle><circle cx="60" cy="112" r="20"></circle></g></svg></div>
+<div style="width: 88px; height: 88px; border-radius: 22px; background: #0F2A18; display: flex; align-items: center; justify-content: center"><svg width="62" height="52" viewBox="34 24 138 116" aria-hidden="true"><g fill="#D7F57A"><circle cx="66" cy="88" r="32"></circle><circle cx="100" cy="62" r="38"></circle><circle cx="134" cy="84" r="32"></circle><circle cx="150" cy="106" r="22"></circle><circle cx="100" cy="110" r="30"></circle><circle cx="60" cy="112" r="20"></circle></g></svg></div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</body>
+</html>
