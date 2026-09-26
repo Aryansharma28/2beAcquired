@@ -1,13 +1,16 @@
 import { Workflow, subTrigger, codeEach, code, tableUpsert, tableUpdate, tableInsert, actor, ifTrue, callWorkflow } from "../lib.mjs";
 
-// Send reply: one item per conversation {itemId, conversationId, platform, buyer, text, state, lastOffer, deal, price}.
-// Saves the conversation state, sends the message on the platform, stores it, and hands deals to W5 Sold.
+// Send reply: one item per conversation {itemId, conversationId, platform, buyer, text, state, lastOffer, price, pickup, itemStatus}.
+// Saves conversation state, moves the item status forward, sends the message on the platform, stores it,
+// and hands booked pickups to W5.
 export default (env, ids) => {
   const w = new Workflow("TBA · Send reply", { errorWorkflow: ids.error });
   w.add("Reply to send", subTrigger());
   w.add("Prep", codeEach(`
 const j = $json;
-const itemStatus = j.state === 'needs_you' ? 'needs_you' : 'negotiating';
+const rank = { live: 0, negotiating: 1, deal: 2, pickup_scheduled: 3, sold: 4 };
+const wanted = j.state === 'deal' ? 'deal' : j.state === 'pickup_scheduled' ? 'pickup_scheduled' : 'negotiating';
+const itemStatus = (rank[wanted] ?? 0) > (rank[j.itemStatus] ?? 0) ? wanted : j.itemStatus;   // never move backwards
 return { json: { ...j, text: j.text || '', lastOffer: j.lastOffer ?? null, itemStatus } };`));
   w.add("Save conversation", tableUpsert("conversations", { conversationId: "={{ $json.conversationId }}" }, {
     conversationId: "={{ $json.conversationId }}", itemId: "={{ $json.itemId }}", platform: "={{ $json.platform }}",
@@ -21,7 +24,7 @@ return { json: { ...j, text: j.text || '', lastOffer: j.lastOffer ?? null, itemS
   w.add("Agent message", codeEach(`
 const p = $('Prep').item.json;
 return { json: { itemId: p.itemId, conversationId: p.conversationId, platform: p.platform, buyer: p.buyer,
-  msgId: 'agent_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), from: 'agent', text: p.text,
+  msgId: 'agent_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), text: p.text,
   ts: new Date().toISOString(), offer: p.price ?? null } };`));
   w.add("Store agent message", tableInsert("messages", {
     itemId: "={{ $json.itemId }}", conversationId: "={{ $json.conversationId }}", platform: "={{ $json.platform }}",
@@ -31,9 +34,9 @@ return { json: { itemId: p.itemId, conversationId: p.conversationId, platform: p
   w.link("Has a reply?", "Send on Marktplaats (Apify)", 0);
   w.chain("Send on Marktplaats (Apify)", "Agent message", "Store agent message");
 
-  w.add("Deals", code(`return $('Prep').all().filter(i => i.json.deal).map(i => ({ json: { itemId: i.json.itemId, conversationId: i.json.conversationId, platform: i.json.platform, buyer: i.json.buyer, price: i.json.price } }));`), { executeOnce: false });
-  w.add("Sold", callWorkflow(ids.sold));
-  w.link("Item status", "Deals");
-  w.link("Deals", "Sold");
+  w.add("Booked pickups", code(`return $('Prep').all().filter(i => i.json.state === 'pickup_scheduled' && i.json.pickup).map(i => ({ json: { itemId: i.json.itemId, conversationId: i.json.conversationId, platform: i.json.platform, buyer: i.json.buyer, price: i.json.lastOffer ?? i.json.price, pickup: i.json.pickup } }));`));
+  w.add("Close the deal", callWorkflow(ids.pickup));
+  w.link("Item status", "Booked pickups");
+  w.link("Booked pickups", "Close the deal");
   return w;
 };

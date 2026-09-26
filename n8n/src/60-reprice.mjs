@@ -1,9 +1,10 @@
 import { Workflow, schedule, code, codeEach, tableGet, tableUpdate, actor, ifTrue } from "../lib.mjs";
 
-// W4 · Reprice: hourly, look at time online, views and interest vs the goal; lower the price (never below floor) or hold.
+// W4 · Reprice + wrap-up: hourly. Lower the price of listings that are not moving (never below the minimum),
+// and mark items sold once their pickup time has passed.
 export default (env, ids) => {
-  const w = new Workflow("TBA · 4 Reprice", { errorWorkflow: ids.error });
-  const fastH = Number(env.REPRICE_FAST_HOURS || 6), slowH = Number(env.REPRICE_SLOW_HOURS || 24);
+  const w = new Workflow("TBA · 4 Reprice + wrap-up", { errorWorkflow: ids.error });
+  const fastH = Number(env.REPRICE_FAST_HOURS || 4), slowH = Number(env.REPRICE_SLOW_HOURS || 24);
   w.add("Every hour", schedule(Number(env.REPRICE_MINUTES || 60)));
   w.add("Items", tableGet("items"));
   w.add("Conversations", tableGet("conversations"), { executeOnce: true });
@@ -47,5 +48,19 @@ return { json: { itemId: d.itemId, data: JSON.stringify(it), old: d.old, next: d
   w.link("Lower price?", "Update price (Apify)", 0);
   w.chain("Update price (Apify)", "New price", "Save price");
   w.log("Save price", "=Lowered price €{{ $('New price').item.json.old }} → €{{ $('New price').item.json.next }} ({{ $('New price').item.json.reason }})", { type: "decision", itemId: "={{ $('New price').item.json.itemId }}" });
+
+  // Wrap-up: pickup time passed → sold.
+  w.add("Picked up?", code(`
+const now = Date.now();
+return $('Items').all().map(i => i.json).filter(r => r.status === 'pickup_scheduled').flatMap(r => {
+  const it = JSON.parse(r.data);
+  if (!it.pickup || Date.parse(it.pickup.end) + 30 * 60e3 > now) return [];
+  it.status = 'sold';
+  return [{ json: { itemId: r.itemId, data: JSON.stringify(it), price: it.sale?.price, buyer: it.sale?.buyer } }];
+});`), { position: [520, 400] });
+  w.add("Mark sold", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { status: "sold", data: "={{ $json.data }}" }), { position: [780, 400] });
+  w.link("Items", "Picked up?");
+  w.link("Picked up?", "Mark sold");
+  w.log("Mark sold", "=Picked up by {{ $('Picked up?').item.json.buyer }}. Sold for €{{ $('Picked up?').item.json.price }}", { type: "notify", itemId: "={{ $('Picked up?').item.json.itemId }}" });
   return w;
 };

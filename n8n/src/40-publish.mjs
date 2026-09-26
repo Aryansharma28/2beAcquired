@@ -1,6 +1,6 @@
-import { Workflow, subTrigger, code, tableGet, tableUpdate, actor, ntfy } from "../lib.mjs";
+import { Workflow, subTrigger, code, tableGet, tableUpdate, actor } from "../lib.mjs";
 
-// W2 · Publish: put the ad live on Marktplaats with our own Apify actor (logged-in browser), then tell the owner.
+// W2 · Publish: put the ad live on Marktplaats with our own Apify actor (logged-in browser), and show it in the app.
 export default (env, ids) => {
   const w = new Workflow("TBA · 2 Publish", { errorWorkflow: ids.error });
   w.add("Called with itemId", subTrigger());
@@ -33,7 +33,5 @@ return [{ json: { itemId: src.itemId, status: 'live', data: JSON.stringify(item)
   w.add("Save live", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { status: "live", data: "={{ $json.data }}" }));
   w.chain("Post on Marktplaats (Apify)", "Live", "Save live");
   w.log("Save live", "=Live on Marktplaats at €{{ $('Live').first().json.price }}", { type: "notify", itemId: "={{ $('Live').first().json.itemId }}" });
-  w.add("Push: live", ntfy(env, `{ title: 'Your item is live', message: '"' + $('Live').first().json.title + '" is live on ' + $('Live').first().json.count + ' platform(s) at €' + $('Live').first().json.price, tags: ['rocket'], click: $('Live').first().json.url || '' }`));
-  w.link("Save live", "Push: live");
   return w;
 };

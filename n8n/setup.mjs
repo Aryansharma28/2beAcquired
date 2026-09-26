@@ -53,4 +53,10 @@ if (env.APIFY_TOKEN) {
   console.log(`= Apify user ${me.username}, photo store ${store.id}`);
 } else console.log("! APIFY_TOKEN missing");
 
+// Google Calendar: connect it once in the n8n UI (Credentials → Google Calendar OAuth2 → Sign in with Google); we pick it up here.
+const all = (await n8n("GET", "/credentials?limit=100")).data || [];
+const gcal = all.find((c) => c.type === "googleCalendarOAuth2Api");
+if (gcal) { creds.gcal = { id: gcal.id, name: gcal.name }; console.log(`= Google Calendar (${gcal.id})`); }
+else console.log("! No Google Calendar credential in n8n yet (pickup slots fall back to default hours)");
+
 writeFileSync(credFile, JSON.stringify(creds, null, 2));

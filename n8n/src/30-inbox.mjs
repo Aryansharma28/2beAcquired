@@ -1,40 +1,44 @@
-import { Workflow, schedule, code, codeEach, tableGet, tableInsert, actor, agent, chatModel, outputParser, ifTrue, callWorkflow, ntfy } from "../lib.mjs";
+import { Workflow, schedule, code, codeEach, tableGet, tableInsert, actor, agent, chatModel, outputParser, callWorkflow, calendarEvents, HAS_CALENDAR } from "../lib.mjs";
 
-const SYSTEM = `You are the seller's autonomous negotiating agent for one second-hand item listed on Marktplaats (Netherlands).
-You decide what to do with the buyer's latest message(s) and write the reply the seller would send.
+const SYSTEM = `You are an autonomous agent selling one second-hand item on Marktplaats (Netherlands) for its owner. The owner is never asked anything: you handle the whole sale yourself, from first message to pickup.
+The owner's only instruction: sell it as fast as possible, but never below the minimum price (floorPrice).
 
-Rules:
-- Goal "max_price": hold firm, concede slowly (small steps), highlight value. Goal "fast": be flexible, close quickly at or above the floor.
-- NEVER agree to a price below floorPrice. NEVER reveal the floor price or that you are an AI.
-- An offer is any price the buyer proposes (e.g. "50?", "wil je 40 voor", "bod 60", a Marktplaats bid). Put it in "offer".
-- Counter-offers must be >= floorPrice and <= askPrice. Put the number you ask for in "price".
-- Accept when the offer is >= floorPrice and fits the goal (fast: accept quickly; max_price: accept once close to your last counter). Use action "accept" and set price to the agreed amount.
-- If the buyer's final offer is below floorPrice and they will not move, use "ask_owner" (the owner decides). Write no reply text in that case.
-- Scam signals (pays via a link / Tikkie from them, courier "pickup" arranged by them, wants WhatsApp/phone/email early, asks for bank details, overpaying) → action "decline", buyerType "scam", short polite reply without details.
-- Questions (still available? dimensions? pickup?) → action "answer" using ONLY facts from the ad; if unknown say you will check.
-- Lowballers (< 50% of ask): counter firmly but friendly.
-- Reply in the buyer's language (usually Dutch), 1-3 short sentences, friendly and human, like a real Marktplaats seller. Pickup location: the seller's city (don't invent an address).`;
+Stages (conversation.stage):
+- "open": negotiate.
+  - Any offer >= floorPrice → ACCEPT immediately (action "accept", price = the offer). In the same reply propose 2 or 3 pickup times picked from freeSlots (use their "label").
+  - Offer below floorPrice → action "counter" with price between floorPrice and askPrice (first time you can meet halfway; if they push back, go to floorPrice). Never reveal the floor.
+  - Questions (still available? size? condition?) → action "answer" using ONLY facts from the ad, and invite an offer or a pickup.
+  - Buyer says they want it at the asking price → "accept" with price = askPrice and propose pickup times.
+- "deal": price is agreed, you need a pickup time.
+  - Buyer picks or suggests a time that matches one of freeSlots → action "confirm_pickup", pickupStart = that slot's "start" (copy exactly). Reply confirming day and time and give the pickup address (pickupAddress).
+  - Otherwise → action "propose_pickup" with 2-3 labels from freeSlots.
+- "pickup_scheduled": answer logistics briefly (action "answer"); never change the price.
+- If reservedForSomeoneElse is true: politely say it is already sold/reserved (action "decline").
+
+Scam signals (buyer's own payment link / Tikkie trick, courier arranged by buyer, asks for WhatsApp/phone/email/bank details early, overpaying) → action "decline", buyerType "scam", short reply without details.
+Write like a real, friendly Dutch Marktplaats seller: buyer's language (usually Dutch), 1-3 short sentences, no emojis, never mention being an AI.`;
 
 const SCHEMA = {
   type: "object",
   properties: {
     buyerType: { type: "string", enum: ["serious", "lowballer", "scam", "question"] },
     offer: { type: ["number", "null"], description: "Price the buyer offered in their latest message(s), else null" },
-    action: { type: "string", enum: ["answer", "counter", "accept", "decline", "ask_owner", "wait"] },
+    action: { type: "string", enum: ["answer", "counter", "accept", "propose_pickup", "confirm_pickup", "decline", "wait"] },
     price: { type: ["number", "null"], description: "Counter or agreed price" },
-    reply: { type: "string", description: "Message to send to the buyer (empty for ask_owner/wait)" },
+    pickupStart: { type: ["string", "null"], description: "For confirm_pickup: the exact 'start' of the chosen free slot" },
+    reply: { type: "string", description: "Message to send to the buyer" },
     reasoning: { type: "string", description: "One sentence: why" },
   },
-  required: ["buyerType", "offer", "action", "price", "reply", "reasoning"],
+  required: ["buyerType", "offer", "action", "price", "pickupStart", "reply", "reasoning"],
 };
 
-// W3 · Inbox: every few minutes read Marktplaats chats, let the negotiator agent decide, act, and log.
+// W3 · Inbox: every few minutes read Marktplaats chats, let the agent decide and act, log everything.
 export default (env, ids) => {
   const w = new Workflow("TBA · 3 Inbox + negotiate", { errorWorkflow: ids.error });
   w.add("Every 2 min", schedule(Number(env.INBOX_MINUTES || 2)));
   w.add("Items", tableGet("items"));
   w.add("Active listings", code(`
-const active = $input.all().map(i => i.json).filter(r => ['live', 'negotiating', 'needs_you'].includes(r.status))
+const active = $input.all().map(i => i.json).filter(r => ['live', 'negotiating', 'deal', 'pickup_scheduled'].includes(r.status))
   .map(r => ({ itemId: r.itemId, listings: (JSON.parse(r.data).listings || []).filter(l => l.platform === 'marktplaats' && l.listingId) }))
   .filter(a => a.listings.length);
 if (!active.length) return [];
@@ -50,105 +54,136 @@ const items = Object.fromEntries(rows.map(r => [r.itemId, { ...JSON.parse(r.data
 const byListing = {};
 for (const it of Object.values(items)) for (const l of it.listings || []) if (l.listingId) byListing[String(l.listingId)] = it;
 const known = new Set($('Known messages').all().map(i => String(i.json.msgId)).filter(Boolean));
-const conv = Object.fromEntries($('Conversations').all().map(i => i.json).filter(c => c.conversationId).map(c => [c.conversationId, c]));
+const convRows = $('Conversations').all().map(i => i.json).filter(c => c.conversationId);
+const conv = Object.fromEntries(convRows.map(c => [c.conversationId, c]));
 const threads = $('Read inbox (Apify)').all().map(i => i.json).filter(c => c.conversationId && byListing[String(c.listingId)]);
 const sorted = (c) => (c.messages || []).slice().sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
 const offerIn = (t) => { const m = String(t).replace(/\\./g, '').match(/(?:€|eur|euro|bod|bied|voor|for)\\s*(\\d{1,5})|(\\d{1,5})\\s*(?:€|euro|eur)|^\\s*(\\d{1,5})\\s*\\??\\s*$/i); return m ? Number(m[1] || m[2] || m[3]) : null; };`;
 
-  // Branch A: store every new buyer message (so the app shows the full chat)
+  // Branch A: store every new buyer message so the app shows the full chat
   w.add("New buyer messages", code(common + `
 const out = [];
 for (const c of threads) {
   const it = byListing[String(c.listingId)];
   for (const m of sorted(c)) if (m.from === 'buyer' && !known.has(String(m.id)))
     out.push({ json: { itemId: it.id, conversationId: c.conversationId, platform: 'marktplaats', buyer: c.buyer?.name || 'Buyer',
-      msgId: String(m.id), from: 'buyer', text: m.text, ts: m.ts, offer: offerIn(m.text) } });
+      msgId: String(m.id), text: m.text, ts: m.ts, offer: offerIn(m.text) } });
 }
-return out;`), { y: -220, position: [w.x, -220] });
+return out;`), { position: [w.x, -240] });
   w.add("Store buyer messages", tableInsert("messages", {
     itemId: "={{ $json.itemId }}", conversationId: "={{ $json.conversationId }}", platform: "={{ $json.platform }}",
     buyer: "={{ $json.buyer }}", msgId: "={{ $json.msgId }}", from: "buyer", text: "={{ $json.text }}", ts: "={{ $json.ts }}",
     "offer:number": "={{ $json.offer }}",
-  }), { position: [w.x, -220] });
+  }), { position: [w.x, -240] });
   w.link("Read inbox (Apify)", "New buyer messages");
   w.link("New buyer messages", "Store buyer messages");
 
-  // Branch B: conversations whose latest message is an unanswered buyer message → agent
+  // Owner's free pickup slots: Google Calendar if connected, else default evening/weekend windows.
+  if (HAS_CALENDAR) {
+    w.add("Owner calendar", calendarEvents("={{ $now.toISO() }}", "={{ $now.plus({ days: 4 }).toISO() }}"), { executeOnce: true });
+    w.link("Read inbox (Apify)", "Owner calendar");
+  }
+  w.add("Free pickup slots", code(`
+const zone = 'Europe/Amsterdam';
+const busy = ${HAS_CALENDAR ? "$('Owner calendar').all().map(i => i.json).filter(e => e.start)" : "[]"}
+  .map(e => [DateTime.fromISO(e.start.dateTime || e.start.date, { zone }), DateTime.fromISO(e.end.dateTime || e.end.date, { zone })]);
+const [h0, h1] = '${env.PICKUP_HOURS || "10-21"}'.split('-').map(Number);
+const now = DateTime.now().setZone(zone);
+const slots = [];
+for (let d = 0; d < 4 && slots.length < 8; d++) {
+  const day = now.plus({ days: d }).startOf('day');
+  let perDay = 0;
+  for (let h = h0; h < h1 && perDay < 3; h += 0.5) {
+    const s = day.plus({ minutes: h * 60 }), e = s.plus({ minutes: 30 });
+    if (s < now.plus({ hours: 2 })) continue;
+    if (busy.some(([bs, be]) => s < be && e > bs)) continue;
+    slots.push({ start: s.toISO(), end: e.toISO(), label: s.setLocale('nl').toFormat('ccc d LLL HH:mm') });
+    perDay++; h += 2.5; // spread the options over the day
+  }
+}
+return [{ json: { slots, calendar: ${HAS_CALENDAR} } }];`), { position: [w.x + 260, -240] });
+  w.link(HAS_CALENDAR ? "Owner calendar" : "Read inbox (Apify)", "Free pickup slots");
+
+  // Branch B: conversations whose last message is an unanswered buyer message → agent
   w.add("Needs a reply", code(common + `
+const slots = $('Free pickup slots').first().json.slots;
 const out = [];
 for (const c of threads) {
   const it = byListing[String(c.listingId)];
-  if (!['live', 'negotiating'].includes(it.status)) continue;
   const prev = conv[c.conversationId];
-  if (prev && ['deal', 'declined', 'needs_you'].includes(prev.state)) continue;
+  if (prev && prev.state === 'declined') continue;
   const msgs = sorted(c);
   const fresh = msgs.filter(m => m.from === 'buyer' && !known.has(String(m.id)));
   if (!fresh.length || msgs.at(-1).from !== 'buyer') continue;
+  const reservedForSomeoneElse = convRows.some(o => o.itemId === it.id && o.conversationId !== c.conversationId && ['deal', 'pickup_scheduled'].includes(o.state));
   const bidOffers = (c.bids || []).map(b => Number(b.amount)).filter(Boolean);
   out.push({ json: {
-    itemId: it.id, conversationId: c.conversationId, platform: 'marktplaats', buyer: c.buyer?.name || 'Buyer',
-    lastOffer: prev?.lastOffer ?? null, detectedOffer: fresh.map(m => offerIn(m.text)).filter(Boolean).at(-1) ?? (bidOffers.length ? Math.max(...bidOffers) : null),
+    itemId: it.id, conversationId: c.conversationId, platform: 'marktplaats', buyer: c.buyer?.name || 'Buyer', itemStatus: it.status,
+    stage: prev?.state || 'open', lastOffer: prev?.lastOffer ?? null, slots,
+    detectedOffer: fresh.map(m => offerIn(m.text)).filter(Boolean).at(-1) ?? (bidOffers.length ? Math.max(...bidOffers) : null),
     context: {
-      item: { title: it.title, description: it.description, condition: it.condition, askPrice: it.askPrice, floorPrice: it.floorPrice,
-              goal: it.goal, marketRange: it.priceRange, delivery: it.delivery, listedAt: it.liveAt },
-      conversation: msgs.map(m => ({ from: m.from === 'buyer' ? 'buyer' : 'seller', text: m.text, ts: m.ts })),
-      latestBuyerMessages: fresh.map(m => m.text), bids: c.bids || [], lastOfferOnRecord: prev?.lastOffer ?? null,
+      item: { title: it.title, description: it.description, condition: it.condition, askPrice: it.askPrice, floorPrice: it.floorPrice, marketRange: it.priceRange },
+      conversation: { stage: prev?.state || 'open', agreedPrice: it.sale?.price ?? prev?.lastOffer ?? null, pickup: it.pickup || null,
+        messages: msgs.map(m => ({ from: m.from === 'buyer' ? 'buyer' : 'seller', text: m.text, ts: m.ts })) },
+      latestBuyerMessages: fresh.map(m => m.text), bids: c.bids || [],
+      freeSlots: slots.map(s => ({ start: s.start, label: s.label })),
+      pickupAddress: '${(env.PICKUP_ADDRESS || "").replace(/'/g, "")}' || 'the address in my profile',
+      reservedForSomeoneElse,
     } } });
 }
 return out;`));
-  w.link("Read inbox (Apify)", "Needs a reply");
+  w.link("Free pickup slots", "Needs a reply");
 
-  w.add("Negotiator (AI agent)", agent({ text: "={{ JSON.stringify($json.context) }}", system: SYSTEM }));
-  w.add("Claude", chatModel(), { position: [w.x - 260, 240] });
+  w.add("Sales agent (AI)", agent({ text: "={{ JSON.stringify($json.context) }}", system: SYSTEM }));
+  w.add("Model", chatModel(env), { position: [w.x - 260, 240] });
   w.add("Decision format", outputParser(SCHEMA), { position: [w.x - 60, 240] });
-  w.sub("Claude", "Negotiator (AI agent)", "ai_languageModel");
-  w.sub("Decision format", "Negotiator (AI agent)", "ai_outputParser");
-  w.link("Needs a reply", "Negotiator (AI agent)");
+  w.sub("Model", "Sales agent (AI)", "ai_languageModel");
+  w.sub("Decision format", "Sales agent (AI)", "ai_outputParser");
+  w.link("Needs a reply", "Sales agent (AI)");
 
-  // Deterministic guardrails on top of the model: the floor is law.
+  // Deterministic guardrails on top of the model: the minimum price is law, pickup slots must be real.
   w.add("Guardrails", codeEach(`
 const ctx = $('Needs a reply').item.json;
 const d = $json.output || {};
 const floor = Number(ctx.context.item.floorPrice) || 0;
 const ask = Number(ctx.context.item.askPrice) || floor;
 const offer = d.offer ?? ctx.detectedOffer ?? null;
-let action = d.action, price = d.price != null ? Math.round(d.price) : null, reply = d.reply || '', guard = null;
+let action = d.action, price = d.price != null ? Math.round(d.price) : null, reply = d.reply || '', guard = null, pickup = null;
 if (action === 'accept') {
-  const deal = price ?? offer;
-  if (deal == null || deal < floor) { action = 'ask_owner'; reply = ''; guard = 'accept below floor blocked (' + deal + ' < ' + floor + ')'; }
-  else price = deal;
+  price = price ?? offer;
+  if (price == null || price < floor) { action = 'counter'; price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager ga ik helaas niet.'; guard = 'accept below minimum turned into counter at minimum'; }
 }
-if (action === 'counter' && (price == null || price < floor)) { action = 'ask_owner'; reply = ''; guard = 'counter below floor blocked'; }
-if (action === 'counter' && price > ask) price = ask;
+if (action === 'counter') {
+  if (price == null || price < floor) { price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager ga ik helaas niet.'; guard = guard || 'counter raised to minimum'; }
+  if (price > ask) price = ask;
+  if (offer != null && offer >= floor) { action = 'accept'; price = offer; guard = 'offer was at/above minimum → accepted'; }
+}
+if (action === 'confirm_pickup') {
+  const s = ctx.slots.find(s => s.start === d.pickupStart) || ctx.slots.find(s => Math.abs(Date.parse(s.start) - Date.parse(d.pickupStart)) < 31 * 60e3);
+  if (!s || ctx.stage === 'open') { action = 'propose_pickup'; guard = 'pickup time not in free slots'; reply = 'Ik kan ' + ctx.slots.slice(0, 3).map(s => s.label).join(', of ') + '. Wat past jou?'; }
+  else pickup = { start: s.start, end: s.end, label: s.label };
+}
+if (ctx.context.reservedForSomeoneElse && ['accept', 'confirm_pickup', 'counter'].includes(action)) { action = 'decline'; reply = 'Sorry, hij is helaas al verkocht.'; guard = 'already sold to another buyer'; }
 if (action === 'wait') reply = '';
-const state = action === 'accept' ? 'deal' : action === 'ask_owner' ? 'needs_you' : action === 'decline' ? 'declined' : 'open';
+const state = action === 'accept' ? 'deal' : action === 'confirm_pickup' ? 'pickup_scheduled' : action === 'decline' ? 'declined'
+  : ['deal', 'pickup_scheduled'].includes(ctx.stage) ? ctx.stage : 'open';
 return { json: {
-  itemId: ctx.itemId, conversationId: ctx.conversationId, platform: ctx.platform, buyer: ctx.buyer,
-  action, price, offer, text: reply, state, deal: action === 'accept', lastOffer: offer ?? ctx.lastOffer,
-  buyerType: d.buyerType, reasoning: d.reasoning + (guard ? ' [guardrail: ' + guard + ']' : ''),
-  buyerMessage: ctx.context.latestBuyerMessages.join(' / '), title: ctx.context.item.title, floor,
+  itemId: ctx.itemId, conversationId: ctx.conversationId, platform: ctx.platform, buyer: ctx.buyer, itemStatus: ctx.itemStatus,
+  action, price, offer, text: reply, state, pickup, lastOffer: action === 'accept' ? price : (offer ?? ctx.lastOffer),
+  buyerType: d.buyerType, reasoning: (d.reasoning || '') + (guard ? ' [guardrail: ' + guard + ']' : ''),
+  buyerMessage: ctx.context.latestBuyerMessages.join(' / '),
 } };`));
-  w.link("Negotiator (AI agent)", "Guardrails");
+  w.link("Sales agent (AI)", "Guardrails");
 
   w.add("Log decision", tableInsert("decisions", {
     itemId: "={{ $json.itemId }}", conversationId: "={{ $json.conversationId }}", platform: "={{ $json.platform }}",
     buyerMessage: "={{ $json.buyerMessage }}", "offer:number": "={{ $json.offer }}", action: "={{ $json.action }}",
     reply: "={{ $json.text }}", reasoning: "={{ $json.reasoning }}",
-  }), { position: [w.x - 260, -220] });
+  }), { position: [w.x - 260, -240] });
   w.link("Guardrails", "Log decision");
-  w.log("Guardrails", "={{ $json.buyer }}{{ $json.offer ? ' offered €' + $json.offer : ' wrote' }} → {{ { answer: 'answered', counter: 'countered €' + $json.price, accept: 'deal at €' + $json.price, decline: 'declined (' + $json.buyerType + ')', ask_owner: 'asking you', wait: 'waiting' }[$json.action] }}", { type: "decision" });
+  w.log("Guardrails", "={{ $json.buyer }}{{ $json.offer ? ' offered €' + $json.offer : ' wrote' }} → {{ { answer: 'answered', counter: 'countered €' + $json.price, accept: 'deal at €' + $json.price + ', proposing pickup times', propose_pickup: 'proposed pickup times', confirm_pickup: 'pickup booked ' + ($json.pickup ? $json.pickup.label : ''), decline: 'declined (' + $json.buyerType + ')', wait: 'waiting' }[$json.action] }}", { type: "decision" });
 
   w.add("Act (send + save)", callWorkflow(ids.send, { wait: true }));
   w.link("Guardrails", "Act (send + save)");
-
-  w.add("Owner needed?", ifTrue("={{ $json.state === 'needs_you' }}"));
-  w.link("Guardrails", "Owner needed?");
-  const approve = `${env.N8N_BASE_URL}/webhook/tba/approve`;
-  w.add("Push: your call", ntfy(env, `{ title: 'Offer below your floor: €' + $json.offer, message: $json.buyer + ' offers €' + $json.offer + ' for "' + $json.title + '" (your floor is €' + $json.floor + '). Accept?', tags: ['moneybag'], priority: 4,
-    actions: [
-      { action: 'http', label: 'Accept €' + $json.offer, url: '${approve}', method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemId: $json.itemId, conversationId: $json.conversationId, action: 'accept_offer', amount: $json.offer }), clear: true },
-      { action: 'http', label: 'Decline', url: '${approve}', method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemId: $json.itemId, conversationId: $json.conversationId, action: 'reject_offer' }), clear: true }
-    ] }`));
-  w.link("Owner needed?", "Push: your call", 0);
   return w;
 };

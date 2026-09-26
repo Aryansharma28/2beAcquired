@@ -26,7 +26,6 @@ const credFile = join(root, "n8n", "credentials.json");
 export const CREDS = existsSync(credFile) ? JSON.parse(readFileSync(credFile, "utf8")) : {};
 const cred = (key, type) => (CREDS[key] ? { credentials: { [type]: { id: CREDS[key].id, name: CREDS[key].name } } } : {});
 
-export const MODEL = "claude-sonnet-5";
 
 export class Workflow {
   constructor(name, { errorWorkflow } = {}) {
@@ -185,18 +184,23 @@ export const tableGet = (table, match = null) => [
 
 // ---------- integrations ----------
 
-// Claude via the Messages API with forced tool use → reliable JSON. Output: $json.content[0].input
-export const claude = ({ system, content, tool, maxTokens = 1500 }) => [
+// LLM via any OpenAI-compatible endpoint (Groq, OpenRouter, Together, Jev…) with a forced function call → reliable JSON.
+// Read the result with ARGS: the parsed arguments of the forced tool call.
+export const ARGS = "(() => { const m = $json.choices[0].message; const a = m.tool_calls?.[0]?.function?.arguments ?? m.content; return typeof a === 'string' ? JSON.parse(a.replace(/^```(json)?|```$/g, '')) : a; })()";
+
+export const llm = (env, { system, content, tool, maxTokens = 1500, vision = false }) => [
   "n8n-nodes-base.httpRequest", 4.2,
   {
-    method: "POST", url: "https://api.anthropic.com/v1/messages",
-    authentication: "predefinedCredentialType", nodeCredentialType: "anthropicApi",
-    sendHeaders: true, specifyHeaders: "json", jsonHeaders: '{"anthropic-version":"2023-06-01"}',
+    method: "POST", url: `${env.LLM_BASE_URL}/chat/completions`,
+    authentication: "genericCredentialType", genericAuthType: "httpHeaderAuth",
     sendBody: true, specifyBody: "json",
-    jsonBody: `={{ JSON.stringify({ model: "${MODEL}", max_tokens: ${maxTokens}, system: ${system}, tools: [${JSON.stringify(tool)}], tool_choice: { type: "tool", name: "${tool.name}" }, messages: [{ role: "user", content: ${content} }] }) }}`,
+    jsonBody: `={{ JSON.stringify({ model: "${vision ? env.LLM_VISION_MODEL || env.LLM_MODEL : env.LLM_MODEL}", max_tokens: ${maxTokens}, temperature: 0.3,
+      messages: [{ role: "system", content: ${system} }, { role: "user", content: ${content} }],
+      tools: [{ type: "function", function: ${JSON.stringify({ name: tool.name, description: tool.description, parameters: tool.input_schema })} }],
+      tool_choice: { type: "function", function: { name: "${tool.name}" } } }) }}`,
     options: { timeout: 120000 },
   },
-  { ...cred("anthropic", "anthropicApi"), retryOnFail: true, maxTries: 3, waitBetweenTries: 3000 },
+  { ...cred("llmHttp", "httpHeaderAuth"), retryOnFail: true, maxTries: 3, waitBetweenTries: 3000 },
 ];
 
 // Our Marktplaats Apify actor, run synchronously; returns one n8n item per dataset item.
@@ -235,13 +239,27 @@ export const ntfy = (env, bodyExpr) => [
 
 export const agent = ({ text, system }) => [
   "@n8n/n8n-nodes-langchain.agent", 3.1,
-  { promptType: "define", text, hasOutputParser: true, options: { systemMessage: system, maxIterations: 5, returnIntermediateSteps: false } },
+  { promptType: "define", text, hasOutputParser: true, options: { systemMessage: system, maxIterations: 3 } },
 ];
 
-export const chatModel = () => [
-  "@n8n/n8n-nodes-langchain.lmChatAnthropic", 1.6,
-  { model: { __rl: true, mode: "list", value: MODEL, cachedResultName: "Claude Sonnet 5" }, options: { maxTokensToSample: 1200, temperature: 0.4 } },
-  cred("anthropic", "anthropicApi"),
+export const chatModel = (env) => [
+  "@n8n/n8n-nodes-langchain.lmChatOpenAi", 1.2,
+  { model: { __rl: true, mode: "id", value: env.LLM_MODEL || "set-LLM_MODEL" }, options: { baseURL: env.LLM_BASE_URL, temperature: 0.4, maxTokens: 900 } },
+  cred("llm", "openAiApi"),
+];
+
+// Google Calendar (only if the owner connected one in n8n; see setup.mjs)
+export const HAS_CALENDAR = !!CREDS.gcal;
+export const calendarEvents = (timeMin, timeMax) => [
+  "n8n-nodes-base.googleCalendar", 1.3,
+  { operation: "getAll", calendar: { __rl: true, mode: "id", value: "primary" }, returnAll: true, timeMin, timeMax, options: { singleEvents: true } },
+  { ...cred("gcal", "googleCalendarOAuth2Api"), alwaysOutputData: true },
+];
+export const calendarCreate = ({ start, end, summary, description, location }) => [
+  "n8n-nodes-base.googleCalendar", 1.3,
+  { operation: "create", calendar: { __rl: true, mode: "id", value: "primary" }, start, end, useDefaultReminders: true,
+    additionalFields: { summary, description, location } },
+  cred("gcal", "googleCalendarOAuth2Api"),
 ];
 
 export const outputParser = (schema) => [
