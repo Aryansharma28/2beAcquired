@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { details } from "@/lib/api";
+import { details, rename } from "@/lib/api";
 import { CONDITIONS, CONDITION_NL, GOALS, attrText, chipFor, eur, type ConditionChip } from "@/lib/format";
 import type { Goal, Item } from "@/lib/types";
 import { BottomAction, Button, Eyebrow, Segmented, Soon, cx } from "./ui";
@@ -23,8 +23,34 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
   const [city, setCity] = useState("Amsterdam");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Market picture: from intake, or re-checked after the owner corrected the name.
+  const [market, setMarket] = useState<Pick<Item, "priceRange" | "compsCount" | "comps">>({});
+  const [pricedName, setPricedName] = useState((rec.name ?? item.title ?? "").trim());
+  const [repricing, setRepricing] = useState(false);
+  const view: Item = { ...item, ...market };
 
   const next = () => { setStep((s) => s + 1); window.scrollTo({ top: 0 }); };
+
+  /** Step 02 → 03. If the name was corrected, price the corrected product first. */
+  async function confirmName() {
+    const n = name.trim();
+    if (!n) return;
+    if (n.toLowerCase() === pricedName.toLowerCase()) return next();
+    setRepricing(true);
+    setError(null);
+    try {
+      const r = await rename(item.id, n);
+      setMarket({ priceRange: r.priceRange ?? undefined, compsCount: r.compsCount, comps: r.comps });
+      if (r.priceRange?.low) setFloor(round5(r.priceRange.low));
+      setPricedName(n);
+      next();
+    } catch (e) {
+      setError(`Couldn't check prices for "${n}": ${(e as Error).message}. Try again, or set the minimum yourself.`);
+      setPricedName(n); // don't block: a second tap continues with the old market data
+    } finally {
+      setRepricing(false);
+    }
+  }
 
   async function submit() {
     setBusy(true);
@@ -75,7 +101,7 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
           />
         )}
         {step === 1 && <WhenGone goal={goal} setGoal={setGoal} />}
-        {step === 2 && <Minimum item={item} floor={floor} setFloor={setFloor} />}
+        {step === 2 && <Minimum item={view} floor={floor} setFloor={setFloor} />}
         {step === 3 && <Delivery city={city} setCity={setCity} />}
       </div>
 
@@ -84,8 +110,11 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
       <BottomAction>
         {step === 0 && (
           <div className="flex items-center gap-3">
-            <Button onClick={next} disabled={!name.trim()} className="flex-1 !py-4 !text-[18px]">Yes, that&apos;s it</Button>
-            {!fixing && <button onClick={() => setFixing(true)} className="px-2 text-[15px] font-semibold text-cobalt">Fix it</button>}
+            <Button onClick={confirmName} disabled={!name.trim() || repricing} className="flex-1 !py-4 !text-[18px]">
+              {repricing ? <><span className="size-5 animate-spin rounded-full border-[3px] border-white/30 border-t-white" /> Checking prices…</>
+                : name.trim().toLowerCase() !== pricedName.toLowerCase() ? "Use this name" : "Yes, that's it"}
+            </Button>
+            {!fixing && !repricing && <button onClick={() => setFixing(true)} className="px-2 text-[15px] font-semibold text-cobalt">Not right? Fix it</button>}
           </div>
         )}
         {(step === 1 || step === 2) && <Button onClick={next} className="w-full !py-4 !text-[18px]">Next</Button>}

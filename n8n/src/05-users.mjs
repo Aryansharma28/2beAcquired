@@ -2,14 +2,16 @@ import { Workflow, webhook, respond, code, tableGet, tableUpsert, tableInsert, t
 
 // Accounts + "Connect Marktplaats" pairing. All endpoints are called by the poof app's server (X-Poof-Key),
 // which forwards the signed-in user as X-Poof-User.
-const ME = `
+// DEMO_MP_STORE (e.g. mp-session): every account counts as connected and sells on that one owner session.
+const me = (env) => `const DEMO = ${JSON.stringify(env.DEMO_MP_STORE || '')}, DEMO_NAME = ${JSON.stringify(env.DEMO_MP_NAME || 'Marktplaats')};
 const u = (row) => { const d = row && row.data ? JSON.parse(row.data) : {};
   const hours = Array.isArray(d.pickupHours) ? d.pickupHours : (d.pickupHours ? [d.pickupHours] : []);
   return { userId: row?.userId, name: d.name || '', onboarded: !!d.onboarded,
     pickupCity: d.pickupCity || '', pickupAddress: d.pickupAddress || '', pickupHours: hours,
-    mpConnected: !!d.mpConnected, mpName: d.mpName || null, connectedAt: d.connectedAt || null }; };`;
+    mpConnected: !!d.mpConnected || !!DEMO, mpName: d.mpName || (DEMO ? DEMO_NAME : null), connectedAt: d.connectedAt || null }; };`;
 
 export default (env, ids) => {
+  const ME = me(env);
   const w = new Workflow("poof · Accounts + connect", { errorWorkflow: ids.error });
   let y = 0;
   const lane = () => { w.x = 0; y += 360; return y; };

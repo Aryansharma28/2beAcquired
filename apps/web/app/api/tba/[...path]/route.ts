@@ -8,7 +8,7 @@ import { json, n8nBase, n8nHeaders } from "@/lib/server/n8n";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const ALLOWED = new Set(["intake", "item", "items", "details", "approve", "me"]);
+const ALLOWED = new Set(["intake", "item", "items", "details", "rename", "approve", "me"]);
 
 async function forward(req: NextRequest, path: string[], method: "GET" | "POST") {
   const base = n8nBase();

@@ -21,8 +21,10 @@ if (b.description) it.description = String(b.description).slice(0, 4000);
 if (b.askPrice && Number(b.askPrice) >= it.floorPrice) { it.askPrice = Math.round(Number(b.askPrice)); it.pricePlan = [{ price: it.askPrice, from: new Date().toISOString() }]; }
 it.approvedAt = new Date().toISOString();
 const edited = ['title', 'description', 'askPrice'].filter(k => b[k]);
-const connected = !!(u.mpConnected && u.mpStore);
-it.mpStore = u.mpStore || null;
+// Demo mode (DEMO_MP_STORE): sell on the owner's always-logged-in session when the user has none of their own.
+const DEMO = ${JSON.stringify(env.DEMO_MP_STORE || "")};
+const connected = !!((u.mpConnected && u.mpStore) || DEMO);
+it.mpStore = (u.mpConnected && u.mpStore) || DEMO || null;
 it.pickupAddress = u.pickupAddress || '';
 it.pickupHours = u.pickupHours || 'anytime';
 return [{ json: { itemId: row.itemId, data: JSON.stringify(it), edited, connected, status: connected ? 'ad_ready' : 'needs_connection' } }];`));

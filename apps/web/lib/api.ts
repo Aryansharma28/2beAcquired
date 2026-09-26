@@ -48,6 +48,13 @@ export async function details(body: DetailsRequest): Promise<void> {
   await post("/details", body);
 }
 
+/** Screen 02 "Fix it": recognition was wrong. Re-runs the market check for the corrected name (~20–40 s). */
+export type RenameResult = { priceRange?: Item["priceRange"] | null; compsCount?: number; comps?: Item["comps"] };
+export async function rename(itemId: string, name: string): Promise<RenameResult> {
+  if (MOCK) return { priceRange: null, compsCount: 0, comps: [] };
+  return post<RenameResult>("/rename", { itemId, name });
+}
+
 /** Screen 07: approve the ad (only edited fields are sent). Starts publishing. */
 export async function approve(body: ApproveRequest): Promise<void> {
   if (MOCK) return mock.approve(body);
