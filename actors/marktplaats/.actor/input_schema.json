@@ -1,0 +1,266 @@
+{
+    "title": "Marktplaats actor input",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "action": {
+            "title": "Action",
+            "type": "string",
+            "description": "What to do. comps/stats need no login; inbox/reply/post/update_price/delist use the stored session.",
+            "editor": "select",
+            "enum": [
+                "comps",
+                "inbox",
+                "reply",
+                "stats",
+                "post",
+                "update_price",
+                "delist"
+            ],
+            "enumTitles": [
+                "comps: search comparable listings",
+                "inbox: read conversations (+ bids)",
+                "reply: send a message in a conversation",
+                "stats: views / favorites of a listing",
+                "post: place a new ad (browser)",
+                "update_price: change the price of an ad (browser)",
+                "delist: remove an ad (browser)"
+            ],
+            "default": "comps"
+        },
+        "query": {
+            "title": "Search query (comps)",
+            "type": "string",
+            "description": "comps: free-text query, e.g. 'ikea poang'.",
+            "editor": "textfield",
+            "sectionCaption": "comps",
+            "prefill": "ikea poang"
+        },
+        "limit": {
+            "title": "Max results (comps)",
+            "type": "integer",
+            "description": "comps: number of listings to return (1-300).",
+            "minimum": 1,
+            "maximum": 300,
+            "default": 30
+        },
+        "categoryId": {
+            "title": "L1 category id (comps)",
+            "type": "integer",
+            "description": "comps: optional Marktplaats L1 category id to narrow the search."
+        },
+        "includeNoPrice": {
+            "title": "Include listings without a price (comps)",
+            "type": "boolean",
+            "description": "comps: also return 'Bieden' / 'Zie omschrijving' listings that have no amount.",
+            "default": false
+        },
+        "excludeBusiness": {
+            "title": "Exclude business ads (comps)",
+            "type": "boolean",
+            "description": "comps: skip Admarkt ads (ids starting with 'a': shops, auction houses), which distort second-hand prices.",
+            "default": true
+        },
+        "since": {
+            "title": "Since (inbox)",
+            "type": "string",
+            "description": "inbox: ISO timestamp. Only conversations/bids with activity after this moment are returned; messages after it are flagged isNew.",
+            "editor": "textfield",
+            "sectionCaption": "inbox / reply"
+        },
+        "conversationLimit": {
+            "title": "Max conversations (inbox)",
+            "type": "integer",
+            "description": "inbox: newest N conversations to read.",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+        },
+        "includeBids": {
+            "title": "Include bids (inbox)",
+            "type": "boolean",
+            "description": "inbox: read the bids on your own active listings and attach them (bid-only entries too).",
+            "default": true
+        },
+        "sellingOnly": {
+            "title": "Only conversations where I sell (inbox)",
+            "type": "boolean",
+            "description": "inbox: skip conversations about things you are buying.",
+            "default": true
+        },
+        "conversationId": {
+            "title": "Conversation id (reply)",
+            "type": "string",
+            "description": "reply: conversationId from the inbox output.",
+            "editor": "textfield"
+        },
+        "text": {
+            "title": "Message text (reply)",
+            "type": "string",
+            "description": "reply: the message to send.",
+            "editor": "textarea"
+        },
+        "replyMode": {
+            "title": "Reply mode",
+            "type": "string",
+            "description": "reply: 'http' (fast, internal endpoint), 'browser' (types into the chat UI), or 'auto' (http, falls back to browser on a non-auth failure).",
+            "editor": "select",
+            "enum": [
+                "auto",
+                "http",
+                "browser"
+            ],
+            "default": "auto"
+        },
+        "listingUrl": {
+            "title": "Listing URL (stats)",
+            "type": "string",
+            "description": "stats: full listing URL. Alternatively pass listingId.",
+            "editor": "textfield",
+            "sectionCaption": "stats / update_price / delist"
+        },
+        "listingId": {
+            "title": "Listing id",
+            "type": "string",
+            "description": "stats / update_price / delist: listing id, e.g. 'm2446876735'.",
+            "editor": "textfield"
+        },
+        "delistReason": {
+            "title": "Delist reason",
+            "type": "string",
+            "description": "delist: which answer to pick in the 'why are you removing this ad' dialog.",
+            "editor": "select",
+            "enum": [
+                "sold_on_marktplaats",
+                "sold_elsewhere",
+                "not_sold"
+            ],
+            "default": "sold_elsewhere"
+        },
+        "title": {
+            "title": "Title (post)",
+            "type": "string",
+            "description": "post: ad title (max 60 chars).",
+            "editor": "textfield",
+            "sectionCaption": "post"
+        },
+        "description": {
+            "title": "Description (post)",
+            "type": "string",
+            "description": "post: ad description (plain text, newlines kept).",
+            "editor": "textarea"
+        },
+        "price": {
+            "title": "Price in euros (post / update_price)",
+            "type": "integer",
+            "description": "post / update_price: asking price in whole euros.",
+            "minimum": 0
+        },
+        "priceType": {
+            "title": "Price type (post)",
+            "type": "string",
+            "description": "post: Marktplaats price type label.",
+            "editor": "select",
+            "enum": [
+                "Vraagprijs",
+                "Bieden",
+                "Gratis",
+                "Zie omschrijving",
+                "Nader overeen te komen",
+                "Ruilen"
+            ],
+            "default": "Vraagprijs"
+        },
+        "allowBids": {
+            "title": "Allow bids (post)",
+            "type": "boolean",
+            "description": "post: with Vraagprijs, tick 'Bieden toestaan' so buyers can bid.",
+            "default": true
+        },
+        "minBid": {
+            "title": "Minimum bid in euros (post)",
+            "type": "integer",
+            "description": "post: optional minimum bid ('Bieden vanaf').",
+            "minimum": 0
+        },
+        "categoryHint": {
+            "title": "Category hint (post)",
+            "type": "string",
+            "description": "post: text to match against the categories Marktplaats suggests for the title, e.g. 'Fauteuils'. The first suggestion is used when nothing matches.",
+            "editor": "textfield"
+        },
+        "photoUrls": {
+            "title": "Photos (post)",
+            "type": "array",
+            "description": "post: photo URLs (https://...) or keys in the photo KV store (see photoStore). Max 24.",
+            "editor": "stringList"
+        },
+        "condition": {
+            "title": "Condition (post)",
+            "type": "string",
+            "description": "post: new | as_good_as_new | used | refurbished | not_working, or the Dutch label as shown on the form.",
+            "editor": "textfield",
+            "default": "used"
+        },
+        "delivery": {
+            "title": "Delivery (post)",
+            "type": "string",
+            "description": "post: pickup (Ophalen), shipping (Verzenden) or both (Ophalen of Verzenden).",
+            "editor": "select",
+            "enum": [
+                "pickup",
+                "shipping",
+                "both"
+            ],
+            "default": "pickup"
+        },
+        "postcode": {
+            "title": "Postcode (post)",
+            "type": "string",
+            "description": "post: only used when the form's postcode is empty.",
+            "editor": "textfield"
+        },
+        "attributes": {
+            "title": "Extra attributes (post)",
+            "type": "object",
+            "description": "post: category-specific fields, keyed by form label or field name, e.g. {\"Merk\": \"IKEA\", \"Kleur\": \"Bruin\"}.",
+            "editor": "json"
+        },
+        "dryRun": {
+            "title": "Dry run (post / update_price / delist)",
+            "type": "boolean",
+            "description": "Fill everything and take screenshots, but do not click the final place / save / delete button.",
+            "default": false
+        },
+        "useProxy": {
+            "title": "Use residential NL proxy",
+            "type": "boolean",
+            "description": "Route traffic through Apify RESIDENTIAL proxy with countryCode NL.",
+            "default": false,
+            "sectionCaption": "Advanced"
+        },
+        "sessionStore": {
+            "title": "Session KV store",
+            "type": "string",
+            "description": "Named key-value store holding the Playwright storageState under key 'state'.",
+            "editor": "textfield",
+            "default": "mp-session"
+        },
+        "photoStore": {
+            "title": "Photo KV store",
+            "type": "string",
+            "description": "Named key-value store used when a photo entry is a key instead of a URL.",
+            "editor": "textfield",
+            "default": "tba-photos"
+        },
+        "headful": {
+            "title": "Headful browser (local debugging)",
+            "type": "boolean",
+            "description": "Show the browser window. Only useful with 'apify run' on your own machine.",
+            "default": false
+        }
+    },
+    "required": [
+        "action"
+    ]
+}

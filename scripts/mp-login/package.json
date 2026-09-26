@@ -1,0 +1,17 @@
+{
+    "name": "mp-login",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "One-time manual Marktplaats login; saves the Playwright storageState for the actor.",
+    "scripts": {
+        "login": "tsx index.ts"
+    },
+    "dependencies": {
+        "playwright": "1.61.1"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.0",
+        "tsx": "^4.20.3"
+    }
+}

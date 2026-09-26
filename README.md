@@ -6,5 +6,6 @@ Built at Build Weekend 2026 with **n8n** (the brain) and **Apify** (eyes and han
 
 - `apps/web` — mobile web app (Next.js PWA)
 - `actors/marktplaats` — Apify actor: comps, post, inbox, reply, stats, reprice, delist
+- `scripts/mp-login` — log in to Marktplaats once by hand; saves the session for the actor (`npx tsx scripts/mp-login/index.ts`)
 - `n8n/workflows` — n8n workflows as JSON, pushed with `scripts/`
 - `docs/PLAN.md` — architecture, API contract, build order

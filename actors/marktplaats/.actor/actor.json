@@ -1,0 +1,11 @@
+{
+    "$schema": "https://apify.com/schemas/v1/actor.ide.json",
+    "actorSpecification": 1,
+    "name": "marktplaats",
+    "title": "2beAcquired Marktplaats",
+    "description": "Comparables, inbox, replies, listing stats, and posting / repricing / delisting ads on Marktplaats.nl with a stored, manually created login session.",
+    "version": "0.1",
+    "buildTag": "latest",
+    "input": "./input_schema.json",
+    "dockerfile": "../Dockerfile"
+}

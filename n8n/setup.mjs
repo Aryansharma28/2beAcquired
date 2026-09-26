@@ -33,8 +33,11 @@ async function ensureCred(key, name, type, data) {
   console.log(`+ ${name} (${c.id})`);
 }
 
-if (env.ANTHROPIC_API_KEY) await ensureCred("anthropic", "TBA Anthropic", "anthropicApi", { apiKey: env.ANTHROPIC_API_KEY });
-else console.log("! ANTHROPIC_API_KEY missing");
+// Any OpenAI-compatible provider (Groq, OpenRouter, Together, Jev…): LLM_BASE_URL + LLM_API_KEY.
+if (env.LLM_API_KEY && env.LLM_BASE_URL) {
+  await ensureCred("llm", "TBA LLM (OpenAI-compatible)", "openAiApi", { apiKey: env.LLM_API_KEY, url: env.LLM_BASE_URL });
+  await ensureCred("llmHttp", "TBA LLM bearer", "httpHeaderAuth", { name: "Authorization", value: `Bearer ${env.LLM_API_KEY}` });
+} else console.log("! LLM_API_KEY / LLM_BASE_URL missing");
 
 if (env.APIFY_TOKEN) {
   await ensureCred("apify", "TBA Apify", "httpHeaderAuth", { name: "Authorization", value: `Bearer ${env.APIFY_TOKEN}` });

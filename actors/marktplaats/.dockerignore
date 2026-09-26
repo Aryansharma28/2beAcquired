@@ -1,0 +1,8 @@
+.git
+.DS_Store
+node_modules
+dist
+storage
+apify_storage
+test
+README.md
