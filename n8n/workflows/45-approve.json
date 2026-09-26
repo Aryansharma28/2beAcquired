@@ -1,0 +1,357 @@
+{
+  "name": "TBA · Owner actions",
+  "nodes": [
+    {
+      "id": "cb2327ed-3b2e-4b79-afe9-a5a70ece5823",
+      "name": "Owner action",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tba/approve",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "506c6cf9-d05c-4a12-a252-4e8d541daadd"
+    },
+    {
+      "id": "3d509333-abff-4c2a-8190-ce10e1fb9ec5",
+      "name": "OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "d5389e5e-3e25-4425-a263-2271ee2dee50",
+      "name": "Publish?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "437bffe9-7b03-4748-88d4-6eecc3a71a75",
+              "leftValue": "={{ $('Owner action').first().json.body.action === 'publish' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "ddcf8a5f-1bf1-4f68-8ea9-77d5d7a39f3e",
+      "name": "Publish input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        -160
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: { itemId: $('Owner action').first().json.body.itemId } }];"
+      }
+    },
+    {
+      "id": "372195db-129f-48b2-ae7c-34c20d42f89b",
+      "name": "Publish",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1040,
+        -160
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "9c1h3oYItS59wvlV"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "06370546-e9af-45a4-865a-c388d29332a7",
+      "name": "Conversation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        160
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ykYQZnkrScB4bP1Q"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "conversationId",
+              "condition": "eq",
+              "keyValue": "={{ $('Owner action').first().json.body.conversationId }}"
+            }
+          ]
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByColumn": "createdAt",
+        "orderByDirection": "ASC"
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "82f77089-84c5-409d-84f2-9b9709b4a191",
+      "name": "Owner decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        160
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nconst b = $('Owner action').first().json.body;\nconst c = $input.all().map(i => i.json).find(r => r.conversationId) || {};\nconst amount = Math.round(Number(b.amount ?? c.lastOffer) || 0);\nconst base = { itemId: b.itemId, conversationId: b.conversationId, platform: c.platform || 'marktplaats', buyer: c.buyer || 'Buyer', lastOffer: c.lastOffer ?? null };\nif (b.action === 'accept_offer') return [{ json: { ...base, text: 'Deal, €' + amount + ' is goed! Wanneer wil je het komen ophalen?', state: 'deal', deal: true, price: amount } }];\nif (b.action === 'counter_offer') return [{ json: { ...base, text: 'Voor €' + amount + ' mag je hem hebben.', state: 'open', deal: false, price: amount } }];\nif (b.action === 'reject_offer') return [{ json: { ...base, text: 'Bedankt voor je bod, maar daar ga ik helaas niet mee akkoord.', state: 'declined', deal: false, price: null } }];\nthrow new Error('Unknown action ' + b.action);"
+      }
+    },
+    {
+      "id": "9470ad04-97c5-410f-b588-3a4ce03aaecb",
+      "name": "Act (send + save)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1300,
+        160
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "yKIjgTCSqW7GY2Ju"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "32722f57-395c-45a6-8984-0175af778885",
+      "name": "Log · Owner decision",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        360
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "aXQdTZoKZNsdGAgA"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "itemId": "={{ $json.itemId }}",
+            "ts": "={{ $now.toISO() }}",
+            "type": "decision",
+            "text": "=You decided: {{ { deal: 'accept €' + $json.price, open: 'counter €' + $json.price, declined: 'decline' }[$json.state] }}",
+            "meta": "{}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "itemId",
+              "displayName": "itemId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ts",
+              "displayName": "ts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "meta",
+              "displayName": "meta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Owner action": {
+      "main": [
+        [
+          {
+            "node": "OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OK": {
+      "main": [
+        [
+          {
+            "node": "Publish?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish?": {
+      "main": [
+        [
+          {
+            "node": "Publish input",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish input": {
+      "main": [
+        [
+          {
+            "node": "Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation": {
+      "main": [
+        [
+          {
+            "node": "Owner decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owner decision": {
+      "main": [
+        [
+          {
+            "node": "Act (send + save)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log · Owner decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "RplyyOpwl9XJZegT"
+  }
+}

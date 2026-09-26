@@ -1,0 +1,522 @@
+{
+  "name": "TBA · 5 Sold + delist",
+  "nodes": [
+    {
+      "id": "71cb3427-bdde-4991-ae28-d87cb58ee138",
+      "name": "Deal closed",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "8643214b-29f9-4bce-a501-bb632055be2b",
+      "name": "Get item",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "qbZymoGpQLO6LHKz"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "itemId",
+              "condition": "eq",
+              "keyValue": "={{ $json.itemId }}"
+            }
+          ]
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByColumn": "createdAt",
+        "orderByDirection": "ASC"
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "5ccb441f-05c6-492b-9e30-23129a699e3f",
+      "name": "Mark sold",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst deal = $('Deal closed').item.json;\nconst item = JSON.parse($json.data);\nitem.sale = { price: deal.price, platform: deal.platform, buyer: deal.buyer, conversationId: deal.conversationId, ts: new Date().toISOString() };\nitem.status = 'sold';\nreturn { json: { itemId: $json.itemId, data: JSON.stringify(item), item, price: deal.price, buyer: deal.buyer } };"
+      }
+    },
+    {
+      "id": "ce73ce8d-f33f-41e5-a3b2-6f9feb325b40",
+      "name": "Save sold",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "qbZymoGpQLO6LHKz"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "itemId",
+              "condition": "eq",
+              "keyValue": "={{ $json.itemId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "sold",
+            "data": "={{ $json.data }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "db2a0d87-0317-4a99-ae6b-a9f534ed7a36",
+      "name": "Log · Save sold",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        200
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "aXQdTZoKZNsdGAgA"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "itemId": "={{ $('Mark sold').item.json.itemId }}",
+            "ts": "={{ $now.toISO() }}",
+            "type": "decision",
+            "text": "=Deal at €{{ $('Mark sold').item.json.price }} with {{ $('Mark sold').item.json.buyer }}. Removing the ad everywhere",
+            "meta": "{}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "itemId",
+              "displayName": "itemId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ts",
+              "displayName": "ts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "meta",
+              "displayName": "meta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "439a9faa-1e33-4502-8425-64be0a0c0e66",
+      "name": "Listings to remove",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nreturn $('Mark sold').all().flatMap(i => (i.json.item.listings || []).filter(l => l.status === 'live' && l.listingId)\n  .map(l => ({ json: { itemId: i.json.itemId, platform: l.platform, listingId: l.listingId } })));"
+      }
+    },
+    {
+      "id": "ec8848e1-7be2-45e5-984e-1a864344ecec",
+      "name": "Delist on Marktplaats (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/USER~marktplaats/run-sync-get-dataset-items?timeout=280",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'delist', listingId: $json.listingId, dryRun: false }) }}",
+        "options": {
+          "timeout": 310000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "97e92edd-a3c7-43ed-a521-5bc86babdc92",
+      "name": "All removed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nreturn $('Mark sold').all().map(i => {\n  const item = i.json.item;\n  item.listings = (item.listings || []).map(l => ({ ...l, status: 'removed' }));\n  return { json: { itemId: i.json.itemId, data: JSON.stringify(item), title: item.title, price: i.json.price, platforms: item.listings.length } };\n});"
+      }
+    },
+    {
+      "id": "2a692ef0-ebbc-40ca-b0a9-202db95fd9ec",
+      "name": "Save removed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1820,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "qbZymoGpQLO6LHKz"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "itemId",
+              "condition": "eq",
+              "keyValue": "={{ $json.itemId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "sold",
+            "data": "={{ $json.data }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2c021e86-e67d-428d-9b58-da1eaf596855",
+      "name": "Log · Save removed",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1820,
+        200
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "aXQdTZoKZNsdGAgA"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "itemId": "={{ $('All removed').item.json.itemId }}",
+            "ts": "={{ $now.toISO() }}",
+            "type": "notify",
+            "text": "=Sold for €{{ $('All removed').item.json.price }}. Removed from every platform",
+            "meta": "{}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "itemId",
+              "displayName": "itemId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ts",
+              "displayName": "ts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "meta",
+              "displayName": "meta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "eb3428b7-4780-4fdb-913d-d75a54235e6b",
+      "name": "Push: sold",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2080,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ntfy.sh/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify(Object.assign({ topic: \"tba-3e7edc678d63\" }, { title: 'Sold for €' + $('All removed').item.json.price, message: '\"' + $('All removed').item.json.title + '\" is sold. Removed everywhere.', tags: ['tada', 'moneybag'], priority: 4 })) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Deal closed": {
+      "main": [
+        [
+          {
+            "node": "Get item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get item": {
+      "main": [
+        [
+          {
+            "node": "Mark sold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark sold": {
+      "main": [
+        [
+          {
+            "node": "Save sold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save sold": {
+      "main": [
+        [
+          {
+            "node": "Log · Save sold",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Listings to remove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listings to remove": {
+      "main": [
+        [
+          {
+            "node": "Delist on Marktplaats (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delist on Marktplaats (Apify)": {
+      "main": [
+        [
+          {
+            "node": "All removed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All removed": {
+      "main": [
+        [
+          {
+            "node": "Save removed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save removed": {
+      "main": [
+        [
+          {
+            "node": "Log · Save removed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Push: sold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "RplyyOpwl9XJZegT"
+  }
+}

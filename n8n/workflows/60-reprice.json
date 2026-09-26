@@ -1,0 +1,444 @@
+{
+  "name": "TBA · 4 Reprice",
+  "nodes": [
+    {
+      "id": "ff39d84b-55b8-4304-80fc-c0403a6656c4",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 60
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "dd281f47-ee5e-4c36-8227-96c5ec6cc3d6",
+      "name": "Items",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "qbZymoGpQLO6LHKz"
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByColumn": "createdAt",
+        "orderByDirection": "ASC"
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "f7f73189-0bd2-4be6-989f-5ec90cb9952d",
+      "name": "Conversations",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ykYQZnkrScB4bP1Q"
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByColumn": "createdAt",
+        "orderByDirection": "ASC"
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "d411e371-cf2c-40b5-923e-1204df802829",
+      "name": "Candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nconst convs = $('Conversations').all().map(i => i.json);\nconst now = Date.now(), H = 3600e3;\nreturn $('Items').all().map(i => i.json).filter(r => r.status === 'live').flatMap(r => {\n  const it = JSON.parse(r.data);\n  const mp = (it.listings || []).find(l => l.platform === 'marktplaats' && l.status === 'live');\n  if (!mp) return [];\n  const lastChange = Date.parse((it.priceHistory || []).at(-1)?.ts || it.liveAt || it.createdAt);\n  const every = it.goal === 'fast' ? 6 : 24;\n  if ((now - lastChange) < every * H) return [];\n  if (it.askPrice <= it.floorPrice) return [];\n  return [{ json: { itemId: r.itemId, item: it, listing: mp, conversations: convs.filter(c => c.itemId === r.itemId).length, hoursSinceChange: Math.round((now - lastChange) / H) } }];\n});"
+      }
+    },
+    {
+      "id": "a8ba0e11-56c6-41b1-9b03-d96d68c8b5e1",
+      "name": "Views (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/USER~marktplaats/run-sync-get-dataset-items?timeout=60",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'stats', listingUrl: $json.listing.url }) }}",
+        "options": {
+          "timeout": 90000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "94cc1346-051f-4f10-a7af-82f006bc48de",
+      "name": "Decide",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst c = $('Candidates').item.json, it = c.item;\nconst views = Number($json.views) || 0, favs = Number($json.favorites) || 0;\n// many views but nobody writes → price is the problem → bigger step\nconst step = it.goal === 'fast' ? (views > 40 && !c.conversations ? 0.12 : 0.08) : (views > 60 && !c.conversations ? 0.07 : 0.05);\nlet next = Math.max(it.floorPrice, Math.round(it.askPrice * (1 - step)));\nif (next >= 50) next = Math.max(it.floorPrice, Math.round(next / 5) * 5);\nconst change = next < it.askPrice;\nconst reason = views + ' views, ' + favs + ' saves, ' + c.conversations + ' chats in ' + c.hoursSinceChange + 'h';\nreturn { json: { itemId: c.itemId, listingId: c.listing.listingId, old: it.askPrice, next, change, reason, item: it } };"
+      }
+    },
+    {
+      "id": "388c25e1-2f79-4ae8-91d3-bf13753c1bb3",
+      "name": "Lower price?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3d132518-3f25-4a87-abcf-2828a30d0b80",
+              "leftValue": "={{ $json.change }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "085c3bb0-0b4f-4a6c-8a6c-ebea80d99a27",
+      "name": "Update price (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1820,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/USER~marktplaats/run-sync-get-dataset-items?timeout=280",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'update_price', listingId: $json.listingId, price: $json.next, dryRun: false }) }}",
+        "options": {
+          "timeout": 310000
+        }
+      }
+    },
+    {
+      "id": "54cad32c-144b-40ae-bf07-8cbe3277ab7d",
+      "name": "New price",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst d = $('Decide').item.json, it = d.item;\nit.askPrice = d.next;\nit.listings = it.listings.map(l => l.platform === 'marktplaats' ? { ...l, price: d.next } : l);\n(it.priceHistory ??= []).push({ ts: new Date().toISOString(), price: d.next, reason: d.reason });\nreturn { json: { itemId: d.itemId, data: JSON.stringify(it), old: d.old, next: d.next, reason: d.reason } };"
+      }
+    },
+    {
+      "id": "0e6a84ca-592a-4d3e-875f-6c44f6669d84",
+      "name": "Save price",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2340,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "qbZymoGpQLO6LHKz"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "itemId",
+              "condition": "eq",
+              "keyValue": "={{ $json.itemId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "data": "={{ $json.data }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a8407ef6-95f8-4b29-946d-f53f3677b852",
+      "name": "Log · Save price",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2340,
+        200
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "aXQdTZoKZNsdGAgA"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "itemId": "={{ $('New price').item.json.itemId }}",
+            "ts": "={{ $now.toISO() }}",
+            "type": "decision",
+            "text": "=Lowered price €{{ $('New price').item.json.old }} → €{{ $('New price').item.json.next }} ({{ $('New price').item.json.reason }})",
+            "meta": "{}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "itemId",
+              "displayName": "itemId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ts",
+              "displayName": "ts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "meta",
+              "displayName": "meta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Items": {
+      "main": [
+        [
+          {
+            "node": "Conversations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversations": {
+      "main": [
+        [
+          {
+            "node": "Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidates": {
+      "main": [
+        [
+          {
+            "node": "Views (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Views (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Decide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide": {
+      "main": [
+        [
+          {
+            "node": "Lower price?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lower price?": {
+      "main": [
+        [
+          {
+            "node": "Update price (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update price (Apify)": {
+      "main": [
+        [
+          {
+            "node": "New price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New price": {
+      "main": [
+        [
+          {
+            "node": "Save price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save price": {
+      "main": [
+        [
+          {
+            "node": "Log · Save price",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "RplyyOpwl9XJZegT"
+  }
+}

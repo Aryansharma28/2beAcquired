@@ -1,0 +1,516 @@
+{
+  "name": "TBA · Send reply",
+  "nodes": [
+    {
+      "id": "d506b349-6c21-4584-89e4-45368a50eabe",
+      "name": "Reply to send",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "e719147c-1e50-4bcc-ace0-e8567fccc3a3",
+      "name": "Prep",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst j = $json;\nconst itemStatus = j.state === 'needs_you' ? 'needs_you' : 'negotiating';\nreturn { json: { ...j, text: j.text || '', lastOffer: j.lastOffer ?? null, itemStatus } };"
+      }
+    },
+    {
+      "id": "fcbf92a5-ceef-40bb-bae5-a7f99a4f3c3f",
+      "name": "Save conversation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ykYQZnkrScB4bP1Q"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "conversationId",
+              "condition": "eq",
+              "keyValue": "={{ $json.conversationId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "conversationId": "={{ $json.conversationId }}",
+            "itemId": "={{ $json.itemId }}",
+            "platform": "={{ $json.platform }}",
+            "buyer": "={{ $json.buyer }}",
+            "state": "={{ $json.state }}",
+            "lastOffer": "={{ $json.lastOffer }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "conversationId",
+              "displayName": "conversationId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "itemId",
+              "displayName": "itemId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "platform",
+              "displayName": "platform",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "buyer",
+              "displayName": "buyer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lastOffer",
+              "displayName": "lastOffer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ab70aadc-d458-4806-bfe2-c6893cf99b6e",
+      "name": "Item status",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "qbZymoGpQLO6LHKz"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "itemId",
+              "condition": "eq",
+              "keyValue": "={{ $('Prep').item.json.itemId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $('Prep').item.json.itemStatus }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "cd7b3092-d7a5-4b52-b2ed-b3ff026033e2",
+      "name": "Has a reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "febaf0f2-8e0f-4994-a012-04de6c26d035",
+              "leftValue": "={{ !!$('Prep').item.json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "a43d470f-000c-407b-a3f2-daf94c6db808",
+      "name": "Send on Marktplaats (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/USER~marktplaats/run-sync-get-dataset-items?timeout=90",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'reply', conversationId: $('Prep').item.json.conversationId, text: $('Prep').item.json.text }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      }
+    },
+    {
+      "id": "b648b264-8d2d-45d5-8071-9f1c29cc4ca4",
+      "name": "Agent message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst p = $('Prep').item.json;\nreturn { json: { itemId: p.itemId, conversationId: p.conversationId, platform: p.platform, buyer: p.buyer,\n  msgId: 'agent_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), from: 'agent', text: p.text,\n  ts: new Date().toISOString(), offer: p.price ?? null } };"
+      }
+    },
+    {
+      "id": "5b081709-bd58-46da-a6ed-e1a225244e19",
+      "name": "Store agent message",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1820,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "u8BPdUepl83OaYgK"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "itemId": "={{ $json.itemId }}",
+            "conversationId": "={{ $json.conversationId }}",
+            "platform": "={{ $json.platform }}",
+            "buyer": "={{ $json.buyer }}",
+            "msgId": "={{ $json.msgId }}",
+            "from": "agent",
+            "text": "={{ $json.text }}",
+            "ts": "={{ $json.ts }}",
+            "offer": "={{ $json.offer }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "itemId",
+              "displayName": "itemId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "conversationId",
+              "displayName": "conversationId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "platform",
+              "displayName": "platform",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "buyer",
+              "displayName": "buyer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "msgId",
+              "displayName": "msgId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ts",
+              "displayName": "ts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "offer",
+              "displayName": "offer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2e86e48e-20d3-4e44-9353-46db7623e398",
+      "name": "Deals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $('Prep').all().filter(i => i.json.deal).map(i => ({ json: { itemId: i.json.itemId, conversationId: i.json.conversationId, platform: i.json.platform, buyer: i.json.buyer, price: i.json.price } }));"
+      },
+      "executeOnce": false
+    },
+    {
+      "id": "a150ffb4-35d8-4009-815c-e656e94ee911",
+      "name": "Sold",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2340,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "pNYOkC5SCDYMR6qI"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Reply to send": {
+      "main": [
+        [
+          {
+            "node": "Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep": {
+      "main": [
+        [
+          {
+            "node": "Save conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save conversation": {
+      "main": [
+        [
+          {
+            "node": "Item status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item status": {
+      "main": [
+        [
+          {
+            "node": "Has a reply?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Deals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has a reply?": {
+      "main": [
+        [
+          {
+            "node": "Send on Marktplaats (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send on Marktplaats (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Agent message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent message": {
+      "main": [
+        [
+          {
+            "node": "Store agent message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deals": {
+      "main": [
+        [
+          {
+            "node": "Sold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "RplyyOpwl9XJZegT"
+  }
+}
