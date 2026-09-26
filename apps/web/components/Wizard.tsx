@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 import { details, rename } from "@/lib/api";
 import { CONDITIONS, CONDITION_NL, GOALS, attrText, chipFor, eur, type ConditionChip } from "@/lib/format";
 import type { Goal, Item } from "@/lib/types";
-import { BottomAction, Button, Eyebrow, Segmented, Soon, cx } from "./ui";
+import { BottomAction, Button, Eyebrow, ICON_BTN, Segmented, Soon, cx } from "./ui";
 
 const round5 = (n: number) => Math.max(5, Math.round(n / 5) * 5);
 
@@ -70,27 +70,34 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
   }
 
   return (
-    <div className="pb-28">
+    <div className="pb-36">
       {/* Progress */}
-      <div className="flex items-center gap-3 pb-5">
+      <div className="flex items-center gap-2.5 pb-3">
         {step > 0 ? (
-          <button onClick={() => setStep((s) => s - 1)} aria-label="Back" className="grid size-10 shrink-0 place-items-center rounded-full bg-card ring-1 ring-line transition active:scale-95">
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
+          <button onClick={() => setStep((s) => s - 1)} aria-label="Back" className={ICON_BTN}>
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
           </button>
         ) : (
-          <Link href="/" aria-label="Close" className="grid size-10 shrink-0 place-items-center rounded-full bg-card ring-1 ring-line transition active:scale-95">
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          <Link href="/" aria-label="Close" className={ICON_BTN}>
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </Link>
         )}
-        <div className="flex flex-1 gap-1.5">
-          {[0, 1, 2, 3].map((i) => (
-            <span key={i} className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
-              <span className={cx("block h-full origin-left rounded-full bg-cobalt transition-transform duration-500", i <= step ? "scale-x-100" : "scale-x-0")} />
-            </span>
-          ))}
-        </div>
-        <span className="font-mono text-[12px] font-bold text-mute">{step + 1}/4</span>
+        <span className="h-1 flex-1 overflow-hidden rounded-full bg-line">
+          <span className="block h-full rounded-full bg-ink transition-[width] duration-500" style={{ width: `${((step + 1) / 4) * 100}%` }} />
+        </span>
+        <span className="whitespace-nowrap text-[13px] text-moss tabular">{step + 1} of 4</span>
       </div>
+
+      {step > 0 && (
+        <div className="mb-4 mt-1 flex items-center gap-2 rounded-[14px] bg-card px-2.5 py-1.5 shadow-soft">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {item.photos[cover] && <img src={item.photos[cover]} alt="" className="size-7 shrink-0 rounded-[8px] object-cover" />}
+          <span className="flex min-w-0 items-baseline gap-1.5 text-[13px]">
+            <b className="truncate font-bold">{name.trim() || "Your item"}</b>
+            {step > 1 && <span className="whitespace-nowrap text-moss">· {GOALS.find((g) => g.value === goal)?.label}</span>}
+          </span>
+        </div>
+      )}
 
       <div key={step} className="animate-rise">
         {step === 0 && (
@@ -105,22 +112,25 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
         {step === 3 && <Delivery city={city} setCity={setCity} />}
       </div>
 
-      {error && <p className="mt-4 rounded-2xl bg-alert-soft p-4 text-[14px] text-alert">{error}</p>}
+      {error && <p className="mt-4 rounded-[20px] bg-alert-soft p-4 text-[14px] text-alert">{error}</p>}
 
       <BottomAction>
         {step === 0 && (
-          <div className="flex items-center gap-3">
-            <Button onClick={confirmName} disabled={!name.trim() || repricing} className="flex-1 !py-4 !text-[18px]">
-              {repricing ? <><span className="size-5 animate-spin rounded-full border-[3px] border-white/30 border-t-white" /> Checking prices…</>
-                : name.trim().toLowerCase() !== pricedName.toLowerCase() ? "Use this name" : "Yes, that's it"}
+          <div className="flex flex-col items-stretch gap-1">
+            <Button onClick={confirmName} disabled={!name.trim() || repricing} className="w-full">
+              {repricing ? <><span className="size-5 animate-spin rounded-full border-[3px] border-lime/30 border-t-lime" /> Checking prices…</>
+                : name.trim().toLowerCase() !== pricedName.toLowerCase() ? <>Use this name <Arrow /></> : <>Yes, that&apos;s it <Arrow /></>}
             </Button>
-            {!fixing && !repricing && <button onClick={() => setFixing(true)} className="px-2 text-[15px] font-semibold text-cobalt">Not right? Fix it</button>}
+            {/* Fixed-height slot so the main button never moves when this link appears (a moving button loses the tap). */}
+            <div className="flex h-11 items-center justify-center">
+              {!fixing && !repricing && <button onClick={() => setFixing(true)} className="min-h-11 px-3 text-[15px] font-semibold text-ink underline underline-offset-4">Not right? Fix it</button>}
+            </div>
           </div>
         )}
-        {(step === 1 || step === 2) && <Button onClick={next} className="w-full !py-4 !text-[18px]">Next</Button>}
+        {(step === 1 || step === 2) && <Button onClick={next} className="w-full">Next</Button>}
         {step === 3 && (
-          <Button onClick={submit} disabled={busy} className="w-full !py-4 !text-[18px]">
-            {busy ? <><span className="size-5 animate-spin rounded-full border-[3px] border-white/30 border-t-white" /> Creating…</> : "Create my ad"}
+          <Button onClick={submit} disabled={busy} className="w-full">
+            {busy ? <><span className="size-5 animate-spin rounded-full border-[3px] border-lime/30 border-t-lime" /> Creating…</> : <>Create my ad <Arrow /></>}
           </Button>
         )}
       </BottomAction>
@@ -130,10 +140,18 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
 
 function Title({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
   return (
-    <div className="mb-5 px-1">
-      <h2 className="font-display text-[38px] font-extrabold leading-[0.95] tracking-[-0.045em]">{children}</h2>
-      {sub && <p className="mt-2 text-[15px] text-ink-2">{sub}</p>}
+    <div className="mb-5">
+      <h2 className="text-[26px] font-extrabold leading-[1.2] tracking-[-0.02em]">{children}</h2>
+      {sub && <p className="mt-1.5 text-[15px] text-moss">{sub}</p>}
     </div>
+  );
+}
+
+function Arrow() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+    </svg>
   );
 }
 
@@ -150,32 +168,33 @@ function IsThisIt(p: {
   const category = item.recognition?.category ?? item.category?.split(" › ").at(-1);
   return (
     <div>
-      <Title>Is this it?</Title>
+      <Title sub="Poof recognised it from your photos.">Is this it?</Title>
 
-      <div className="relative aspect-[4/3.2] overflow-hidden rounded-[28px] bg-ink">
+      <div className="relative h-[230px] overflow-hidden rounded-[20px] bg-limetint">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {item.photos[p.cover] && <img key={p.cover} src={item.photos[p.cover]} alt="" className="size-full animate-fade object-cover" />}
-        <span className="absolute left-3 top-3 rounded-full bg-ink/70 px-2.5 py-1 text-[12px] font-semibold text-white backdrop-blur">Cover</span>
-        {item.photos.length > 1 && (
-          <div className="absolute inset-x-3 bottom-3 flex gap-2">
-            {item.photos.map((ph, i) => (
-              <button
-                key={i}
-                onClick={() => p.setCover(i)}
-                aria-label={`Use photo ${i + 1} as cover`}
-                className={cx("size-12 overflow-hidden rounded-xl ring-2 transition", i === p.cover ? "ring-tag" : "ring-white/70 opacity-80")}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ph} alt="" className="size-full object-cover" />
-              </button>
-            ))}
-          </div>
-        )}
+        <span className="absolute bottom-2 right-2 rounded-full bg-card px-2 py-0.5 text-[12px] font-semibold shadow-soft">Cover</span>
       </div>
-      {item.photos.length > 1 && <p className="mt-2 px-1 text-[13px] text-mute">Tap a photo to make it the cover.</p>}
+      {item.photos.length > 1 && (
+        <div className="mt-2 flex gap-2">
+          {item.photos.map((ph, i) => (
+            <button
+              key={i}
+              onClick={() => p.setCover(i)}
+              aria-label={`Use photo ${i + 1} as cover`}
+              aria-pressed={i === p.cover}
+              className={cx("h-[58px] flex-1 overflow-hidden rounded-[10px] transition", i === p.cover ? "ring-2 ring-ink" : "opacity-85")}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={ph} alt="" className="size-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+      {item.photos.length > 1 && <p className="mt-2 text-[13px] text-moss">Tap a photo to make it the cover.</p>}
 
-      <section className="mt-5 px-1">
-        <Eyebrow>What it is</Eyebrow>
+      <section className="mt-[18px]">
+        <p className="text-[13px] font-semibold text-moss">What it is</p>
         {p.fixing ? (
           <input
             autoFocus
@@ -184,25 +203,26 @@ function IsThisIt(p: {
             onBlur={() => p.name.trim() && p.setFixing(false)}
             onKeyDown={(e) => e.key === "Enter" && p.name.trim() && p.setFixing(false)}
             placeholder="What is it? e.g. IKEA POÄNG"
-            className="mt-1 w-full rounded-2xl bg-card px-4 py-3 font-display text-[24px] font-bold tracking-[-0.03em] outline-none ring-2 ring-cobalt"
+            className="mt-1 min-h-12 w-full rounded-[12px] border-2 border-ink bg-card px-3.5 py-2 text-[20px] font-extrabold tracking-[-0.02em] outline-none"
           />
         ) : (
-          <button onClick={() => p.setFixing(true)} className="mt-1 text-left">
-            <span className="font-display text-[30px] font-extrabold leading-none tracking-[-0.04em]">{p.name}</span>
-            {category && <span className="ml-2 text-[16px] text-mute">· {category}</span>}
+          <button onClick={() => p.setFixing(true)} className="mt-0.5 text-left">
+            <span className="text-[24px] font-extrabold leading-tight tracking-[-0.02em]">{p.name}</span>
+            {category && <span className="mt-0.5 block text-[15px] text-moss">{category}</span>}
           </button>
         )}
       </section>
 
-      <section className="mt-5 px-1">
-        <Eyebrow className="mb-2">Condition</Eyebrow>
+      <section className="mt-5">
+        <Eyebrow className="mb-2.5">Condition</Eyebrow>
         <div className="flex flex-wrap gap-2">
           {CONDITIONS.map((c) => (
             <button
               key={c}
               onClick={() => p.setCondition(c)}
-              className={cx("rounded-full px-4 py-2 text-[15px] font-semibold transition active:scale-95",
-                c === p.condition ? "bg-ink text-white" : "bg-card text-ink ring-1 ring-line")}
+              aria-pressed={c === p.condition}
+              className={cx("min-h-11 rounded-full px-[18px] text-[15px] font-semibold transition active:scale-95",
+                c === p.condition ? "bg-ink text-white" : "bg-card text-ink shadow-soft")}
             >
               {c}
             </button>
@@ -212,10 +232,10 @@ function IsThisIt(p: {
 
       {p.attrs.length > 0 && (
         <section className="mt-5">
-          <Eyebrow className="mb-2 px-1">Details</Eyebrow>
-          <ul className="overflow-hidden rounded-[22px] bg-card shadow-soft">
+          <Eyebrow className="mb-2.5">Details</Eyebrow>
+          <ul className="overflow-hidden rounded-[20px] bg-card shadow-soft">
             {p.attrs.map((a, i) => (
-              <li key={i} className="border-b border-line/70 last:border-0">
+              <li key={i} className="border-b border-line last:border-0">
                 {editing === i ? (
                   <input
                     autoFocus
@@ -223,10 +243,10 @@ function IsThisIt(p: {
                     onChange={(e) => p.setAttrs(p.attrs.map((x, j) => (j === i ? e.target.value : x)))}
                     onBlur={() => setEditing(null)}
                     onKeyDown={(e) => e.key === "Enter" && setEditing(null)}
-                    className="w-full bg-cobalt-soft/50 px-4 py-3 text-[15px] outline-none"
+                    className="min-h-[52px] w-full bg-limetint px-4 py-3 text-[15px] outline-none"
                   />
                 ) : (
-                  <button onClick={() => setEditing(i)} className="flex w-full items-center gap-2 px-4 py-3 text-left text-[15px]">
+                  <button onClick={() => setEditing(i)} className="flex min-h-[52px] w-full items-center gap-2 px-4 py-3 text-left text-[15px]">
                     <AttrText text={a} />
                     <Pencil />
                   </button>
@@ -245,7 +265,7 @@ function AttrText({ text }: { text: string }) {
   if (i < 0) return <span className="flex-1">{text}</span>;
   return (
     <span className="flex flex-1 justify-between gap-3">
-      <span className="text-mute">{text.slice(0, i)}</span>
+      <span className="text-moss">{text.slice(0, i)}</span>
       <span className="text-right font-semibold">{text.slice(i + 1).trim()}</span>
     </span>
   );
@@ -268,14 +288,14 @@ function WhenGone({ goal, setGoal }: { goal: Goal; setGoal: (g: Goal) => void })
   const [speed, price] = SPEED[goal];
   return (
     <div>
-      <Title>When should it be gone?</Title>
+      <Title sub="Faster means a slightly lower price.">When should it be gone?</Title>
       <Segmented<Goal> value={goal} onChange={setGoal} options={GOALS.map((x) => ({ value: x.value, label: x.label }))} />
-      <p key={goal} className="mt-4 animate-fade px-1 font-display text-[22px] font-bold leading-tight tracking-[-0.02em]">{g.hint}</p>
-      <div className="mt-6 space-y-3 rounded-[24px] bg-card p-4 shadow-soft">
-        <Meter label="Speed" value={speed} tone="bg-cobalt" />
-        <Meter label="Price" value={price} tone="bg-tag" />
+      <p key={goal} className="mb-2 mt-[18px] animate-fade text-[18px] font-bold leading-snug">{g.hint}</p>
+      <div className="space-y-3 rounded-[20px] bg-card p-4 shadow-soft">
+        <Meter label="Speed" value={speed} tone="bg-ink" />
+        <Meter label="Price" value={price} tone="bg-lime" />
       </div>
-      <p className="mt-3 px-1 text-[13.5px] text-mute">Your agent sets the price and lowers it step by step to hit this. You see the plan before anything goes online.</p>
+      <p className="mt-3 text-[13px] text-moss">Poof sets the price and lowers it step by step to hit this. You see the plan before anything goes online.</p>
     </div>
   );
 }
@@ -283,10 +303,10 @@ function WhenGone({ goal, setGoal }: { goal: Goal; setGoal: (g: Goal) => void })
 function Meter({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-14 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-mute">{label}</span>
+      <span className="w-14 text-[13px] font-bold text-moss">{label}</span>
       <div className="flex flex-1 gap-1">
         {[1, 2, 3, 4, 5].map((i) => (
-          <span key={i} className={cx("h-3 flex-1 rounded-full transition-colors duration-300", i <= value ? tone : "bg-line")} />
+          <span key={i} className={cx("h-2.5 flex-1 rounded-full transition-colors duration-300", i <= value ? tone : "bg-line")} />
         ))}
       </div>
     </div>
@@ -299,31 +319,31 @@ function Minimum({ item, floor, setFloor }: { item: Item; floor: number; setFloo
   const r = item.priceRange;
   return (
     <div>
-      <Title>What&apos;s your minimum?</Title>
-      <div className="flex items-center justify-between gap-3 rounded-[28px] bg-card px-4 py-6 shadow-soft">
+      <Title sub="The lowest price you'd still be happy with.">What&apos;s your minimum?</Title>
+      <div className="flex items-center justify-between gap-3 rounded-[20px] bg-card p-3.5 shadow-soft">
         <Step label="Lower" onClick={() => setFloor(Math.max(5, floor - 5))} disabled={floor <= 5}>
-          <path d="M6 12h12" />
+          <path d="M5 12h14" />
         </Step>
-        <span key={floor} className="tabular animate-pop font-mono text-[64px] font-bold leading-none tracking-[-0.05em]">€{floor}</span>
+        <span key={floor} className="tabular animate-pop text-[44px] font-extrabold leading-none tracking-[-0.02em]">€{floor}</span>
         <Step label="Higher" onClick={() => setFloor(floor + 5)}>
-          <path d="M12 6v12M6 12h12" />
+          <path d="M5 12h14" /><path d="M12 5v14" />
         </Step>
       </div>
 
       {r && (
-        <div className="mt-5 px-1">
-          <p className="text-[15px] text-ink-2">
-            Similar ones sell for <b className="font-mono text-ink">{eur(r.low)}</b> to <b className="font-mono text-ink">{eur(r.high)}</b>
+        <div className="mt-5">
+          <p className="text-[12px] font-bold text-moss">
+            Similar ones sell for {eur(r.low)} to {eur(r.high)}
           </p>
           <RangeBar low={r.low} high={r.high} mark={floor} />
         </div>
       )}
 
-      <div className="mt-6 flex items-center gap-3 rounded-[22px] bg-ink px-4 py-4 text-white">
-        <svg viewBox="0 0 24 24" className="size-7 shrink-0 text-tag" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-          <path d="M12 3l7 3v6c0 4.2-3 7.4-7 9-4-1.6-7-4.8-7-9V6z" /><path d="M8.5 12l2.5 2.5 4.5-5" strokeLinecap="round" />
+      <div className="mt-[18px] flex items-center gap-3 rounded-[16px] bg-limetint px-4 py-3.5">
+        <svg viewBox="0 0 24 24" className="size-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" />
         </svg>
-        <p className="font-display text-[19px] font-bold leading-tight tracking-[-0.02em]">Your agent never accepts less.</p>
+        <p className="font-bold">Poof never accepts less.</p>
       </div>
     </div>
   );
@@ -331,8 +351,8 @@ function Minimum({ item, floor, setFloor }: { item: Item; floor: number; setFloo
 
 function Step({ children, label, onClick, disabled }: { children: ReactNode; label: string; onClick: () => void; disabled?: boolean }) {
   return (
-    <button onClick={onClick} disabled={disabled} aria-label={label} className="grid size-14 shrink-0 place-items-center rounded-full bg-paper transition active:scale-90 disabled:opacity-30">
-      <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">{children}</svg>
+    <button onClick={onClick} disabled={disabled} aria-label={label} className="grid size-[52px] shrink-0 place-items-center rounded-full bg-card shadow-soft transition active:scale-90 disabled:opacity-30">
+      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">{children}</svg>
     </button>
   );
 }
@@ -343,16 +363,16 @@ export function RangeBar({ low, high, mark, markLabel = "your minimum" }: { low:
   const pct = (v: number) => `${((v - lo) / (hi - lo || 1)) * 100}%`;
   const under = mark < low;
   return (
-    <div className="relative mt-9 h-12">
-      <div className="absolute inset-x-0 top-3 h-2.5 rounded-full bg-line" />
-      <div className="absolute top-3 h-2.5 rounded-full bg-cobalt" style={{ left: pct(low), width: `calc(${pct(high)} - ${pct(low)})` }} />
-      <span className="absolute top-7 -translate-x-1/2 font-mono text-[11px] font-bold text-mute" style={{ left: pct(low) }}>{eur(low)}</span>
-      <span className="absolute top-7 -translate-x-1/2 font-mono text-[11px] font-bold text-mute" style={{ left: pct(high) }}>{eur(high)}</span>
-      <div className="absolute -top-6 bottom-4 w-0 transition-[left] duration-300" style={{ left: pct(mark) }}>
-        <span className="absolute -translate-x-1/2 whitespace-nowrap rounded-full bg-tag px-2 py-0.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink">
+    <div className="relative mt-10 h-12">
+      <div className="absolute inset-x-0 top-3 h-3 rounded-[4px] bg-line" />
+      <div className="absolute top-3 h-3 rounded-[4px] bg-lime" style={{ left: pct(low), width: `calc(${pct(high)} - ${pct(low)})` }} />
+      <span className="absolute top-8 -translate-x-1/2 text-[12px] text-moss tabular" style={{ left: pct(low) }}>{eur(low)}</span>
+      <span className="absolute top-8 -translate-x-1/2 text-[12px] text-moss tabular" style={{ left: pct(high) }}>{eur(high)}</span>
+      <div className="absolute -top-7 bottom-4 w-0 transition-[left] duration-300" style={{ left: pct(mark) }}>
+        <span className="absolute -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-2.5 py-[3px] text-[12px] font-bold text-white">
           {markLabel}
         </span>
-        <span className={cx("absolute top-5 h-[26px] w-[3px] -translate-x-1/2 rounded-full", under ? "bg-alert" : "bg-ink")} />
+        <span className={cx("absolute top-5 h-[28px] w-[2px] -translate-x-1/2", under ? "bg-alert" : "bg-ink")} />
       </div>
     </div>
   );
@@ -365,25 +385,25 @@ function Delivery({ city, setCity }: { city: string; setCity: (s: string) => voi
     <div>
       <Title>How does it get to the buyer?</Title>
       <div className="space-y-2.5">
-        <div className="rounded-[24px] bg-card p-4 ring-2 ring-cobalt">
+        <div className="rounded-[20px] bg-card p-4 shadow-[0_0_0_2px_var(--color-ink)]">
           <div className="flex items-center gap-3">
-            <span className="grid size-6 place-items-center rounded-full bg-cobalt"><span className="size-2.5 rounded-full bg-white" /></span>
-            <span className="font-display text-[20px] font-bold tracking-[-0.02em]">Pickup</span>
+            <span className="grid size-[22px] place-items-center rounded-full bg-ink"><span className="size-2 rounded-full bg-white" /></span>
+            <span className="font-bold">Pickup</span>
           </div>
-          <label className="mt-3 block">
-            <span className="mb-1.5 block px-1 text-[13px] text-mute">Postcode or city</span>
+          <label className="mt-3 block pl-[34px]">
+            <span className="mb-1 block text-[13px] font-semibold text-moss">Postcode or city</span>
             <input
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="w-full rounded-2xl bg-paper px-4 py-3 text-[17px] font-semibold outline-none focus:ring-2 focus:ring-cobalt"
+              className="min-h-11 w-full rounded-[12px] border border-line bg-card px-3.5 text-[15px] font-semibold outline-none focus:border-ink"
             />
           </label>
-          <p className="mt-2 px-1 text-[13px] text-mute">The exact address is only shared with the buyer once there&apos;s a deal.</p>
+          <p className="mt-2 pl-[34px] text-[13px] text-moss">The exact address is only shared with the buyer once there&apos;s a deal.</p>
         </div>
         {["Shipping", "Both"].map((o) => (
-          <div key={o} aria-disabled className="flex items-center gap-3 rounded-[24px] bg-card/60 p-4 text-mute shadow-soft">
-            <span className="size-6 rounded-full border-2 border-line" />
-            <span className="font-display text-[20px] font-bold tracking-[-0.02em]">{o}</span>
+          <div key={o} aria-disabled className="flex items-center gap-3 rounded-[20px] bg-card/60 p-4 text-moss shadow-soft">
+            <span className="size-[22px] rounded-full border-2 border-line" />
+            <span className="font-bold">{o}</span>
             <Soon className="ml-auto" />
           </div>
         ))}
