@@ -8,11 +8,13 @@ export default (env, ids) => {
   w.add("Photos in", webhook("tba/intake"));
   w.add("New item", code(`
 const b = $json.body || {};
+const ownerId = $json.headers['x-poof-user'];
+if (!ownerId) throw new Error('No user');
 const photos = (b.photos || []).filter(Boolean).slice(0, 6).map(p => p.replace(/^data:[^,]+,/, ''));
 if (!photos.length) throw new Error('No photos in request');
 const itemId = 'itm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const item = {
-  id: itemId, status: 'recognizing', createdAt: new Date().toISOString(),
+  id: itemId, ownerId, status: 'recognizing', createdAt: new Date().toISOString(),
   notes: String(b.notes || '').slice(0, 500),
   photos: photos.map((_, i) => '${photoUrl}' + itemId + '-' + i + '.jpg'),
   listings: [], priceHistory: [],

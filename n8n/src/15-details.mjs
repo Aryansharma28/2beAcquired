@@ -12,6 +12,7 @@ const b = $('Owner details').first().json.body;
 const row = $input.all().map(i => i.json).find(r => r.itemId);
 if (!row) throw new Error('Item not found: ' + b.itemId);
 const it = JSON.parse(row.data);
+if (it.ownerId && it.ownerId !== $('Owner details').first().json.headers['x-poof-user']) throw new Error('Not your item');
 const goal = ['week', 'two_weeks', 'no_rush'].includes(b.goal) ? b.goal : 'week';
 Object.assign(it, {
   status: 'writing', goal,

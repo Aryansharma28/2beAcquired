@@ -13,6 +13,8 @@ export default (env, ids) => {
 const row = $('Item row').all().map(i => i.json).find(r => r.itemId);
 if (!row) return [{ json: { error: 'not_found' } }];
 const item = JSON.parse(row.data || '{}');
+if (item.ownerId && item.ownerId !== $('GET item').first().json.headers['x-poof-user']) return [{ json: { error: 'not_found' } }];
+delete item.mpStore;
 item.status = row.status;
 item.listings ??= [];
 const parse = (s) => { try { return s ? JSON.parse(s) : undefined; } catch { return undefined; } };
@@ -39,7 +41,8 @@ return [{ json: item }];`));
   w.add("GET items", webhook("tba/items", "GET"), { y: 400 });
   w.add("All items", tableGet("items"), { y: 400 });
   w.add("Summaries", code(`
-const items = $input.all().map(i => i.json).filter(r => r.itemId).map(r => {
+const me = $('GET items').first().json.headers['x-poof-user'];
+const items = $input.all().map(i => i.json).filter(r => r.itemId).filter(r => JSON.parse(r.data || '{}').ownerId === me).map(r => {
   const d = JSON.parse(r.data || '{}');
   return { id: r.itemId, status: r.status, title: d.title || d.name || 'New item', photo: d.photos?.[0], askPrice: d.askPrice,
            floorPrice: d.floorPrice, goal: d.goal, sale: d.sale, createdAt: d.createdAt,

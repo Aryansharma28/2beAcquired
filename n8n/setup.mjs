@@ -39,6 +39,9 @@ if (env.LLM_API_KEY && env.LLM_BASE_URL) {
   await ensureCred("llmHttp", "TBA LLM bearer", "httpHeaderAuth", { name: "Authorization", value: `Bearer ${env.LLM_API_KEY}` });
 } else console.log("! LLM_API_KEY / LLM_BASE_URL missing");
 
+// Shared secret between the poof app (Vercel) and every n8n webhook.
+if (env.POOF_APP_KEY) await ensureCred("appKey", "poof app key", "httpHeaderAuth", { name: "X-Poof-Key", value: env.POOF_APP_KEY });
+
 if (env.APIFY_TOKEN) {
   await ensureCred("apify", "TBA Apify", "httpHeaderAuth", { name: "Authorization", value: `Bearer ${env.APIFY_TOKEN}` });
   const apify = async (method, path) => {

@@ -32,8 +32,8 @@ return { json: { itemId: $json.itemId, item, price: deal.price, buyer: deal.buye
 
   w.add("Listings to remove", code(`
 return $('${last}').all().flatMap(i => (i.json.item.listings || []).filter(l => l.status === 'live' && l.listingId)
-  .map(l => ({ json: { itemId: i.json.itemId, platform: l.platform, listingId: l.listingId } })));`));
-  w.add("Delist on Marktplaats (Apify)", actor(env, "={{ JSON.stringify({ action: 'delist', delistReason: 'sold_on_marktplaats', useProxy: true, listingId: $json.listingId, dryRun: " + (env.MP_DRY_RUN === "1") + " }) }}", { soft: true }));
+  .map(l => ({ json: { itemId: i.json.itemId, platform: l.platform, listingId: l.listingId, sessionStore: i.json.item.mpStore || 'mp-session' } })));`));
+  w.add("Delist on Marktplaats (Apify)", actor(env, "={{ JSON.stringify({ action: 'delist', delistReason: 'sold_on_marktplaats', useProxy: true, sessionStore: $json.sessionStore, listingId: $json.listingId, dryRun: " + (env.MP_DRY_RUN === "1") + " }) }}", { soft: true }));
   w.add("All removed", code(`
 return $('${last}').all().map(i => {
   const item = i.json.item;

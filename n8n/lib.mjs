@@ -20,6 +20,8 @@ export const TABLES = {
   decisions: "CgbqV5RAJMCLYuDC",
   messages: "u8BPdUepl83OaYgK",
   conversations: "ykYQZnkrScB4bP1Q",
+  users: "FZKmuYNuPef0MilB",
+  pairings: "Rz9Kao8eYUhioeER",
 };
 
 const credFile = join(root, "n8n", "credentials.json");
@@ -83,11 +85,16 @@ export class Workflow {
 
 // ---------- core nodes ----------
 
+// Every webhook requires the X-Poof-Key header (the app's shared secret) once that credential exists.
 export const webhook = (path, method = "POST") => [
   "n8n-nodes-base.webhook", 2.1,
-  { httpMethod: method, path, responseMode: "responseNode", options: {} },
-  { webhookId: crypto.randomUUID() },
+  { httpMethod: method, path, responseMode: "responseNode", ...(CREDS.appKey ? { authentication: "headerAuth" } : {}), options: {} },
+  { webhookId: crypto.randomUUID(), ...cred("appKey", "httpHeaderAuth") },
 ];
+
+// The calling user, forwarded by the app's proxy (n8n lower-cases header names).
+export const USER = "$('%NODE%').first().json.headers['x-poof-user']";
+export const userOf = (node) => USER.replace("%NODE%", node);
 
 export const respond = (body = "={{ $json }}", code = 200) => [
   "n8n-nodes-base.respondToWebhook", 1.5,

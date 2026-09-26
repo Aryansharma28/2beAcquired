@@ -62,7 +62,7 @@ if (action === 'wait') reply = '';
 const state = action === 'accept' ? 'deal' : action === 'confirm_pickup' ? 'pickup_scheduled' : action === 'decline' ? 'declined'
   : ['deal', 'pickup_scheduled'].includes(ctx.stage) ? ctx.stage : 'open';
 return { json: {
-  itemId: ctx.itemId, conversationId: ctx.conversationId, platform: ctx.platform, buyer: ctx.buyer, itemStatus: ctx.itemStatus,
+  itemId: ctx.itemId, conversationId: ctx.conversationId, platform: ctx.platform, buyer: ctx.buyer, itemStatus: ctx.itemStatus, sessionStore: ctx.sessionStore,
   action, price, offer, text: reply, state, pickup, lastOffer: action === 'accept' ? price : (offer ?? ctx.lastOffer),
   buyerType: d.buyerType, reasoning: (d.reasoning || '') + (guard ? ' [guardrail: ' + guard + ']' : ''),
   buyerMessage: ctx.context.latestBuyerMessages.join(' / '),
@@ -77,12 +77,21 @@ export default (env, ids) => {
 const active = $input.all().map(i => i.json).filter(r => ['live', 'negotiating', 'deal', 'pickup_scheduled'].includes(r.status))
   .map(r => ({ itemId: r.itemId, listings: (JSON.parse(r.data).listings || []).filter(l => l.platform === 'marktplaats' && l.listingId) }))
   .filter(a => a.listings.length);
-if (!active.length) return [];
-return [{ json: { listingIds: active.flatMap(a => a.listings.map(l => l.listingId)), count: active.length } }];`));
+const byStore = {};
+for (const r of $('Items').all().map(i => i.json)) {
+  if (!['live', 'negotiating', 'deal', 'pickup_scheduled'].includes(r.status)) continue;
+  const it = JSON.parse(r.data);
+  const ids = (it.listings || []).filter(l => l.platform === 'marktplaats' && l.listingId).map(l => l.listingId);
+  if (!ids.length) continue;
+  const store = it.mpStore || 'mp-session';
+  (byStore[store] ??= []).push(...ids);
+}
+return Object.entries(byStore).map(([store, listingIds]) => ({ json: { store, listingIds } }));`));
   w.add("Known messages", tableGet("messages"), { executeOnce: true });
   w.add("Conversations", tableGet("conversations"), { executeOnce: true });
-  w.add("Read inbox (Apify)", actor(env, "={{ JSON.stringify({ action: 'inbox', useProxy: true, sellingOnly: true, includeBids: true, listingIds: $('Active listings').first().json.listingIds, sinceHours: 72 }) }}", { timeout: 120 }), { executeOnce: true });
-  w.chain("Every 2 min", "Items", "Active listings", "Known messages", "Conversations", "Read inbox (Apify)");
+  w.add("Read inbox (Apify)", actor(env, "={{ JSON.stringify({ action: 'inbox', useProxy: true, sellingOnly: true, includeBids: true, sessionStore: $json.store, listingIds: $json.listingIds, sinceHours: 72 }) }}", { timeout: 120 }));
+  w.add("Users", tableGet("users"), { executeOnce: true });
+  w.chain("Every 2 min", "Items", "Known messages", "Conversations", "Users", "Active listings", "Read inbox (Apify)");
 
   const common = `
 const rows = $('Items').all().map(i => i.json).filter(r => r.itemId);
@@ -123,29 +132,40 @@ return out;`), { position: [w.x, -240] });
 const zone = 'Europe/Amsterdam';
 const busy = ${HAS_CALENDAR ? "$('Owner calendar').all().map(i => i.json).filter(e => e.start)" : "[]"}
   .map(e => [DateTime.fromISO(e.start.dateTime || e.start.date, { zone }), DateTime.fromISO(e.end.dateTime || e.end.date, { zone })]);
-const [h0, h1] = '${env.PICKUP_HOURS || "10-21"}'.split('-').map(Number);
 const now = DateTime.now().setZone(zone);
-const slots = [];
-for (let d = 0; d < 4 && slots.length < 8; d++) {
-  const day = now.plus({ days: d }).startOf('day');
-  let perDay = 0;
-  for (let h = h0; h < h1 && perDay < 3; h += 0.5) {
-    const s = day.plus({ minutes: h * 60 }), e = s.plus({ minutes: 30 });
-    if (s < now.plus({ hours: 2 })) continue;
-    if (busy.some(([bs, be]) => s < be && e > bs)) continue;
-    slots.push({ start: s.toISO(), end: e.toISO(), label: s.setLocale('nl').toFormat('ccc d LLL HH:mm') });
-    perDay++; h += 2.5; // spread the options over the day
+// Pickup windows per preference: [allowed weekdays (1=Mon..7=Sun), fromHour, toHour]
+const WINDOWS = { weekday_evenings: [[1, 2, 3, 4, 5], 18, 21], weekend: [[6, 7], 10, 18], anytime: [[1, 2, 3, 4, 5, 6, 7], 10, 21] };
+const slotsFor = (pref, useCalendar) => {
+  const [days, h0, h1] = WINDOWS[pref] || WINDOWS.anytime;
+  const out = [];
+  for (let d = 0; d < 7 && out.length < 8; d++) {
+    const day = now.plus({ days: d }).startOf('day');
+    if (!days.includes(day.weekday)) continue;
+    let perDay = 0;
+    for (let h = h0; h < h1 && perDay < 3; h += 0.5) {
+      const s = day.plus({ minutes: h * 60 }), e = s.plus({ minutes: 30 });
+      if (s < now.plus({ hours: 2 })) continue;
+      if (useCalendar && busy.some(([bs, be]) => s < be && e > bs)) continue;
+      out.push({ start: s.toISO(), end: e.toISO(), label: s.setLocale('nl').toFormat('ccc d LLL HH:mm') });
+      perDay++; h += 2.5; // spread the options over the day
+    }
   }
-}
-return [{ json: { slots, calendar: ${HAS_CALENDAR} } }];`), { position: [w.x + 260, -240] });
+  return out;
+};
+const users = Object.fromEntries($('Users').all().map(i => i.json).filter(u => u.userId).map(u => [u.userId, JSON.parse(u.data || '{}')]));
+const byOwner = {};
+for (const [id, u] of Object.entries(users)) byOwner[id] = slotsFor(u.pickupHours, ${HAS_CALENDAR} && id === '${env.OWNER_USER_ID || ""}');
+return [{ json: { byOwner, fallback: slotsFor('anytime', ${HAS_CALENDAR}), users } }];`), { position: [w.x + 260, -240] });
   w.link(HAS_CALENDAR ? "Owner calendar" : "Read inbox (Apify)", "Free pickup slots");
 
   // Branch B: conversations whose last message is an unanswered buyer message → agent
   w.add("Needs a reply", code(common + `
-const slots = $('Free pickup slots').first().json.slots;
+const fs = $('Free pickup slots').first().json;
 const out = [];
 for (const c of threads) {
   const it = byListing[String(c.listingId)];
+  const slots = fs.byOwner[it.ownerId] || fs.fallback;
+  const owner = fs.users[it.ownerId] || {};
   const prev = conv[c.conversationId];
   if (prev && prev.state === 'declined') continue;
   const msgs = sorted(c);
@@ -154,7 +174,7 @@ for (const c of threads) {
   const reservedForSomeoneElse = convRows.some(o => o.itemId === it.id && o.conversationId !== c.conversationId && ['deal', 'pickup_scheduled'].includes(o.state));
   const bidOffers = (c.bids || []).map(b => Number(b.amount)).filter(Boolean);
   out.push({ json: {
-    itemId: it.id, conversationId: c.conversationId, platform: 'marktplaats', buyer: c.buyer?.name || 'Buyer', itemStatus: it.status,
+    itemId: it.id, conversationId: c.conversationId, platform: 'marktplaats', buyer: c.buyer?.name || 'Buyer', itemStatus: it.status, sessionStore: it.mpStore || 'mp-session',
     stage: prev?.state || 'open', lastOffer: prev?.lastOffer ?? null, slots,
     detectedOffer: fresh.map(m => offerIn(m.text)).filter(Boolean).at(-1) ?? (bidOffers.length ? Math.max(...bidOffers) : null),
     context: {
@@ -163,7 +183,7 @@ for (const c of threads) {
         messages: msgs.map(m => ({ from: m.from === 'buyer' ? 'buyer' : 'seller', text: m.text, ts: m.ts })) },
       latestBuyerMessages: fresh.map(m => m.text), bids: c.bids || [],
       freeSlots: slots.map(s => ({ start: s.start, label: s.label })),
-      pickupAddress: '${(env.PICKUP_ADDRESS || "").replace(/'/g, "")}' || 'the address in my profile',
+      pickupAddress: owner.pickupAddress || it.pickupAddress || ('in ' + (it.pickupCity || 'Amsterdam') + ', exact address follows'),
       reservedForSomeoneElse,
     } } });
 }
