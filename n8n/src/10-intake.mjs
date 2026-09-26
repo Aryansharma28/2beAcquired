@@ -34,7 +34,7 @@ return n.photosB64.map((b64, i) => ({ json: { key: n.itemId + '-' + i + '.jpg' }
   w.add("Recognise item (vision LLM)", llm(env, {
     vision: true,
     system: JSON.stringify("You identify second-hand items from photos for a Dutch reseller. Be specific (brand, model, material, era) but never invent facts you cannot see. Search queries must be what a Dutch buyer types on Marktplaats (usually Dutch, 2-4 words)."),
-    content: "[{ type: 'text', text: 'Identify this item. Owner notes: ' + ($('New item').first().json.item.notes || 'none') }, ...$('New item').first().json.photosB64.slice(0, 3).map(d => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + d } }))]",
+    content: "[{ type: 'text', text: 'Identify this item. Owner notes: ' + ($('New item').first().json.item.notes || 'none') }, ...$('New item').first().json.photosB64.slice(0, 2).map(d => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + d } }))]",
     tool: {
       name: "record_item", description: "Record what the item is",
       input_schema: {
