@@ -36,6 +36,25 @@ function stamp(ts: string) {
 }
 
 /** The agent's audit trail: everything it did, newest first. */
+/** What failed, where, and a link to the exact n8n run: so a stuck ad is never a mystery. */
+function ErrorDetails({ meta }: { meta?: Record<string, unknown> }) {
+  if (!meta) return null;
+  const s = (v: unknown) => (typeof v === "string" && v ? v : null);
+  const step = s(meta.step), msg = s(meta.msg), url = s(meta.url), kind = s(meta.kind);
+  if (!step && !msg && !url) return null;
+  return (
+    <details className="mt-1.5 rounded-xl bg-alert-soft/60 px-3 py-2 text-[12.5px] text-ink-2">
+      <summary className="cursor-pointer font-semibold text-alert">Details</summary>
+      <dl className="mt-1.5 space-y-1 font-mono text-[11.5px] leading-snug">
+        {step && <div><dt className="inline text-mute">step </dt><dd className="inline">{step}</dd></div>}
+        {kind && <div><dt className="inline text-mute">type </dt><dd className="inline">{kind}</dd></div>}
+        {msg && <div className="break-words"><dt className="inline text-mute">reason </dt><dd className="inline">{msg}</dd></div>}
+      </dl>
+      {url && <a href={url} target="_blank" rel="noreferrer" className="mt-1.5 inline-block font-semibold text-cobalt underline">Open this run in n8n</a>}
+    </details>
+  );
+}
+
 export function AgentLog({ item, limit }: { item: Item; limit?: number }) {
   const events = [...item.events].reverse().slice(0, limit);
   if (!events.length) {
@@ -56,6 +75,7 @@ export function AgentLog({ item, limit }: { item: Item; limit?: number }) {
               <p className="mt-0.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.1em] text-mute">
                 {k.label} · <span className="font-medium normal-case tracking-normal">{stamp(e.ts)}</span>
               </p>
+              {e.type === "error" && <ErrorDetails meta={e.meta} />}
             </div>
           </li>
         );

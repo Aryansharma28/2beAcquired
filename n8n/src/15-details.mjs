@@ -56,7 +56,7 @@ return [{ json: { itemId: row.itemId, data: JSON.stringify(it), item: it } }];`)
         required: ["title", "description", "titleEn", "descriptionEn"],
       },
     },
-    maxTokens: 1500,
+    maxTokens: 900,
   }));
   w.add("Ad ready", code(`
 const it = $('Apply details').first().json.item;

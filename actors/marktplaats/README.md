@@ -21,7 +21,7 @@ drive the real site with Playwright (Chrome) on the same session. **Login is nev
 | `delist` | `listingId`, `delistReason` (`sold_elsewhere`), `dryRun` | Playwright via "Mijn advertenties" -> delete | `{ ok, dryRun, listingId, alreadyRemoved, verified, screenshots[], notes[] }` |
 
 Common: `useProxy` (false; Apify RESIDENTIAL, countryCode NL, one sticky IP per run), `sessionStore`
-(`mp-session`), `photoStore` (`tba-photos`), `headful` (local debugging only).
+(required for logged-in actions, no default; `mp-session` is the owner's own login from scripts/mp-login), `photoStore` (`tba-photos`), `headful` (local debugging only).
 
 `photoUrls` entries can be `https://` URLs, `data:` URIs, or keys in the `photoStore` KV store.
 `condition`: `new`, `as_good_as_new`, `used`, `refurbished`, `not_working`, or the Dutch label.

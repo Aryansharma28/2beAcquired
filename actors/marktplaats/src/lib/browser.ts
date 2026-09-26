@@ -7,7 +7,7 @@
 import { Actor, log } from 'apify';
 import { chromium, type Browser, type BrowserContext, type Locator, type Page, type Response } from 'playwright';
 
-import { MpError } from './errors.js';
+import { MpError, inputError } from './errors.js';
 import { proxyUrlFor } from './proxy.js';
 import { loadSession, playwrightState, saveSession, type StorageState } from './session.js';
 import type { Input } from './types.js';
@@ -75,7 +75,9 @@ export async function withBrowser<T>(
     opts: { blockImages: boolean },
     fn: (run: BrowserRun) => Promise<T>,
 ): Promise<T> {
-    const storeName = input.sessionStore || 'mp-session';
+    // No default store: a missing sessionStore must never fall back to someone else's (the owner's) login.
+    const storeName = input.sessionStore;
+    if (!storeName) throw inputError(`'${action}' needs a sessionStore (the user's own Marktplaats session)`);
     const state = await loadSession(storeName);
     if (!state) {
         throw new MpError('SESSION_EXPIRED', `no stored session in KV store '${storeName}'; run scripts/mp-login first`);

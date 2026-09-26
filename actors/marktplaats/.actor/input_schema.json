@@ -242,9 +242,8 @@
         "sessionStore": {
             "title": "Session KV store",
             "type": "string",
-            "description": "Named key-value store holding the Playwright storageState under key 'state'.",
-            "editor": "textfield",
-            "default": "mp-session"
+            "description": "Named key-value store holding the user's Playwright storageState under key 'state'. Required for every logged-in action; there is deliberately no default. Use 'mp-session' for the owner's own login from scripts/mp-login.",
+            "editor": "textfield"
         },
         "photoStore": {
             "title": "Photo KV store",

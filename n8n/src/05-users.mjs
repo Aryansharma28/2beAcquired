@@ -102,10 +102,13 @@ return [{ json: { userId: b.userId, data: JSON.stringify(d) } }];`), { y });
   w.add("User items", tableGet("items"), { y, executeOnce: true });
   w.add("Waiting for connection", code(`
 const userId = $('Set connected').first().json.userId;
+const store = $('Marktplaats connected').first().json.body.store;
+if (!store) return [];
+// Approve saved mpStore = null while the user was not connected: give each waiting ad this user's own session.
 return $input.all().map(i => i.json).filter(r => r.status === 'needs_connection' && JSON.parse(r.data || '{}').ownerId === userId)
-  .map(r => ({ json: { itemId: r.itemId } }));`), { y });
-  w.add("Back to ad_ready", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { status: "ad_ready" }), { y });
-  w.add("Publish waiting ads", callWorkflow(ids.publish), { y });
+  .map(r => { const d = JSON.parse(r.data); d.mpStore = store; d.status = 'ad_ready'; return { json: { itemId: r.itemId, data: JSON.stringify(d) } }; });`), { y });
+  w.add("Back to ad_ready", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { status: "ad_ready", data: "={{ $json.data }}" }), { y });
+  w.add("Publish waiting ads", callWorkflow(ids.publish, { each: true }), { y });
   w.chain("Marktplaats connected", "User row", "Set connected", "Save connected", "Connected", "User items", "Waiting for connection", "Back to ad_ready", "Publish waiting ads");
 
   // POST /tba/mp-disconnected {userId}

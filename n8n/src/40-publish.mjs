@@ -10,6 +10,7 @@ const row = $input.all().map(i => i.json).find(r => r.itemId);
 if (!row) throw new Error('Item not found');
 if (!['ad_ready', 'publishing'].includes(row.status)) return [];   // already live / sold: nothing to do
 const item = JSON.parse(row.data);
+if (!item.mpStore) throw new Error('No Marktplaats connection for this item (mpStore missing): not publishing');   // never post on a shared account
 item.status = 'publishing';
 return [{ json: { itemId: row.itemId, status: 'publishing', data: JSON.stringify(item), item } }];`));
   w.add("Save publishing", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { status: "publishing", data: "={{ $json.data }}" }));
@@ -18,7 +19,7 @@ return [{ json: { itemId: row.itemId, status: 'publishing', data: JSON.stringify
 
   w.add("Post on Marktplaats (Apify)", actor(env, `={{ JSON.stringify((() => { const it = $('Mark publishing').first().json.item; return {
     action: 'post', title: it.title, description: it.description, price: it.askPrice, categoryHint: it.category,
-    condition: it.condition, delivery: 'pickup', priceType: 'Vraagprijs', allowBids: true, minBid: it.floorPrice, photoUrls: it.photos, useProxy: true, sessionStore: it.mpStore || 'mp-session', dryRun: ${env.MP_DRY_RUN === "1"} }; })()) }}`), { executeOnce: true });
+    condition: it.condition, delivery: 'pickup', priceType: 'Vraagprijs', allowBids: true, minBid: it.floorPrice, photoUrls: it.photos, useProxy: true, sessionStore: it.mpStore, dryRun: ${env.MP_DRY_RUN === "1"} }; })()) }}`), { executeOnce: true });
   w.link("Save publishing", "Post on Marktplaats (Apify)");
 
   w.add("Live", code(`

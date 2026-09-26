@@ -1,4 +1,4 @@
-import { MpError } from './errors.js';
+import { MpError, inputError } from './errors.js';
 import { MpHttp } from './http.js';
 import { proxyUrlFor } from './proxy.js';
 import { DEFAULT_UA, jarFromState, loadSession, saveSession, stateFromJar, type StorageState } from './session.js';
@@ -14,8 +14,10 @@ export interface HttpSession {
 
 /** `required`: throw SESSION_EXPIRED when there is no stored login at all. */
 export async function openHttpSession(input: Input, required: boolean): Promise<HttpSession> {
-    const storeName = input.sessionStore || 'mp-session';
-    const state = await loadSession(storeName);
+    // No default store: a missing sessionStore must never fall back to someone else's (the owner's) login.
+    const storeName = input.sessionStore;
+    if (required && !storeName) throw inputError("this action needs a sessionStore (the user's own Marktplaats session)");
+    const state = storeName ? await loadSession(storeName) : null;
     if (required && !state) {
         throw new MpError(
             'SESSION_EXPIRED',
@@ -35,7 +37,7 @@ export async function openHttpSession(input: Input, required: boolean): Promise<
                 rejected = err instanceof MpError && ['SESSION_EXPIRED', 'CAPTCHA'].includes(err.code);
                 throw err;
             } finally {
-                if (state && !rejected) await saveSession(storeName, await stateFromJar(jar, state));
+                if (state && storeName && !rejected) await saveSession(storeName, await stateFromJar(jar, state));
             }
         },
     };

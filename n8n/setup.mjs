@@ -39,6 +39,9 @@ if (env.LLM_API_KEY && env.LLM_BASE_URL) {
   await ensureCred("llmHttp", "TBA LLM bearer", "httpHeaderAuth", { name: "Authorization", value: `Bearer ${env.LLM_API_KEY}` });
 } else console.log("! LLM_API_KEY / LLM_BASE_URL missing");
 
+// Lets the error handler read the failed run (to find which item it was about).
+await ensureCred("n8nApi", "poof n8n API", "httpHeaderAuth", { name: "X-N8N-API-KEY", value: env.N8N_API_KEY });
+
 // Shared secret between the poof app (Vercel) and every n8n webhook.
 if (env.POOF_APP_KEY) await ensureCred("appKey", "poof app key", "httpHeaderAuth", { name: "X-Poof-Key", value: env.POOF_APP_KEY });
 

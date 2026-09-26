@@ -11,6 +11,7 @@ const j = $json;
 const rank = { live: 0, negotiating: 1, deal: 2, pickup_scheduled: 3, sold: 4 };
 const wanted = j.state === 'deal' ? 'deal' : j.state === 'pickup_scheduled' ? 'pickup_scheduled' : 'negotiating';
 const itemStatus = (rank[wanted] ?? 0) > (rank[j.itemStatus] ?? 0) ? wanted : j.itemStatus;   // never move backwards
+if (!j.sessionStore) throw new Error('No Marktplaats session for item ' + j.itemId + ': not sending');
 return { json: { ...j, text: j.text || '', lastOffer: j.lastOffer ?? null, itemStatus } };`));
   w.add("Save conversation", tableUpsert("conversations", { conversationId: "={{ $json.conversationId }}" }, {
     conversationId: "={{ $json.conversationId }}", itemId: "={{ $json.itemId }}", platform: "={{ $json.platform }}",
@@ -20,7 +21,7 @@ return { json: { ...j, text: j.text || '', lastOffer: j.lastOffer ?? null, itemS
   w.add("Has a reply?", ifTrue("={{ !!$('Prep').item.json.text }}"));
   w.chain("Reply to send", "Prep", "Save conversation", "Item status", "Has a reply?");
 
-  w.add("Send on Marktplaats (Apify)", actor(env, "={{ JSON.stringify({ action: 'reply', useProxy: true, sessionStore: $('Prep').item.json.sessionStore || 'mp-session', conversationId: $('Prep').item.json.conversationId, text: $('Prep').item.json.text }) }}", { timeout: 90 }));
+  w.add("Send on Marktplaats (Apify)", actor(env, "={{ JSON.stringify({ action: 'reply', useProxy: true, sessionStore: $('Prep').item.json.sessionStore, conversationId: $('Prep').item.json.conversationId, text: $('Prep').item.json.text }) }}", { timeout: 90 }));
   w.add("Agent message", codeEach(`
 const p = $('Prep').item.json;
 return { json: { itemId: p.itemId, conversationId: p.conversationId, platform: p.platform, buyer: p.buyer,

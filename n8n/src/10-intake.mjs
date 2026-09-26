@@ -1,4 +1,4 @@
-import { Workflow, webhook, respond, code, tableInsert, tableUpdate, llm, ARGS, actor, apify } from "../lib.mjs";
+import { Workflow, webhook, respond, code, tableInsert, tableUpdate, llm, ARGS, actor, apify, ifTrue } from "../lib.mjs";
 
 // W1 · Intake (screens 01→02): photos → Google Lens + vision → real comparables → "Is this it?" + market range.
 export default (env, ids) => {
@@ -45,12 +45,30 @@ return [{ json: { itemId: $('New item').first().json.itemId, lensTitles: titles 
   w.link("Store photos (Apify)", "Identify product (Google Lens · Apify)");
   w.log("Store photos (Apify)", "=Looking it up with Google Lens…", { itemId: "={{ $('New item').first().json.itemId }}" });
   w.link("Identify product (Google Lens · Apify)", "Lens matches");
-  w.log("Lens matches", "={{ $json.lensTitles.length ? 'Google Lens: looks like ' + $json.lensTitles[0] : 'Google Lens found no exact match' }}");
+  w.add("Lens found it?", ifTrue("={{ $json.lensTitles.length > 0 }}"));
+  w.link("Lens matches", "Lens found it?");
+  w.add("Google Lens retry (broader)", apify("POST", "https://api.apify.com/v2/acts/borderline~google-lens/run-sync-get-dataset-items?timeout=150", {
+    sendBody: true, specifyBody: "json",
+    jsonBody: "={{ JSON.stringify({ searchTypes: ['visual-match', 'products', 'all'], language: 'nl', imagesBase64: [$('New item').first().json.photosB64.at(-1)] }) }}",
+    options: { timeout: 170000 },
+  }), { executeOnce: true, onError: "continueRegularOutput", alwaysOutputData: true, position: [w.x, 220] });
+  w.link("Lens found it?", "Google Lens retry (broader)", 1);
+  w.log("Lens found it?", "=Google Lens needs a second look…", { itemId: "={{ $('New item').first().json.itemId }}", name: "Log · Lens retry" });
+  w.connections["Lens found it?"].main[0] = w.connections["Lens found it?"].main[0].filter((c) => c.node !== "Log · Lens retry");
+  w.link("Lens found it?", "Log · Lens retry", 1);
+  w.add("Lens result", code(`
+const titlesFrom = (items) => { const s = JSON.stringify(items.map(i => i.json)); return [...s.matchAll(/"title":"([^"]{5,120})"/g)].map(m => m[1]).filter((t, i, a) => a.indexOf(t) === i).slice(0, 15); };
+const first = $('Lens matches').first().json.lensTitles;
+const retry = $('Google Lens retry (broader)').isExecuted ? titlesFrom($('Google Lens retry (broader)').all()) : [];
+return [{ json: { itemId: $('New item').first().json.itemId, lensTitles: first.length ? first : retry } }];`), { executeOnce: true });
+  w.link("Lens found it?", "Lens result", 0);
+  w.link("Google Lens retry (broader)", "Lens result");
+  w.log("Lens result", "={{ $json.lensTitles.length ? 'Google Lens: looks like ' + $json.lensTitles[0] : 'Google Lens found no exact match, going by the photo' }}");
 
   w.add("Recognise item (vision LLM)", llm(env, {
     vision: true,
     system: JSON.stringify("You identify second-hand items from photos for a Dutch reseller. Most items are mass-market products: first ask yourself which well-known product this is (IKEA, HEMA, Philips, Gazelle, Apple, Lego, ...) and name the exact model if you recognise it (e.g. 'IKEA POÄNG armchair'). Only call something vintage/designer if it clearly is. If the owner gives a hint, trust it. Google Lens matches are strong evidence for brand/model: if several agree, use that product. Use the photo itself for condition, colour and defects. searchQuery = what a Dutch buyer types on Marktplaats for THIS product (brand + model, 2-4 words, e.g. 'ikea poang'); searchQueryBroad = the generic category in Dutch (e.g. 'fauteuil')."),
-    content: "[{ type: 'text', text: 'Identify this item. Owner hint: ' + ($('New item').first().json.item.notes || 'none') + '. Google Lens visual matches (most reliable for brand/model, ignore outliers): ' + $('Lens matches').first().json.lensTitles.join(' | ') }].concat($('New item').first().json.photosB64.slice(0, 2).map(d => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + d } })))",
+    content: "[{ type: 'text', text: 'Identify this item. Owner hint: ' + ($('New item').first().json.item.notes || 'none') + '. Google Lens visual matches (most reliable for brand/model, ignore outliers): ' + $('Lens result').first().json.lensTitles.join(' | ') }].concat($('New item').first().json.photosB64.slice(0, 2).map(d => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + d } })))",
     tool: {
       name: "record_item", description: "Record what the item is",
       input_schema: {
@@ -67,10 +85,32 @@ return [{ json: { itemId: $('New item').first().json.itemId, lensTitles: titles 
         required: ["name", "category", "condition", "searchQuery", "searchQueryBroad", "attributes"],
       },
     },
-  }), { executeOnce: true });
-  w.link("Lens matches", "Recognise item (vision LLM)");
-  w.add("Recognised", code(`return [{ json: { itemId: $('New item').first().json.itemId, recognition: ${ARGS.replaceAll("$json", "$input.first().json")} } }];`));
-  w.link("Recognise item (vision LLM)", "Recognised");
+    maxTokens: 600, // Groq free tier: 1000 output tokens/min on the vision model
+  }), { executeOnce: true, onError: "continueRegularOutput", alwaysOutputData: true });
+  w.link("Lens result", "Recognise item (vision LLM)");
+  w.add("Vision worked?", ifTrue("={{ !!($json.choices && $json.choices.length) }}"));
+  w.link("Recognise item (vision LLM)", "Vision worked?");
+  w.add("Recognise from Lens (text LLM)", llm(env, {
+    system: JSON.stringify("You identify a second-hand item for a Dutch reseller from Google Lens matches of its photo (the photo itself is unavailable). Pick the product most matches agree on. If unsure, stay generic. Condition: assume 'Gebruikt'. searchQuery = what a Dutch buyer types on Marktplaats (brand + model, 2-4 words); searchQueryBroad = the generic category in Dutch."),
+    content: "'Google Lens matches: ' + $('Lens result').first().json.lensTitles.join(' | ') + '. Owner hint: ' + ($('New item').first().json.item.notes || 'none')",
+    tool: {
+      name: "record_item", description: "Record what the item is",
+      input_schema: { type: "object", properties: {
+        name: { type: "string" }, brand: { type: "string" }, category: { type: "string" },
+        condition: { type: "string", enum: ["Nieuw", "Zo goed als nieuw", "Gebruikt", "Niet werkend"] },
+        attributes: { type: "array", items: { type: "string" } }, searchQuery: { type: "string" }, searchQueryBroad: { type: "string" },
+      }, required: ["name", "category", "condition", "searchQuery", "searchQueryBroad", "attributes"] },
+    },
+    maxTokens: 500,
+  }), { executeOnce: true, position: [w.x, 220] });
+  w.link("Vision worked?", "Recognise from Lens (text LLM)", 1);
+  w.add("Recognised", code(`
+const fromText = $('Recognise from Lens (text LLM)').isExecuted;
+const src = fromText ? $('Recognise from Lens (text LLM)').first().json : $('Recognise item (vision LLM)').first().json;
+const recognition = ${ARGS.replaceAll("$json", "src")};
+return [{ json: { itemId: $('New item').first().json.itemId, recognition, via: fromText ? 'lens' : 'vision' } }];`));
+  w.link("Vision worked?", "Recognised", 0);
+  w.link("Recognise from Lens (text LLM)", "Recognised");
   w.log("Recognised", "=Recognised: {{ $json.recognition.name }} ({{ $json.recognition.condition }})");
 
   w.add("Comparables (Apify)", actor(env, `={{ JSON.stringify({ action: 'comps', query: $json.recognition.searchQuery, fallbackQuery: $json.recognition.searchQueryBroad, limit: 40 }) }}`, { timeout: 120, soft: true }), { alwaysOutputData: true });
@@ -82,7 +122,7 @@ return [{ json: { itemId: $('New item').first().json.itemId, lensTitles: titles 
     content: "JSON.stringify({ item: $('Recognised').first().json.recognition, candidates: $input.all().map((c, i) => ({ i, title: c.json.title, price: c.json.price })).filter(c => typeof c.price === 'number').slice(0, 40) })",
     tool: { name: "select_matches", description: "Indexes of candidates that are the same product",
       input_schema: { type: "object", properties: { matches: { type: "array", items: { type: "integer" } }, note: { type: "string" } }, required: ["matches"] } },
-    maxTokens: 600,
+    maxTokens: 400,
   }), { executeOnce: true, onError: "continueRegularOutput" });
 
   // Market picture for screens 02/04: what it is + what similar ones sell for. Then wait for the owner's details.
@@ -102,7 +142,7 @@ const priceRange = clean.length >= 3 ? { low: q(clean, 0.25), mid: q(clean, 0.5)
 const item = { ...n.item, status: 'needs_details',
   recognition: { name: r.name, brand: r.brand, category: r.category, condition: r.condition, attributes: r.attributes || [] },
   name: r.name, brand: r.brand, category: r.category, condition: r.condition, attributes: r.attributes || [], searchQuery: r.searchQuery,
-  lensTitles: $('Lens matches').first().json.lensTitles.slice(0, 5), coverIndex: 0,
+  lensTitles: $('Lens result').first().json.lensTitles.slice(0, 5), coverIndex: 0,
   priceRange, compsCount: clean.length, compPrices: clean,
   comps: comps.filter(c => clean.includes(c.price)).slice(0, 12).map(c => ({ title: c.title, price: c.price, url: c.url, image: c.image, platform: 'marktplaats' })) };
 return [{ json: { itemId: n.itemId, status: 'needs_details', data: JSON.stringify(item), compsCount: clean.length, priceRange } }];`));

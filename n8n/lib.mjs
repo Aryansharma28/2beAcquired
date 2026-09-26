@@ -209,7 +209,7 @@ export const llm = (env, { system, content, tool, maxTokens = 1500, vision = fal
       response_format: { type: "json_schema", json_schema: ${JSON.stringify({ name: tool.name, schema: tool.input_schema })} } })`) + " }}",
     options: { timeout: 120000 },
   },
-  { ...cred("llmHttp", "httpHeaderAuth"), retryOnFail: true, maxTries: 3, waitBetweenTries: 3000 },
+  { ...cred("llmHttp", "httpHeaderAuth"), retryOnFail: true, maxTries: 5, waitBetweenTries: 5000 }, // rides out Groq free-tier per-minute limits
 ];
 
 // Our Marktplaats Apify actor, run synchronously; returns one n8n item per dataset item.
@@ -230,6 +230,13 @@ export const apify = (method, url, extra = {}) => [
   "n8n-nodes-base.httpRequest", 4.2,
   { method, url, authentication: "genericCredentialType", genericAuthType: "httpHeaderAuth", ...extra, options: extra.options ?? {} },
   cred("apify", "httpHeaderAuth"),
+];
+
+// n8n's own public API (used by the error handler to read failed runs)
+export const n8nApi = (env, pathExpr) => [
+  "n8n-nodes-base.httpRequest", 4.2,
+  { method: "GET", url: `=${env.N8N_BASE_URL}/api/v1${pathExpr}`, authentication: "genericCredentialType", genericAuthType: "httpHeaderAuth", options: { timeout: 30000 } },
+  { ...cred("n8nApi", "httpHeaderAuth"), onError: "continueRegularOutput", alwaysOutputData: true },
 ];
 
 // Push to phone via ntfy.sh JSON publishing. bodyExpr must evaluate to {title, message, tags?, click?, actions?}

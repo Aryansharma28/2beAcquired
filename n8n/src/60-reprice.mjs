@@ -14,7 +14,7 @@ const now = Date.now(), H = 3600e3;
 return $('Items').all().map(i => i.json).filter(r => r.status === 'live').flatMap(r => {
   const it = JSON.parse(r.data);
   const mp = (it.listings || []).find(l => l.platform === 'marktplaats' && l.status === 'live');
-  if (!mp) return [];
+  if (!mp || !it.mpStore) return [];
   const lastChange = Date.parse((it.priceHistory || []).at(-1)?.ts || it.liveAt || it.createdAt);
   const every = ['fast', 'week'].includes(it.goal) ? ${fastH} : ${slowH};
   if ((now - lastChange) < every * H) return [];
@@ -37,7 +37,7 @@ return { json: { itemId: c.itemId, listingId: c.listing.listingId, old: it.askPr
   w.add("Lower price?", ifTrue("={{ $json.change }}"));
   w.chain("Candidates", "Views (Apify)", "Decide", "Lower price?");
 
-  w.add("Update price (Apify)", actor(env, "={{ JSON.stringify({ action: 'update_price', sessionStore: $json.item.mpStore || 'mp-session', listingId: $json.listingId, price: $json.next, dryRun: " + (env.MP_DRY_RUN === "1") + " }) }}"));
+  w.add("Update price (Apify)", actor(env, "={{ JSON.stringify({ action: 'update_price', sessionStore: $json.item.mpStore, listingId: $json.listingId, price: $json.next, dryRun: " + (env.MP_DRY_RUN === "1") + " }) }}"));
   w.add("New price", codeEach(`
 const d = $('Decide').item.json, it = d.item;
 it.askPrice = d.next;

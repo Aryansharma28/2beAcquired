@@ -21,8 +21,10 @@ return [{ json: {
     item: { title: 'IKEA POÄNG schommelstoel', description: 'Gebruikt, goede staat. Ophalen in Amsterdam.', condition: 'Gebruikt', askPrice: 40, floorPrice: 30, goal: 'week', pickupCity: 'Amsterdam', ...(b.item || {}) },
     conversation: { stage: b.stage || 'open', agreedPrice: b.lastOffer ?? null, pickup: null, messages: msgs },
     latestBuyerMessages: buyerTail, bids: [], freeSlots: slots.map(s => ({ start: s.start, label: s.label })),
-    pickupAddress: 'Teststraat 1, Amsterdam', reservedForSomeoneElse: !!b.reservedForSomeoneElse,
-  } } }];`));
+    reservedForSomeoneElse: !!b.reservedForSomeoneElse,
+  },
+  pickupAddress: 'Teststraat 1, Amsterdam',
+} }];`));
   w.add("Sales agent (AI)", agent({ text: "={{ JSON.stringify($json.context) }}", system: SYSTEM }));
   w.add("Model", chatModel(env), { position: [w.x - 260, 240] });
   w.add("Decision format", outputParser(SCHEMA), { position: [w.x - 60, 240] });
