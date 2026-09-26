@@ -93,3 +93,29 @@ Statuses: `recognizing` → `needs_details` → `writing` → `ad_ready` → `pu
 - `POST /tba/approve {itemId, title?, description?, askPrice?}` → `{ok}`. Applies edits, publishes. `publishing` → `live`.
 - `GET /tba/item?id=` adds `recap {days, messages, counters}`, `now` (latest agent step), `stats {views, saves, chats}` when known.
 - Condition values: "Nieuw" | "Zo goed als nieuw" | "Gebruikt" | "Niet werkend" (UI chips: New · Like new · Good · Used map to these; Good = "Gebruikt" with good note).
+
+## v3 — real multi-user app on Vercel (26 Sept, 16:00)
+
+### Accounts
+- No passwords. First visit: `POST /api/account` creates `usr_<random>` and sets an httpOnly cookie `poof_uid=<userId>.<hmac>` (HMAC-SHA256 with `POOF_SESSION_SECRET`, 1 year). Lose the cookie = lose the account (acceptable for v1; friends test).
+- The Vercel proxy `/api/tba/*` forwards to n8n with headers `X-Poof-Key: <POOF_APP_KEY>` (shared secret; n8n webhooks reject anything else) and `X-Poof-User: <userId>`.
+
+### Connect Marktplaats (per user) — poof Connector extension
+Marktplaats has no consumer OAuth, so the user's own browser does the login; poof never sees a password.
+1. App (phone or laptop): "Connect Marktplaats" → `POST /api/connect/code` → 6-digit code, valid 15 min (stored in n8n `poof_pairings`).
+2. Laptop: install **poof Connector** (Chrome MV3, `extension/`), log in to marktplaats.nl as usual, open the extension, enter the code, read the consent, tap **Allow**.
+3. Extension checks it's logged in (`GET https://www.marktplaats.nl/identity/v2/api/user` with the browser's cookies), reads marktplaats.nl cookies (`chrome.cookies.getAll`), and `POST {POOF_URL}/api/connect/claim {code, cookies[], userAgent, mpUser{id,name}}`.
+4. Server: `n8n POST /tba/pair/claim {code}` → userId; writes Playwright storageState to Apify KV store `mp-session-<userId>` key `state`; `n8n POST /tba/mp-connected {userId, name, store}`; returns `{ok, name, deviceToken}`.
+5. Extension keeps the session fresh: every 6 h (chrome.alarms) and on marktplaats.nl cookie change (debounced) → `POST /api/connect/refresh {deviceToken, cookies[], userAgent}`. `deviceToken` = HMAC-signed userId issued at claim.
+6. Disconnect: app `DELETE /api/connect` (clears store + flag); extension "Disconnect" button does the same with its deviceToken.
+
+### n8n additions (all webhooks require `X-Poof-Key`)
+- Tables: `poof_users` (userId, status, data JSON: mpConnected, mpName, mpStore, connectedAt, pickupCity, pickupAddress, pickupHours, name), `poof_pairings` (code, userId, expiresAt, claimed).
+- `POST /tba/users` create · `GET /tba/me` · `POST /tba/me` update profile · `POST /tba/pair/new` · `POST /tba/pair/claim` · `POST /tba/mp-connected` · `POST /tba/mp-disconnected`.
+- Items get `ownerId` (from `X-Poof-User`); `GET /tba/items` and `/tba/item` only return the caller's items. Actor calls pass `sessionStore: <user.mpStore>`. Inbox loops per connected user. Agent context uses the owner's pickup address / hours. Google Calendar only for the owner account (`OWNER_USER_ID`).
+- `POST /tba/approve` when the user isn't connected → item status `needs_connection` (app shows the connect flow, then re-approves).
+
+### App additions
+- Onboarding (first run): "poof sells your stuff on Marktplaats for you" → name + pickup city/address/hours → Connect Marktplaats (code screen with live status polling `GET /api/account` until connected; "Skip for now" allowed) → home.
+- Settings sheet: Marktplaats connected as {name} · Disconnect · pickup details.
+- Consent copy (app + extension): what poof does (posts ads, reads and answers buyer messages, changes prices, removes ads, never asks for your password), that automated selling may break Marktplaats's terms and the account could be restricted, and how to disconnect.
