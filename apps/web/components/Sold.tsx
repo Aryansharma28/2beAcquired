@@ -1,13 +1,35 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { PLATFORM, eur, pickupWhen, recapOf } from "@/lib/format";
+import { coverFirst } from "@/lib/useItem";
 import type { Item, Pickup, Platform } from "@/lib/types";
 import { Thread } from "./Chats";
-import { Button, PlatformDot, Tick, cx } from "./ui";
+import { Button, Eyebrow, PlatformLogo, Tick, cx } from "./ui";
+
+type Phase = "sticker" | "poof" | "done";
+
+/** Whether this item's sold moment already played in this tab (so going back and forth doesn't replay it). */
+function firstPhase(id: string): Phase {
+  if (typeof window === "undefined") return "sticker";
+  try {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "done";
+    if (sessionStorage.getItem(`poof:sold:${id}`)) return "done";
+  } catch { /* storage blocked: just play it */ }
+  return "sticker";
+}
+
+function play(src: string, volume: number) {
+  try {
+    const a = new Audio(src);
+    a.volume = volume;
+    a.play().catch(() => {});
+  } catch { /* no audio: fine */ }
+}
 
 /** 14 · Sold. While status is deal / pickup_scheduled it's the
- *  "Sold, pickup planned" variant; at `sold` everything is wrapped up. */
+ *  "Sold, pickup planned" variant; at `sold` everything is wrapped up.
+ *  The ad photo poofs away (sprite + sound from the waitlist page), then the result shows. */
 export function Sold({ item, onOverview }: { item: Item; onOverview: () => void }) {
   const sale = item.sale;
   const [now] = useState(() => Date.now());
@@ -17,116 +39,102 @@ export function Sold({ item, onOverview }: { item: Item; onOverview: () => void 
   // Only platforms we really listed on.
   const platforms: Platform[] = item.listings.length ? [...new Set(item.listings.map((l) => l.platform))] : ["marktplaats"];
   const recap = recapOf(item);
+  const photo = coverFirst(item)[0];
 
-  const confetti = useMemo(
-    () =>
-      Array.from({ length: 28 }, (_, i) => ({
-        left: (i * 37) % 100,
-        delay: (i % 7) * 120,
-        dur: 1800 + ((i * 53) % 1400),
-        dx: `${((i * 29) % 80) - 40}px`,
-        rot: `${(i * 97) % 720}deg`,
-        color: ["#ffd84d", "#ffffff", "#0b0d12", "#ffd84d"][i % 4],
-        w: 6 + (i % 3) * 3,
-      })),
-    [],
-  );
+  const [phase, setPhase] = useState<Phase>(() => firstPhase(item.id));
+  useEffect(() => {
+    if (phase !== "sticker") return;
+    const t1 = setTimeout(() => { setPhase("poof"); play("/brand/poof-item.mp3", 0.5); }, 450);
+    const t2 = setTimeout(() => {
+      setPhase("done");
+      play("/brand/poof-success.mp3", 0.6);
+      try { sessionStorage.setItem(`poof:sold:${item.id}`, "1"); } catch { /* ignore */ }
+    }, 1300);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // Runs once per mount: the phase only moves forward.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const shown = phase === "done";
 
   return (
-    <div className="-mx-5">
-      <div className="relative overflow-hidden rounded-t-[36px] bg-cobalt px-6 pb-8 pt-4 text-white">
-        <div className="pointer-events-none absolute inset-0" aria-hidden>
-          {confetti.map((c, i) => (
-            <span
-              key={i}
-              className="absolute top-0 rounded-[2px]"
-              style={{
-                left: `${c.left}%`, width: c.w, height: c.w * 1.6, background: c.color,
-                animation: `confetti ${c.dur}ms ${c.delay}ms cubic-bezier(0.25,0.6,0.4,1) both`,
-                ["--dx" as string]: c.dx, ["--rot" as string]: c.rot,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* The swing tag, hanging on its string */}
-        <div className="relative flex justify-center pt-1">
-          <div className="flex origin-top animate-swing flex-col items-center">
-            <span className="relative z-10 h-14 w-[2px] rounded-full bg-white/80" />
-            <div className="-mt-[30px] drop-shadow-[0_18px_22px_rgba(0,0,0,0.35)]">
-              <div
-                className="relative flex w-[164px] flex-col items-center bg-tag px-4 pb-5 pt-11 text-ink"
-                style={{ clipPath: "polygon(50% 0, 100% 16%, 100% 100%, 0 100%, 0 16%)", borderRadius: 6 }}
-              >
-                <span className="absolute top-5 size-4 rounded-full bg-cobalt shadow-[inset_0_1px_3px_rgba(0,0,0,0.35)]" />
-                <span className="font-mono text-[13px] font-bold uppercase tracking-[0.3em]">Sold</span>
-                <span className="tabular mt-1 font-mono text-[54px] font-bold leading-none tracking-[-0.05em]">{eur(sale?.price)}</span>
-                <span className="mt-3 h-px w-full bg-ink/20" />
-                <span className="mt-2 font-mono text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink/60">
-                  asked {eur(item.askPrice)}
-                </span>
-              </div>
-            </div>
+    <div className="-mx-5 -mt-2">
+      {/* The poof stage */}
+      <div className="relative flex h-[280px] items-center justify-center overflow-hidden">
+        {phase !== "done" && photo && (
+          <div
+            className={cx("sticker w-[52%] max-w-[210px] overflow-hidden rounded-[12px] transition-[transform,opacity] duration-300 ease-in",
+              phase === "poof" && "!scale-0 opacity-0")}
+            style={{ ["--tilt" as string]: "-3deg" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photo} alt="" className="aspect-square w-full object-cover" />
           </div>
-        </div>
+        )}
+        {phase === "poof" && <span className="poof-fx absolute left-1/2 top-1/2 size-[260px] -translate-x-1/2 -translate-y-1/2" aria-hidden />}
 
-        <div className="relative mt-6 animate-rise text-center [animation-delay:400ms]">
-          <h2 className="font-display text-[44px] font-extrabold leading-[0.95] tracking-[-0.045em]">
-            {done ? `Sold for ${eur(sale?.price)}` : "Sold, pickup planned"}
+        <div className={cx("absolute inset-x-0 px-6 text-center transition-opacity duration-500", shown ? "opacity-100" : "opacity-0")} aria-live="polite">
+          <h2 className="text-[32px] font-extrabold leading-[1.15] tracking-[-0.02em]">
+            {done ? <><span className="marker">Sold</span> for {eur(sale?.price)}</> : <><span className="marker">Sold</span>, pickup planned</>}
           </h2>
-          <p className="mt-2 text-[16px] text-white/80">
+          <p className="mt-2 text-[15px] text-moss">
             {done
               ? [buyer && `to ${buyer}`, sale && `on ${PLATFORM[sale.platform]}`].filter(Boolean).join(" ")
               : [`Deal at ${eur(sale?.price)}`, buyer, sale && PLATFORM[sale.platform]].filter(Boolean).join(" · ")}
           </p>
-          <p className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full bg-white/12 px-3.5 py-1.5 font-mono text-[12px] font-bold tracking-[0.02em]">
-            {recap.duration} · {recap.messages} message{recap.messages === 1 ? "" : "s"} · {recap.counters} counter{recap.counters === 1 ? "" : "s"}
-          </p>
         </div>
-
-        {/* Next step */}
-        {item.pickup && (
-          <div className="relative mt-6">
-            <p className="mb-2 px-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">Next step</p>
-            <PickupCard pickup={item.pickup} done={new Date(item.pickup.end).getTime() < now} />
-          </div>
-        )}
-
-        <section className="relative mt-3 animate-rise rounded-3xl bg-white/10 p-4 backdrop-blur [animation-delay:700ms]">
-          <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">Removed</p>
-          <ul className="space-y-2">
-            {platforms.map((p, i) => {
-              const gone = item.listings.find((l) => l.platform === p)?.status === "removed";
-              return (
-                <li key={p} className="flex items-center gap-3 rounded-2xl bg-white/10 px-3.5 py-2.5">
-                  <PlatformDot platform={p} className="size-2.5 ring-2 ring-white/80" />
-                  <span className="flex-1 text-[15px] font-semibold">{PLATFORM[p]}</span>
-                  <span className="text-[12.5px] text-white/70">{gone ? "ad taken down" : "taking the ad down…"}</span>
-                  <span className={cx("grid size-7 place-items-center rounded-full transition-colors duration-500", gone ? "bg-tag text-ink" : "bg-white/15")}>
-                    {gone ? <Tick className="size-4" delay={i * 120} /> : <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
-        <Button href="/new" variant="ghost" className="relative mt-5 w-full !bg-tag !py-4 !text-[17px] !text-ink !ring-0">
-          Sell something else
-        </Button>
-        <button onClick={onOverview} className="relative mt-3 w-full py-2 text-center text-[14.5px] font-semibold text-white/85 underline decoration-white/40 underline-offset-4">
-          How this ad went
-        </button>
       </div>
 
-      {conv && (
-        <div className="bg-cobalt">
-          <div className="rounded-t-[28px] bg-paper px-5 pb-6 pt-5">
-            <p className="mb-2.5 px-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-mute">How the agent closed it</p>
+      {/* Next panel */}
+      <div className={cx("relative -mb-28 min-h-[60dvh] rounded-t-[28px] bg-card px-5 pb-36 pt-5 shadow-float transition-transform duration-500", shown ? "translate-y-0" : "translate-y-3")}>
+        {item.pickup && (
+          <section>
+            <Eyebrow className="mb-2.5">Next</Eyebrow>
+            <PickupCard pickup={item.pickup} done={new Date(item.pickup.end).getTime() < now} light />
+          </section>
+        )}
+
+        <div className={cx("rounded-[20px] bg-card px-4 py-1 shadow-soft", item.pickup && "mt-3")}>
+          {[
+            ["Time to sell", recap.duration],
+            ["Messages handled", String(recap.messages)],
+            ["Counter offers", String(recap.counters)],
+          ].map(([k, v]) => (
+            <div key={k} className="flex min-h-11 items-center justify-between border-b border-line last:border-0">
+              <span>{k}</span>
+              <b className="font-bold tabular">{v}</b>
+            </div>
+          ))}
+        </div>
+
+        <Eyebrow className="mb-2.5 mt-[22px]">Removed from</Eyebrow>
+        <ul className="flex flex-wrap gap-2">
+          {platforms.map((p, i) => {
+            const gone = item.listings.find((l) => l.platform === p)?.status === "removed";
+            return (
+              <li key={p} className="inline-flex items-center gap-2 rounded-full bg-page py-1 pl-1 pr-3 text-[13px] font-semibold">
+                <PlatformLogo platform={p} className="!size-6" />
+                {gone ? <Tick className="size-3.5" delay={i * 120} /> : <span className="size-3 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />}
+                {PLATFORM[p]}
+                <span className="font-normal text-moss">{gone ? "ad taken down" : "taking the ad down…"}</span>
+              </li>
+            );
+          })}
+        </ul>
+
+        <Button href="/new" className="mt-[18px] w-full">Sell something else</Button>
+        <button onClick={onOverview} className="mt-1 min-h-11 w-full text-center text-[15px] font-semibold text-ink underline underline-offset-4">
+          How this ad went
+        </button>
+
+        {conv && (
+          <div className="mt-4">
+            <div className="puff-line mb-3" />
+            <Eyebrow className="mb-1">How Poof closed it</Eyebrow>
             <Thread c={conv} />
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -138,26 +146,26 @@ export function PickupCard({ pickup, done, light }: { pickup: Pickup; done?: boo
   const first = pickup.buyer.split(" ")[0];
   return (
     <section className={cx(
-      "relative flex animate-pop items-center gap-4 rounded-3xl bg-white p-3 pr-4 text-ink",
-      light ? "shadow-soft" : "shadow-[0_18px_40px_-18px_rgba(0,0,0,0.5)] [animation-delay:550ms]",
+      "relative flex animate-pop items-center gap-3.5 rounded-[20px] bg-limetint p-3.5 text-ink",
+      !light && "shadow-float [animation-delay:550ms]",
     )}>
-      <div className="w-[64px] shrink-0 overflow-hidden rounded-2xl text-center ring-1 ring-line">
-        <div className="bg-alert py-0.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-white">{w.month}</div>
-        <div className="font-display text-[30px] font-extrabold leading-[1.15] tracking-[-0.04em]">{w.date}</div>
-        <div className="pb-1 text-[11px] font-semibold text-mute">{w.weekday}</div>
+      <div className="w-[56px] shrink-0 overflow-hidden rounded-[12px] bg-card text-center leading-[1.1] shadow-soft">
+        <div className="bg-ink py-0.5 text-[10.5px] font-bold text-lime">{w.month}</div>
+        <div className="pt-1 text-[22px] font-extrabold">{w.date}</div>
+        <div className="pb-1 text-[11px] font-semibold text-moss">{w.weekday}</div>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-mono text-[10.5px] font-bold uppercase tracking-[0.16em] text-cobalt">
+        <p className="text-[12px] font-bold text-moss">
           {done ? "Picked up" : "Pickup"} · {pickup.label ?? w.day}
         </p>
-        <p className="tabular font-display text-[21px] font-bold leading-tight tracking-[-0.02em]">
-          {w.time}<span className="text-mute"> – {end.time}</span>
+        <p className="tabular text-[18px] font-extrabold leading-tight">
+          {w.time}<span className="font-bold text-moss"> – {end.time}</span>
         </p>
-        <p className="text-[13.5px] text-ink-2">
+        <p className="text-[13.5px] text-moss">
           {first} picks up{pickup.addressShared && <> · address shared with {first}</>}
         </p>
         {pickup.calendarEventId && (
-          <p className="mt-0.5 flex items-center gap-1 text-[12.5px] font-semibold text-go">
+          <p className="mt-0.5 flex items-center gap-1 text-[12.5px] font-bold text-ink">
             <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></svg>
             In your calendar
           </p>
