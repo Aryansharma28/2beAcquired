@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { CONSENT, PICKUP_HOURS, getAccount, newPairCode, type Account, type PairCode, type Profile } from "@/lib/account";
+import { CONSENT, PICKUP_HOURS, getAccount, newPairCode, phoneLoginStatus, startPhoneLogin, type Account, type PairCode, type PhoneLogin, type Profile } from "@/lib/account";
 import { Button, Eyebrow, PlatformLogo, Tick, cx } from "./ui";
 
-/** Connect Marktplaats: pairing code for the poof Connector + live status. */
+/** Connect Marktplaats: log in right here (secure browser streamed into the app), or the poof Connector on a laptop. */
 export function ConnectMarktplaats({
   onConnected, onSkip, skipLabel = "Skip for now", compact,
 }: { onConnected: (a: Account) => void; onSkip?: () => void; skipLabel?: string; compact?: boolean }) {
@@ -55,6 +55,9 @@ export function ConnectMarktplaats({
 
   return (
     <div className="space-y-4">
+      <PhoneLoginCard />
+
+      <Eyebrow className="px-1 pt-2">Or on a laptop, with the poof Connector</Eyebrow>
       <div className="rounded-[28px] bg-ink px-5 pb-5 pt-4 text-white">
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-tag">
@@ -85,7 +88,6 @@ export function ConnectMarktplaats({
       {error && <p className="rounded-2xl bg-alert-soft p-3 text-[14px] text-alert">Couldn&apos;t get a code: {error}</p>}
 
       <section>
-        <Eyebrow className="mb-2 px-1">On your laptop</Eyebrow>
         <ol className="overflow-hidden rounded-[24px] bg-card ring-1 ring-line/60">
           {[
             <>Install <Link href="/connector" className="font-bold text-cobalt underline decoration-cobalt/30 underline-offset-2">poof Connector</Link> in Chrome</>,
@@ -108,6 +110,62 @@ export function ConnectMarktplaats({
         </button>
       )}
     </div>
+  );
+}
+
+/** Opens a Marktplaats login in CloakBrowser on Apify, shown full-screen in an iframe. The actor links the session itself;
+ *  the account poll in ConnectMarktplaats then flips to "Connected" and this unmounts. */
+function PhoneLoginCard() {
+  const [login, setLogin] = useState<PhoneLogin | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!login || url) return;
+    let stop = false;
+    const started = Date.now();
+    const tick = async () => {
+      if (stop) return;
+      try {
+        const s = await phoneLoginStatus(login);
+        if (s.state === "ready" && s.url) { setUrl(s.url); setBusy(false); return; }
+        if (s.state === "ended") { setError(s.message || "The secure browser stopped. Try again."); setBusy(false); setLogin(null); return; }
+      } catch { /* keep polling */ }
+      if (Date.now() - started > 120_000) { setError("The secure browser took too long to start. Try again."); setBusy(false); setLogin(null); return; }
+      setTimeout(tick, 2000);
+    };
+    tick();
+    return () => { stop = true; };
+  }, [login, url]);
+
+  const start = () => {
+    setBusy(true); setError(null); setUrl(null);
+    startPhoneLogin().then(setLogin).catch((e: Error) => { setError(e.message); setBusy(false); });
+  };
+
+  return (
+    <section className="rounded-[28px] bg-card p-5 ring-1 ring-line/60">
+      <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-mute">
+        <PlatformLogo platform="marktplaats" className="!size-4 !text-[9px]" /> On this phone
+      </p>
+      <p className="mt-2 text-[15px] leading-snug text-ink-2">
+        Log in to Marktplaats in a secure window. You type your password and SMS code yourself; poof never sees them.
+      </p>
+      <Button onClick={start} disabled={busy} className="mt-4 w-full !py-4 !text-[17px]">
+        {busy ? "Opening a secure browser… (~30 s)" : "Log in to Marktplaats"}
+      </Button>
+      {error && <p className="mt-3 rounded-2xl bg-alert-soft p-3 text-[14px] text-alert">{error}</p>}
+      {url && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-paper">
+          <div className="flex items-center justify-between px-4 py-2">
+            <span className="text-[13px] font-semibold text-mute">Secure Marktplaats login</span>
+            <button onClick={() => { setUrl(null); setLogin(null); }} className="rounded-full px-3 py-1.5 text-[14px] font-bold text-ink ring-1 ring-line">Close</button>
+          </div>
+          <iframe src={url} title="Marktplaats login" className="w-full flex-1 border-0" allow="clipboard-read; clipboard-write" />
+        </div>
+      )}
+    </section>
   );
 }
 

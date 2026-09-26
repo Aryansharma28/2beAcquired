@@ -2,7 +2,7 @@
  * One-time Marktplaats login for the 2beAcquired actor.
  *
  * Marktplaats login uses SMS 2FA + reCAPTCHA enterprise + device fingerprinting, so it is never
- * automated: this opens a real (headed) browser with a persistent profile, YOU log in, and the
+ * automated: this opens CloakBrowser (headed) with a persistent profile, YOU log in, and the
  * script only watches for the session to become valid. Then it saves the Playwright storageState
  * to .mp-session/state.json and, when APIFY_TOKEN is set in the repo's .env, uploads it to the
  * named key-value store `mp-session` (key `state`), where the actor reads it.
@@ -11,18 +11,16 @@
  *   npx tsx scripts/mp-login/index.ts              # log in (or reuse the profile) and upload
  *   npx tsx scripts/mp-login/index.ts --check      # is the saved session still valid?
  *   npx tsx scripts/mp-login/index.ts --upload-only  # re-upload .mp-session/state.json
- *   npx tsx scripts/mp-login/index.ts --cloak      # log in inside CloakBrowser (same browser as the actor)
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { launchPersistentContext as cloakPersistent } from 'cloakbrowser';
-import { chromium, type BrowserContext } from 'playwright';
+import type { BrowserContext } from 'playwright';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SESSION_DIR = join(REPO_ROOT, '.mp-session');
-const PROFILE_DIR = join(SESSION_DIR, 'profile');
 const STATE_PATH = join(SESSION_DIR, 'state.json');
 const BASE = 'https://www.marktplaats.nl';
 const LOGIN_URL = `${BASE}/identity/v2/login?target=${encodeURIComponent('/messages')}`;
@@ -41,47 +39,21 @@ interface StorageState {
     meta?: Record<string, unknown>;
 }
 
+/** CloakBrowser only (same browser the actor posts with), with its own persistent profile. */
 async function launch(): Promise<BrowserContext> {
-    if (args.has('--cloak')) {
-        const userDataDir = join(SESSION_DIR, 'cloak-profile');
-        mkdirSync(userDataDir, { recursive: true });
-        const context = await cloakPersistent({
-            userDataDir,
-            headless: false,
-            viewport: null,
-            locale: 'nl-NL',
-            timezone: 'Europe/Amsterdam',
-            humanize: true,
-            args: ['--start-maximized'],
-        });
-        console.log(`Opened CloakBrowser with profile ${userDataDir}`);
-        return context as unknown as BrowserContext;
-    }
-    mkdirSync(PROFILE_DIR, { recursive: true });
-    const options = {
+    const userDataDir = join(SESSION_DIR, 'cloak-profile');
+    mkdirSync(userDataDir, { recursive: true });
+    const context = await cloakPersistent({
+        userDataDir,
         headless: false,
         viewport: null,
         locale: 'nl-NL',
-        timezoneId: 'Europe/Amsterdam',
-        args: ['--disable-blink-features=AutomationControlled', '--start-maximized'],
-        ignoreDefaultArgs: ['--enable-automation'],
-    };
-    // A real installed browser first: captcha and SMS verification behave as usual there.
-    for (const channel of ['chrome', 'msedge'] as const) {
-        try {
-            const context = await chromium.launchPersistentContext(PROFILE_DIR, { ...options, channel });
-            console.log(`Opened ${channel} with profile ${PROFILE_DIR}`);
-            return context;
-        } catch {
-            // not installed: try the next one
-        }
-    }
-    try {
-        return await chromium.launchPersistentContext(PROFILE_DIR, options);
-    } catch (err) {
-        console.error(`No browser available. Install Chrome, or run: npx playwright install chromium\n${(err as Error).message}`);
-        process.exit(1);
-    }
+        timezone: 'Europe/Amsterdam',
+        humanize: true,
+        args: ['--start-maximized'],
+    });
+    console.log(`Opened CloakBrowser with profile ${userDataDir}`);
+    return context as unknown as BrowserContext;
 }
 
 async function unreadCount(context: BrowserContext): Promise<number | null> {

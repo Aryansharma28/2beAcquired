@@ -19,7 +19,7 @@ export const PICKUP_HOURS = ["Weekday evenings", "Weekend daytime", "Anytime 10â
 
 export const CONSENT = [
   "poof uses your Marktplaats account to post your ads, read and answer buyer messages, change prices and remove ads once sold.",
-  "It never asks for or sees your password: you log in yourself, in your own browser.",
+  "It never asks for or sees your password: you log in to Marktplaats yourself.",
   "Automated selling may break Marktplaats's terms, and your account could be restricted.",
   "Disconnect any time in poof Settings or in the poof Connector.",
 ];
@@ -54,6 +54,19 @@ export async function updateAccount(profile: Profile): Promise<Account> {
 export async function newPairCode(): Promise<PairCode> {
   if (MOCK) return mock.newPairCode();
   return call<PairCode>("/api/connect/code", { method: "POST" });
+}
+
+export type PhoneLogin = { runId: string; key: string };
+export type PhoneLoginStatus = { state: "starting" | "ready" | "ended"; url?: string; message?: string };
+
+/** Start a Marktplaats login in a secure browser poof runs (streamed into the app). */
+export async function startPhoneLogin(): Promise<PhoneLogin> {
+  if (MOCK) throw new Error("Not available in demo mode");
+  return call<PhoneLogin>("/api/connect/phone", { method: "POST" });
+}
+
+export async function phoneLoginStatus(l: PhoneLogin): Promise<PhoneLoginStatus> {
+  return call<PhoneLoginStatus>(`/api/connect/phone?runId=${encodeURIComponent(l.runId)}&key=${encodeURIComponent(l.key)}`);
 }
 
 export async function disconnectMarktplaats(): Promise<void> {

@@ -1,4 +1,4 @@
-export type Action = 'comps' | 'inbox' | 'reply' | 'stats' | 'post' | 'update_price' | 'delist';
+export type Action = 'comps' | 'inbox' | 'reply' | 'stats' | 'post' | 'update_price' | 'delist' | 'login';
 
 export interface Input {
     action: Action;
@@ -34,6 +34,11 @@ export interface Input {
     postcode?: string;
     attributes?: Record<string, string>;
     dryRun?: boolean;
+    // login (phone login through a live view; claims the session for a poof account)
+    pairCode?: string;
+    poofUrl?: string;
+    viewToken?: string;
+    timeoutMinutes?: number;
     // advanced
     useProxy?: boolean;
     sessionStore?: string;

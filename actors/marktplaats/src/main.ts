@@ -9,6 +9,7 @@ import { Actor, log } from 'apify';
 import { comps } from './actions/comps.js';
 import { delist } from './actions/delist.js';
 import { inbox } from './actions/inbox.js';
+import { login } from './actions/login.js';
 import { post } from './actions/post.js';
 import { reply } from './actions/reply.js';
 import { stats } from './actions/stats.js';
@@ -25,6 +26,7 @@ const ACTIONS: Record<Action, (input: Input) => Promise<unknown>> = {
     post,
     update_price: updatePrice,
     delist,
+    login,
 };
 
 await Actor.init();

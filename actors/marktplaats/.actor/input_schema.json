@@ -15,7 +15,8 @@
                 "stats",
                 "post",
                 "update_price",
-                "delist"
+                "delist",
+                "login"
             ],
             "enumTitles": [
                 "comps: search comparable listings",
@@ -24,7 +25,8 @@
                 "stats: views / favorites of a listing",
                 "post: place a new ad (browser)",
                 "update_price: change the price of an ad (browser)",
-                "delist: remove an ad (browser)"
+                "delist: remove an ad (browser)",
+                "Phone login (live view)"
             ],
             "default": "comps"
         },
@@ -257,6 +259,30 @@
             "type": "boolean",
             "description": "Show the browser window. Only useful with 'apify run' on your own machine.",
             "default": false
+        },
+        "pairCode": {
+            "title": "Pairing code",
+            "type": "string",
+            "description": "login: the 6-digit poof pairing code the session is claimed with.",
+            "editor": "textfield"
+        },
+        "poofUrl": {
+            "title": "poof URL",
+            "type": "string",
+            "description": "login: base URL of the poof app (its /api/connect/claim is called).",
+            "editor": "textfield"
+        },
+        "viewToken": {
+            "title": "View token",
+            "type": "string",
+            "description": "login: secret required on every live-view request (?t=).",
+            "editor": "textfield"
+        },
+        "timeoutMinutes": {
+            "title": "Login timeout (minutes)",
+            "type": "integer",
+            "description": "login: give up after this many minutes.",
+            "default": 14
         }
     },
     "required": [

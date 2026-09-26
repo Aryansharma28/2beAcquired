@@ -4,12 +4,11 @@
  * a screenshot per step into the default KV store, a log of the site's own XHR writes
  * (to learn endpoints), and login-wall / captcha detection.
  *
- * The browser is CloakBrowser (stealth Chromium, source-level fingerprint patches) unless
- * MP_BROWSER=playwright; if its binary can't be fetched we fall back to plain Playwright.
+ * The browser is always CloakBrowser (stealth Chromium, source-level fingerprint patches).
  */
 import { Actor, log } from 'apify';
 import { launch as cloakLaunch } from 'cloakbrowser';
-import { chromium, type Browser, type BrowserContext, type Locator, type Page, type Response } from 'playwright';
+import { type Browser, type BrowserContext, type Locator, type Page, type Response } from 'playwright';
 
 import { MpError, inputError } from './errors.js';
 import { proxyUrlFor } from './proxy.js';
@@ -47,51 +46,20 @@ function parseProxy(url: string | undefined) {
 const LOCALE = 'nl-NL';
 const TIMEZONE = 'Europe/Amsterdam';
 
-async function launch(input: Input): Promise<{ browser: Browser; cloak: boolean }> {
+/** CloakBrowser only: no plain-Playwright fallback, so a missing binary fails the run instead of posting unprotected. */
+export async function launch(input: Input): Promise<Browser> {
     const proxy = parseProxy(await proxyUrlFor(input.useProxy));
-    if (process.env.MP_BROWSER !== 'playwright') {
-        try {
-            const browser = (await cloakLaunch({
-                headless: !input.headful,
-                proxy,
-                locale: LOCALE,
-                timezone: TIMEZONE,
-                // Opt-in: humanize can't resolve getByRole/chained locators, which the actions use throughout.
-                humanize: process.env.MP_HUMANIZE === '1',
-                args: ['--disable-dev-shm-usage'],
-            })) as unknown as Browser;
-            log.info(`CloakBrowser ${browser.version()}`);
-            return { browser, cloak: true };
-        } catch (err) {
-            log.warning(`CloakBrowser unavailable, falling back to Playwright: ${(err as Error).message}`);
-        }
-    }
-    return { browser: await launchPlaywright(input, proxy), cloak: false };
-}
-
-async function launchPlaywright(input: Input, proxy: ReturnType<typeof parseProxy>): Promise<Browser> {
-    const options = {
+    const browser = (await cloakLaunch({
         headless: !input.headful,
         proxy,
-        args: ['--disable-blink-features=AutomationControlled', '--lang=nl-NL', '--disable-dev-shm-usage'],
-        ignoreDefaultArgs: ['--enable-automation'],
-    };
-    try {
-        return await chromium.launch({ ...options, channel: 'chrome' }); // real Chrome (present in the Apify image)
-    } catch {
-        return chromium.launch(options); // bundled Chromium
-    }
-}
-
-function userAgentFor(version: string): string {
-    const major = version.split('.')[0];
-    const platform =
-        process.platform === 'win32'
-            ? 'Windows NT 10.0; Win64; x64'
-            : process.platform === 'darwin'
-              ? 'Macintosh; Intel Mac OS X 10_15_7'
-              : 'X11; Linux x86_64';
-    return `Mozilla/5.0 (${platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${major}.0.0.0 Safari/537.36`;
+        locale: LOCALE,
+        timezone: TIMEZONE,
+        // Opt-in: humanize can't resolve getByRole/chained locators, which the actions use throughout.
+        humanize: process.env.MP_HUMANIZE === '1',
+        args: ['--disable-dev-shm-usage'],
+    })) as unknown as Browser;
+    log.info(`CloakBrowser ${browser.version()}`);
+    return browser;
 }
 
 /**
@@ -112,19 +80,11 @@ export async function withBrowser<T>(
         throw new MpError('SESSION_EXPIRED', `no stored session in KV store '${storeName}'; run scripts/mp-login first`);
     }
 
-    const { browser, cloak } = await launch(input);
+    const browser = await launch(input);
+    // No UA/locale/timezone here: CloakBrowser sets them in the binary; CDP emulation on top would be detectable.
     const context = await browser.newContext({
         storageState: playwrightState(state),
         viewport: { width: 1366, height: 900 },
-        // CloakBrowser sets UA/locale/timezone in the binary; CDP emulation on top would be detectable.
-        ...(cloak
-            ? {}
-            : {
-                  locale: LOCALE,
-                  timezoneId: TIMEZONE,
-                  userAgent: userAgentFor(browser.version()),
-                  extraHTTPHeaders: { 'Accept-Language': 'nl-NL,nl;q=0.9,en;q=0.8' },
-              }),
     });
     await context.route('**/*', (route) => {
         const type = route.request().resourceType();
