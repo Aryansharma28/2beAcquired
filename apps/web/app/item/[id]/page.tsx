@@ -14,7 +14,7 @@ import { Overview } from "@/components/Overview";
 import { Looking, Writing } from "@/components/Setup";
 import { Sold } from "@/components/Sold";
 import { Wizard } from "@/components/Wizard";
-import { BackButton, Button, Eyebrow, NavBar, PriceTag } from "@/components/ui";
+import { BackButton, Button, Eyebrow, ICON_BTN, NavBar, PriceTag } from "@/components/ui";
 
 type Screen = "looking" | "wizard" | "writing" | "ad" | "connect" | "going" | "overview" | "sold" | "error";
 
@@ -72,22 +72,22 @@ export default function ItemPage() {
   const nav = screen === "overview" || screen === "sold";
 
   return (
-    <main className={`flex flex-1 flex-col px-5 pt-[max(16px,env(safe-area-inset-top))] ${nav ? "pb-28" : "pb-10"}`}>
+    <main className={`flex flex-1 flex-col px-5 pt-[max(16px,env(safe-area-inset-top))] ${nav ? "pb-28" : "pb-10"} ${screen === "sold" ? "bg-limetint" : ""}`}>
       {screen !== "wizard" && (
-        <header className="flex items-center gap-3 py-2">
+        <header className="flex min-h-14 items-center gap-2.5 py-2">
           {screen === "overview" && overview ? (
-            <button onClick={() => setOverview(false)} aria-label="Back" className="grid size-10 place-items-center rounded-full bg-card ring-1 ring-line transition active:scale-95">
-              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
+            <button onClick={() => setOverview(false)} aria-label="Back" className={ICON_BTN}>
+              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
             </button>
           ) : (
             <BackButton />
           )}
-          <p className="truncate font-display text-[19px] font-bold tracking-[-0.03em]">{screen ? TITLE[screen] ?? "" : ""}</p>
+          <p className="truncate text-[17px] font-bold">{screen ? TITLE[screen] ?? "" : ""}</p>
         </header>
       )}
 
       {error && !item && (
-        <div className="mt-8 rounded-3xl bg-alert-soft p-5 text-alert">
+        <div className="mt-8 rounded-[20px] bg-alert-soft p-5 text-alert">
           <p className="font-semibold">Can&apos;t load this ad.</p>
           <p className="mt-1 text-[14px]">{error}</p>
           <Button href="/" variant="ghost" className="mt-4">Back to your ads</Button>
@@ -96,8 +96,8 @@ export default function ItemPage() {
 
       {!item && !error && (
         <div className="mt-4 space-y-4">
-          <div className="skeleton aspect-[4/3] rounded-[28px]" />
-          <div className="skeleton h-40 rounded-[28px]" />
+          <div className="skeleton aspect-[4/3] rounded-[20px]" />
+          <div className="skeleton h-40 rounded-[20px]" />
         </div>
       )}
 
@@ -136,25 +136,28 @@ function ErrorCard({ item, onRetry }: { item: Item; onRetry: () => void }) {
   };
   return (
     <div className="space-y-4">
-      <div className="rounded-[26px] bg-alert-soft p-5 text-alert">
-        <p className="font-display text-[24px] font-extrabold leading-tight tracking-[-0.03em]">Your agent hit a problem</p>
-        <p className="mt-1.5 text-[15px] font-medium">{last?.text ?? "No details were logged. Check the activity log below."}</p>
-        {loginIssue && <p className="mt-2 text-[14px]">Open the poof Connector on your laptop while logged in to Marktplaats, then try again.</p>}
+      <div className="rounded-[20px] bg-card p-5 shadow-soft">
+        <p className="flex items-center gap-2 text-[13px] font-bold text-alert">
+          <span className="grid size-5 place-items-center rounded-full bg-alert text-[12px] font-extrabold text-white">!</span> Problem
+        </p>
+        <p className="mt-2 text-[24px] font-extrabold leading-tight tracking-[-0.02em]">Poof hit a problem</p>
+        <p className="mt-1.5 text-[15px] font-medium text-alert">{last?.text ?? "No details were logged. Check the activity log below."}</p>
+        {loginIssue && <p className="mt-2 text-[14px] text-moss">Open the poof Connector on your laptop while logged in to Marktplaats, then try again.</p>}
         {canRetry ? (
           <Button onClick={retry} disabled={busy} variant="ink" className="mt-4 w-full">{busy ? "Trying again…" : "Try again"}</Button>
         ) : (
           <Button href="/new" variant="ink" className="mt-4 w-full">Start over with a new photo</Button>
         )}
-        {err && <p className="mt-2 text-[13.5px]">{err}</p>}
+        {err && <p className="mt-2 text-[13.5px] text-alert">{err}</p>}
       </div>
       <section>
-        <Eyebrow className="mb-2 px-1">The ad so far</Eyebrow>
-        <div className="overflow-hidden rounded-[26px] bg-card shadow-soft">
+        <Eyebrow className="mb-2">The ad so far</Eyebrow>
+        <div className="overflow-hidden rounded-[20px] bg-card shadow-soft">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {photo && <img src={photo} alt="" className="aspect-[16/10] w-full object-cover" />}
           <div className="space-y-2 p-4">
             <div className="flex items-start justify-between gap-3">
-              <p className="font-display text-[19px] font-bold leading-tight tracking-[-0.02em]">{item.title ?? item.recognition?.name ?? "Not recognised yet"}</p>
+              <p className="text-[18px] font-extrabold leading-tight">{item.title ?? item.recognition?.name ?? "Not recognised yet"}</p>
               {item.askPrice != null && <PriceTag amount={item.askPrice} size="sm" />}
             </div>
             {item.floorPrice != null && <p className="text-[13.5px] text-mute">Minimum {eur(item.floorPrice)}</p>}
@@ -163,7 +166,7 @@ function ErrorCard({ item, onRetry }: { item: Item; onRetry: () => void }) {
         </div>
       </section>
       <section>
-        <Eyebrow className="mb-2 px-1">Activity log</Eyebrow>
+        <Eyebrow className="mb-2">Activity log</Eyebrow>
         <AgentLog item={item} />
       </section>
     </div>
