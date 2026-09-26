@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>poof Connector</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="top">
+    <svg class="mark" viewBox="0 0 380 220" aria-hidden="true">
+      <path d="M80 0 H360 a20 20 0 0 1 20 20 V200 a20 20 0 0 1 -20 20 H80 L0 110 Z" fill="#ffd84d"/>
+      <circle cx="62" cy="110" r="17" fill="#2b3bff"/>
+      <text x="220" y="146" text-anchor="middle" font-size="104" font-weight="700" fill="#0b0d12" letter-spacing="-4">poof</text>
+    </svg>
+    <div>
+      <div class="brand">poof Connector</div>
+      <div class="tagline">Lets poof sell on your Marktplaats</div>
+    </div>
+  </header>
+
+  <main id="view" aria-live="polite"></main>
+
+  <details class="advanced" id="advanced">
+    <summary>Advanced</summary>
+    <label for="poof-url">poof address</label>
+    <div class="row">
+      <input id="poof-url" type="url" spellcheck="false" autocomplete="off" placeholder="https://poof-app.vercel.app">
+      <button id="save-url" class="btn small">Save</button>
+    </div>
+    <button id="reset-url" class="linkish">Reset to default</button>
+    <p class="hint" id="url-msg"></p>
+  </details>
+
+  <template id="t-loading">
+    <section class="state center"><div class="spinner" aria-label="Loading"></div></section>
+  </template>
+
+  <template id="t-loggedout">
+    <section class="state">
+      <h1>Log in to Marktplaats first</h1>
+      <p>poof uses your own Marktplaats login in this browser. Log in as usual, then come back here.</p>
+      <button class="btn primary" data-action="open-login">Open Marktplaats login</button>
+      <button class="btn ghost" data-action="recheck">I've logged in, check again</button>
+    </section>
+  </template>
+
+  <template id="t-connect">
+    <section class="state">
+      <div class="who"><span class="dot"></span><span>Logged in as <b data-slot="name"></b></span></div>
+      <h1>Connect to poof</h1>
+      <label class="lbl" id="code-label">Enter the 6-digit code from the poof app</label>
+      <div class="code" role="group" aria-labelledby="code-label">
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 1" autocomplete="one-time-code">
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 2">
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 3">
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 4">
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 5">
+        <input inputmode="numeric" maxlength="1" aria-label="Digit 6">
+      </div>
+      <div class="error" data-slot="error" hidden></div>
+      <div class="consent">
+        <p><b>If you allow this, poof will</b> post ads, read and answer buyer messages, change prices and remove ads on your Marktplaats account.</p>
+        <p>poof never sees your password.</p>
+        <p>Automated selling may go against Marktplaats's terms, and your account could be restricted.</p>
+        <p>You can disconnect any time, here or in the poof app.</p>
+      </div>
+      <button class="btn primary" data-action="allow" disabled>Allow poof to sell for me</button>
+    </section>
+  </template>
+
+  <template id="t-connecting">
+    <section class="state center">
+      <div class="spinner"></div>
+      <p class="muted">Connecting to poof…</p>
+    </section>
+  </template>
+
+  <template id="t-connected">
+    <section class="state">
+      <div class="done" data-slot="success" hidden>
+        <div class="check" aria-hidden="true">✓</div>
+        <p><b>Connected.</b> You can close this. poof takes it from here.</p>
+      </div>
+      <div class="warn" data-slot="relogin" hidden>
+        <p><b>Log in to Marktplaats again to keep poof selling.</b></p>
+        <button class="btn small dark" data-action="open-login">Open Marktplaats login</button>
+      </div>
+      <div class="warn" data-slot="mismatch" hidden>
+        <p><b>A different Marktplaats account is logged in.</b> poof won't sync it. Log back in as <span data-slot="name"></span>.</p>
+      </div>
+      <div class="error" data-slot="error" hidden></div>
+      <div class="status-card">
+        <div class="tag-line"><span class="dot"></span><span>Connected as <b data-slot="name"></b></span></div>
+        <div class="muted small">session last synced <span data-slot="synced"></span></div>
+      </div>
+      <button class="btn primary" data-action="sync">Sync now</button>
+      <button class="btn ghost danger" data-action="disconnect">Disconnect</button>
+    </section>
+  </template>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "poof-connector",
+  "version": "0.1.0",
+  "private": true,
+  "description": "poof Connector browser extension: hands your Marktplaats session to poof, with consent.",
+  "type": "module",
+  "scripts": {
+    "icons": "node scripts/make-icons.mjs",
+    "check": "node scripts/check.mjs",
+    "test": "node --test scripts/test-lib.mjs",
+    "zip": "node scripts/check.mjs && node scripts/zip.mjs"
+  }
+}
