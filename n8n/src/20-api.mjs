@@ -26,6 +26,11 @@ item.conversations = $('Item conversations').all().map(i => i.json).filter(c => 
     .sort((a, b) => String(a.ts).localeCompare(String(b.ts)))
     .map(m => ({ from: m.from === 'agent' ? 'agent' : 'buyer', text: m.text, ts: m.ts, offer: m.offer ?? undefined })),
 }));
+const agentMsgs = msgs.filter(m => m.from === 'agent');
+const start = Date.parse(item.liveAt || item.createdAt);
+item.recap = { days: Math.max(1, Math.ceil((Date.now() - start) / 864e5)), messages: msgs.length, counters: agentMsgs.filter(m => m.offer != null).length };
+item.now = item.events.length ? item.events[item.events.length - 1].text : null;
+delete item.compPrices;
 return [{ json: item }];`));
   w.add("Respond item", respond());
   w.chain("GET item", "Item row", "Item events", "Item conversations", "Item messages", "Assemble item", "Respond item");

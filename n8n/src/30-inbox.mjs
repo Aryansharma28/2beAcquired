@@ -1,11 +1,14 @@
 import { Workflow, schedule, code, codeEach, tableGet, tableInsert, actor, agent, chatModel, outputParser, callWorkflow, calendarEvents, HAS_CALENDAR } from "../lib.mjs";
 
 const SYSTEM = `You are an autonomous agent selling one second-hand item on Marktplaats (Netherlands) for its owner. The owner is never asked anything: you handle the whole sale yourself, from first message to pickup.
-The owner's only instruction: sell it as fast as possible, but never below the minimum price (floorPrice).
+The owner set a minimum price (floorPrice, never go below it, never reveal it) and a goal:
+- goal "week": sell fast. Accept ANY offer >= floorPrice immediately.
+- goal "two_weeks": accept offers >= (floorPrice + askPrice) / 2 immediately; lower offers (still >= floorPrice) get a counter halfway, accept on the second round.
+- goal "no_rush": hold out; accept offers >= 90% of askPrice; otherwise counter close to askPrice, conceding slowly.
 
 Stages (conversation.stage):
 - "open": negotiate.
-  - Any offer >= floorPrice → ACCEPT immediately (action "accept", price = the offer). In the same reply propose 2 or 3 pickup times picked from freeSlots (use their "label").
+  - Offer acceptable for the goal → ACCEPT (action "accept", price = the offer). In the same reply propose 2 or 3 pickup times picked from freeSlots (use their "label").
   - Offer below floorPrice → action "counter" with price between floorPrice and askPrice (first time you can meet halfway; if they push back, go to floorPrice). Never reveal the floor.
   - Questions (still available? size? condition?) → action "answer" using ONLY facts from the ad, and invite an offer or a pickup.
   - Buyer says they want it at the asking price → "accept" with price = askPrice and propose pickup times.
@@ -122,7 +125,7 @@ for (const c of threads) {
     stage: prev?.state || 'open', lastOffer: prev?.lastOffer ?? null, slots,
     detectedOffer: fresh.map(m => offerIn(m.text)).filter(Boolean).at(-1) ?? (bidOffers.length ? Math.max(...bidOffers) : null),
     context: {
-      item: { title: it.title, description: it.description, condition: it.condition, askPrice: it.askPrice, floorPrice: it.floorPrice, marketRange: it.priceRange },
+      item: { title: it.title, description: it.description, condition: it.condition, askPrice: it.askPrice, floorPrice: it.floorPrice, goal: it.goal || 'week', marketRange: it.priceRange, pickupCity: it.pickupCity },
       conversation: { stage: prev?.state || 'open', agreedPrice: it.sale?.price ?? prev?.lastOffer ?? null, pickup: it.pickup || null,
         messages: msgs.map(m => ({ from: m.from === 'buyer' ? 'buyer' : 'seller', text: m.text, ts: m.ts })) },
       latestBuyerMessages: fresh.map(m => m.text), bids: c.bids || [],
@@ -156,7 +159,7 @@ if (action === 'accept') {
 if (action === 'counter') {
   if (price == null || price < floor) { price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager ga ik helaas niet.'; guard = guard || 'counter raised to minimum'; }
   if (price > ask) price = ask;
-  if (offer != null && offer >= floor) { action = 'accept'; price = offer; guard = 'offer was at/above minimum → accepted'; }
+  if (offer != null && offer >= floor && (ctx.context.item.goal || 'week') === 'week') { action = 'accept'; price = offer; guard = 'sell-this-week: offer at/above minimum → accepted'; }
 }
 if (action === 'confirm_pickup') {
   const s = ctx.slots.find(s => s.start === d.pickupStart) || ctx.slots.find(s => Math.abs(Date.parse(s.start) - Date.parse(d.pickupStart)) < 31 * 60e3);

@@ -16,7 +16,7 @@ return $('Items').all().map(i => i.json).filter(r => r.status === 'live').flatMa
   const mp = (it.listings || []).find(l => l.platform === 'marktplaats' && l.status === 'live');
   if (!mp) return [];
   const lastChange = Date.parse((it.priceHistory || []).at(-1)?.ts || it.liveAt || it.createdAt);
-  const every = it.goal === 'fast' ? ${fastH} : ${slowH};
+  const every = ['fast', 'week'].includes(it.goal) ? ${fastH} : ${slowH};
   if ((now - lastChange) < every * H) return [];
   if (it.askPrice <= it.floorPrice) return [];
   return [{ json: { itemId: r.itemId, item: it, listing: mp, conversations: convs.filter(c => c.itemId === r.itemId).length, hoursSinceChange: Math.round((now - lastChange) / H) } }];
@@ -28,7 +28,7 @@ return $('Items').all().map(i => i.json).filter(r => r.status === 'live').flatMa
 const c = $('Candidates').item.json, it = c.item;
 const views = Number($json.views) || 0, favs = Number($json.favorites) || 0;
 // many views but nobody writes → price is the problem → bigger step
-const step = it.goal === 'fast' ? (views > 40 && !c.conversations ? 0.12 : 0.08) : (views > 60 && !c.conversations ? 0.07 : 0.05);
+const step = ['fast', 'week'].includes(it.goal) ? (views > 40 && !c.conversations ? 0.12 : 0.08) : (views > 60 && !c.conversations ? 0.07 : 0.05);
 let next = Math.max(it.floorPrice, Math.round(it.askPrice * (1 - step)));
 if (next >= 50) next = Math.max(it.floorPrice, Math.round(next / 5) * 5);
 const change = next < it.askPrice;
