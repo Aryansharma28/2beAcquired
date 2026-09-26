@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.next/
+dist/
+storage/
+.mp-session/
+*.log
+.DS_Store
