@@ -103,6 +103,8 @@ export async function withBrowser<T>(
 
     const page = await context.newPage();
     page.setDefaultTimeout(20_000);
+    // Residential proxies can be slow: page loads get more room than element waits.
+    page.setDefaultNavigationTimeout(60_000);
     const kv = await Actor.openKeyValueStore();
     const shots: Shot[] = [];
     const network: BrowserRun['network'] = [];

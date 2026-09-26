@@ -209,7 +209,12 @@ export async function post(input: Input): Promise<PostResult> {
         };
 
         // 0. open the place-ad page
-        const response = await page.goto(PLACE_URL, { waitUntil: 'domcontentloaded' });
+        // 'commit' + a wait for the form below: slow proxies can take long to fire DOMContentLoaded. One retry.
+        let response = await page.goto(PLACE_URL, { waitUntil: 'commit' }).catch(() => null);
+        if (!response || !(await page.locator(SEL.title.join(', ')).first().waitFor({ timeout: 30_000 }).then(() => true, () => false))) {
+            log.warning('place-ad page slow; retrying once');
+            response = await page.goto(PLACE_URL, { waitUntil: 'commit', timeout: 90_000 });
+        }
         await page.waitForTimeout(2000); // client-side redirect to the login page happens here
         await guard(response);
         if (await acceptCookies(page)) step('cookie banner accepted', true);
