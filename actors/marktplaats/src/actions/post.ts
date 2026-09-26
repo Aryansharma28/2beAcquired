@@ -85,6 +85,8 @@ export interface PostResult {
     listingId: string | null;
     url: string | null;
     placeButtonFound: boolean;
+    /** From the owner's ad page shortly after placing: Marktplaats moderation may set a fresh ad inactive. */
+    visibility?: 'visible' | 'inactive' | 'unknown';
     steps: Step[];
     warnings: string[];
     screenshots: { step: string; url: string }[];
@@ -449,12 +451,23 @@ export async function post(input: Input): Promise<PostResult> {
         }
         const listingId = await findListingIdAfterPlace(run, title);
         step('listing id', Boolean(listingId), listingId ?? 'not found; check my-account');
+        let visibility: PostResult['visibility'] = 'unknown';
+        if (listingId) {
+            await page.waitForTimeout(8000);
+            await page.goto(`${BASE_URL}/seller/view/${listingId}`, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+            await page.waitForTimeout(2000);
+            const body = await page.locator('body').innerText({ timeout: 5000 }).catch(() => '');
+            visibility = /niet zichtbaar op marktplaats|op inactief/i.test(body) ? 'inactive' : body.includes(listingId) ? 'visible' : 'unknown';
+            step('visibility', visibility !== 'inactive', visibility);
+            await shot('visibility');
+        }
         return {
             ok: true,
             dryRun: false,
             listingId,
             url: listingId ? `${BASE_URL}/${listingId}` : page.url(),
             placeButtonFound: true,
+            visibility,
             steps,
             warnings,
             screenshots: screenshots(),
