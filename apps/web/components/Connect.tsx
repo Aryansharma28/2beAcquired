@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { CONSENT, PICKUP_HOURS, getAccount, newPairCode, phoneLoginStatus, startPhoneLogin, type Account, type PairCode, type PhoneLogin, type Profile } from "@/lib/account";
+import { createPortal } from "react-dom";
+import { CONSENT, PICKUP_HOURS, getAccount, newPairCode, phoneLoginStatus, startPhoneLogin, stopPhoneLogin, type Account, type PairCode, type PhoneLogin, type Profile } from "@/lib/account";
 import { Button, Eyebrow, PlatformLogo, Tick, cx } from "./ui";
 
 /** Connect Marktplaats: log in right here (secure browser streamed into the app), or the poof Connector on a laptop. */
@@ -156,14 +157,15 @@ function PhoneLoginCard() {
         {busy ? "Opening a secure browser… (~30 s)" : "Log in to Marktplaats"}
       </Button>
       {error && <p className="mt-3 rounded-2xl bg-alert-soft p-3 text-[14px] text-alert">{error}</p>}
-      {url && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-paper">
+      {url && createPortal(
+        <div className="fixed inset-0 z-[100] flex flex-col bg-paper">
           <div className="flex items-center justify-between px-4 py-2">
             <span className="text-[13px] font-semibold text-mute">Secure Marktplaats login</span>
-            <button onClick={() => { setUrl(null); setLogin(null); }} className="rounded-full px-3 py-1.5 text-[14px] font-bold text-ink ring-1 ring-line">Close</button>
+            <button onClick={() => { if (login) stopPhoneLogin(login); setUrl(null); setLogin(null); }} className="rounded-full px-3 py-1.5 text-[14px] font-bold text-ink ring-1 ring-line">Close</button>
           </div>
           <iframe src={url} title="Marktplaats login" className="w-full flex-1 border-0" allow="clipboard-read; clipboard-write" />
-        </div>
+        </div>,
+        document.body,
       )}
     </section>
   );

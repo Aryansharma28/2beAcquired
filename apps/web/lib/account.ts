@@ -69,6 +69,10 @@ export async function phoneLoginStatus(l: PhoneLogin): Promise<PhoneLoginStatus>
   return call<PhoneLoginStatus>(`/api/connect/phone?runId=${encodeURIComponent(l.runId)}&key=${encodeURIComponent(l.key)}`);
 }
 
+export async function stopPhoneLogin(l: PhoneLogin): Promise<void> {
+  await call(`/api/connect/phone?runId=${encodeURIComponent(l.runId)}&key=${encodeURIComponent(l.key)}`, { method: "DELETE" }).catch(() => {});
+}
+
 export async function disconnectMarktplaats(): Promise<void> {
   if (MOCK) return mock.disconnectMarktplaats();
   await call("/api/connect", { method: "DELETE" });

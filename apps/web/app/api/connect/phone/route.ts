@@ -68,3 +68,26 @@ export async function GET(req: Request) {
     return json({ error: (e as Error).message }, 502);
   }
 }
+
+/** DELETE ?runId=&key= → stop the login run (the user closed the window). The key must match the run's viewToken. */
+export async function DELETE(req: Request) {
+  const userId = await currentUserId();
+  if (!userId) return json({ error: "No account" }, 401);
+  const q = new URL(req.url).searchParams;
+  const runId = q.get("runId") ?? "";
+  const key = q.get("key") ?? "";
+  if (!/^[A-Za-z0-9]{10,30}$/.test(runId) || key.length < 16) return json({ error: "Bad request" }, 400);
+  try {
+    const run = await apify<Run>(`/actor-runs/${runId}`);
+    const res = await fetch(`${API}/key-value-stores/${run.defaultKeyValueStoreId}/records/INPUT`, {
+      headers: { Authorization: `Bearer ${token()}` },
+      cache: "no-store",
+    });
+    const input = (await res.json().catch(() => null)) as { action?: string; viewToken?: string } | null;
+    if (input?.action !== "login" || input.viewToken !== key) return json({ error: "Not your login" }, 403);
+    if (["READY", "RUNNING"].includes(run.status)) await apify<Run>(`/actor-runs/${runId}/abort`, { method: "POST" });
+    return json({ ok: true });
+  } catch (e) {
+    return json({ error: (e as Error).message }, 502);
+  }
+}

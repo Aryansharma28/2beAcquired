@@ -208,13 +208,13 @@ function viewerHtml(poofUrl: string): string {
 <title>Log in to Marktplaats · poof</title>
 <style>
 :root{--ink:#14110f;--bg:#f6f2ea;--go:#1f8a4c;--mute:#6b645c}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);font:15px/1.4 system-ui,-apple-system,sans-serif;color:var(--ink);overscroll-behavior:none}
-header{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:700}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font:15px/1.4 system-ui,-apple-system,sans-serif;color:var(--ink);overscroll-behavior:none}
+header{display:flex;align-items:center;gap:8px;padding:8px 12px;font-weight:700}
 header .lock{font-size:11.5px;text-align:right;font-weight:600;color:var(--mute);margin-left:auto}
 #wrap{position:relative;margin:0 auto;max-width:440px;padding:0 8px}
-#screen{display:block;width:100%;border-radius:14px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.08),0 8px 30px rgba(0,0,0,.08);touch-action:none;user-select:none;-webkit-user-select:none}
+#screen{display:block;width:auto;max-width:100%;max-height:calc(100dvh - 104px);margin:0 auto;border-radius:14px;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.08),0 8px 30px rgba(0,0,0,.08);touch-action:none;user-select:none;-webkit-user-select:none}
 #kb{position:fixed;left:-1000px;top:0;opacity:0;width:10px;height:10px;font-size:16px}
-#bar{display:flex;gap:8px;justify-content:center;padding:10px}
+#bar{display:flex;gap:8px;justify-content:center;padding:8px}
 #bar button{border:0;border-radius:999px;background:#fff;padding:9px 14px;font:600 14px system-ui;color:var(--ink);box-shadow:0 1px 0 rgba(0,0,0,.08)}
 #msg{position:fixed;inset:0;display:none;place-items:center;background:rgba(246,242,234,.94);text-align:center;padding:24px}
 #msg.show{display:grid}#msg h2{margin:.2em 0;font-size:26px}#msg p{color:var(--mute);margin:.4em 0 1.2em}
