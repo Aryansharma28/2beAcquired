@@ -12,14 +12,14 @@ export default function ChatPage() {
   const c = item?.conversations.find((x) => x.id === decodeURIComponent(cid));
   return (
     <main className="flex flex-1 flex-col px-5 pb-28 pt-[max(16px,env(safe-area-inset-top))]">
-      <header className="flex items-center gap-3 py-2">
+      <header className="flex items-center gap-2.5 py-2">
         <BackButton href={`/item/${id}/chats`} />
-        {item?.title && <p className="min-w-0 truncate text-[13.5px] text-mute">{item.title}</p>}
+        {item?.title && <p className="min-w-0 truncate text-[14px] font-semibold text-moss">{item.title}</p>}
       </header>
       <div className="flex-1 pt-3">
-        {error && !item && <p className="rounded-2xl bg-alert-soft p-4 text-[14px] text-alert">Can&apos;t load this chat: {error}</p>}
-        {!item && !error && <div className="skeleton h-60 rounded-[22px]" />}
-        {item && !c && <p className="rounded-2xl bg-card p-4 text-[14px] text-ink-2 shadow-soft">This chat isn&apos;t there anymore.</p>}
+        {error && !item && <p className="rounded-[20px] bg-alert-soft p-4 text-[14px] text-alert">Can&apos;t load this chat: {error}</p>}
+        {!item && !error && <div className="skeleton h-60 rounded-[20px]" />}
+        {item && !c && <p className="rounded-[20px] bg-card p-4 text-[14px] text-moss shadow-soft">This chat isn&apos;t there anymore.</p>}
         {item && c && <Negotiation item={item} c={c} />}
       </div>
       <NavBar />
