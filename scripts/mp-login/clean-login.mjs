@@ -54,9 +54,9 @@ if (!(await devtools())) {
     "https://www.marktplaats.nl/"], { detached: true, stdio: "ignore" }).unref();
   console.log("Opened a normal Chrome window. Log in to Marktplaats there like you always do (SMS code etc.).");
 }
-console.log("Waiting for the login (checking every 5 s, up to 30 min)…");
+console.log("Waiting for the login (checking every 5 s, up to 2 hours)…");
 
-for (let i = 0; i < 360; i++) {
+for (let i = 0; i < 1440; i++) {
   await sleep(5000);
   const v = await devtools();
   if (!v) continue;
