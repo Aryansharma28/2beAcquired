@@ -47,8 +47,16 @@ const LOCALE = 'nl-NL';
 const TIMEZONE = 'Europe/Amsterdam';
 
 /** CloakBrowser only: no plain-Playwright fallback, so a missing binary fails the run instead of posting unprotected. */
+/** Stable per account (session store), so every run is the same "device" to Marktplaats. 10000-99999 like CloakBrowser's own. */
+export function fingerprintSeed(key: string): number {
+    let h = 2166136261;
+    for (const ch of key) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    return 10000 + (h % 90000);
+}
+
 export async function launch(input: Input): Promise<Browser> {
-    const proxy = parseProxy(await proxyUrlFor(input.useProxy));
+    const key = input.sessionStore;
+    const proxy = parseProxy(await proxyUrlFor(input.useProxy, key));
     const browser = (await cloakLaunch({
         headless: !input.headful,
         proxy,
@@ -56,9 +64,10 @@ export async function launch(input: Input): Promise<Browser> {
         timezone: TIMEZONE,
         // Opt-in: humanize can't resolve getByRole/chained locators, which the actions use throughout.
         humanize: process.env.MP_HUMANIZE === '1',
-        args: ['--disable-dev-shm-usage'],
+        // Overrides CloakBrowser's random per-launch seed: one fixed fingerprint per account.
+        args: ['--disable-dev-shm-usage', ...(key ? [`--fingerprint=${fingerprintSeed(key)}`] : [])],
     })) as unknown as Browser;
-    log.info(`CloakBrowser ${browser.version()}`);
+    log.info(`CloakBrowser ${browser.version()}${key ? ` (fingerprint ${fingerprintSeed(key)}, sticky proxy for ${key})` : ''}`);
     return browser;
 }
 

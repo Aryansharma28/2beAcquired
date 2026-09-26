@@ -17,7 +17,7 @@ export interface StorageState {
     cookies: PwCookie[];
     origins: { origin: string; localStorage: { name: string; value: string }[] }[];
     /** Written by scripts/mp-login; not part of Playwright's format and stripped before use. */
-    meta?: { userAgent?: string; savedAt?: string; updatedAt?: string; source?: string };
+    meta?: { userAgent?: string; savedAt?: string; updatedAt?: string; source?: string; mpUser?: { id: string; name: string } };
 }
 
 export const SESSION_KEY = 'state';

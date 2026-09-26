@@ -16,6 +16,7 @@ import type { BrowserContext } from 'playwright';
 
 import { acceptCookies, launch } from '../lib/browser.js';
 import { MpError, inputError } from '../lib/errors.js';
+import { saveSession, type StorageState } from '../lib/session.js';
 import { BASE_URL, type Input } from '../lib/types.js';
 
 const LOGIN_URL = `${BASE_URL}/identity/v2/login?target=${encodeURIComponent('/messages')}`;
@@ -23,9 +24,13 @@ const VIEWPORT = { width: 400, height: 780 };
 
 export async function login(input: Input) {
     const code = String(input.pairCode ?? '').replace(/\D/g, '');
-    const poofUrl = String(input.poofUrl ?? '').replace(/\/+$/, '');
+    // Direct mode (no pairCode): save the session straight into `sessionStore` (the demo/owner store) instead of
+    // claiming it for a poof account. Either way the run uses that store's fixed fingerprint + sticky proxy, so the
+    // login happens on the same "device" that will post.
+    const direct = !code && !!input.sessionStore;
+    const poofUrl = String(input.poofUrl || 'https://poof-lovat.vercel.app').replace(/\/+$/, '');
     const token = String(input.viewToken ?? '');
-    if (code.length !== 6) throw inputError("login needs the 6-digit 'pairCode'");
+    if (!direct && code.length !== 6) throw inputError("login needs the 6-digit 'pairCode' (or a 'sessionStore' to save to)");
     if (!/^https?:\/\//.test(poofUrl)) throw inputError("login needs 'poofUrl'");
     if (token.length < 16) throw inputError("login needs a 'viewToken' of 16+ characters");
     const minutes = Math.min(Math.max(Number(input.timeoutMinutes ?? 14), 1), 30);
@@ -159,6 +164,16 @@ export async function login(input: Input) {
         const userAgent = await page.evaluate(() => navigator.userAgent);
         const cookies = (await context.cookies()).filter((c) => c.domain.includes('marktplaats.nl'));
 
+        if (direct) {
+            await saveSession(input.sessionStore!, {
+                cookies: cookies as StorageState['cookies'],
+                origins: [],
+                meta: { userAgent, mpUser, savedAt: new Date().toISOString(), source: 'cloud-login' },
+            });
+            setState('done');
+            await new Promise((r) => setTimeout(r, 2500));
+            return { ok: true, action: 'login', name: doneName, savedTo: input.sessionStore };
+        }
         const res = await fetch(`${poofUrl}/api/connect/claim`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

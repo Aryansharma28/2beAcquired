@@ -25,7 +25,7 @@ export async function openHttpSession(input: Input, required: boolean): Promise<
         );
     }
     const jar = await jarFromState(state);
-    const http = new MpHttp(jar, state?.meta?.userAgent || DEFAULT_UA, await proxyUrlFor(input.useProxy));
+    const http = new MpHttp(jar, state?.meta?.userAgent || DEFAULT_UA, await proxyUrlFor(input.useProxy, input.sessionStore));
     return {
         http,
         state,

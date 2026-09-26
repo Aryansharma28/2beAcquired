@@ -3,6 +3,7 @@
 // /api/connect/claim with a fresh pairing code, exactly like the poof Connector.
 import { randomBytes } from "node:crypto";
 import { currentUserId } from "@/lib/server/auth";
+import { storeName } from "@/lib/server/apify";
 import { json, n8n } from "@/lib/server/n8n";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +44,8 @@ export async function POST(req: Request) {
   try {
     const run = await apify<Run>(`/acts/${ACTOR}/runs?timeout=1200&memory=2048`, {
       method: "POST",
-      body: JSON.stringify({ action: "login", pairCode: code, poofUrl, viewToken, useProxy: true, timeoutMinutes: 15 }),
+      // sessionStore: the store the claim will fill, so the login runs on that account's fixed fingerprint + sticky IP.
+      body: JSON.stringify({ action: "login", pairCode: code, poofUrl, viewToken, useProxy: true, timeoutMinutes: 15, sessionStore: storeName(userId) }),
     });
     return json({ runId: run.id, key: viewToken });
   } catch (e) {
