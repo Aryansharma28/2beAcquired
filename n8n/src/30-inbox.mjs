@@ -1,15 +1,17 @@
 import { Workflow, schedule, webhook, respond, code, codeEach, tableGet, tableInsert, tableUpdate, actor, agent, chatModel, outputParser, callWorkflow, calendarEvents, HAS_CALENDAR } from "../lib.mjs";
 
 export const SYSTEM = `You are an autonomous agent selling one second-hand item on Marktplaats (Netherlands) for its owner. The owner is never asked anything: you handle the whole sale yourself, from first message to pickup.
-The owner set a minimum price (floorPrice, never go below it, never reveal it) and a goal:
-- goal "week": sell fast. Accept ANY offer >= floorPrice immediately.
-- goal "two_weeks": accept offers >= (floorPrice + askPrice) / 2 immediately; lower offers (still >= floorPrice) get a counter halfway, accept on the second round.
-- goal "no_rush": hold out; accept offers >= 90% of askPrice; otherwise counter close to askPrice, conceding slowly.
+The owner set an asking price (askPrice) and a minimum (floorPrice: never go below it, never reveal it).
+NEGOTIATE, push ONCE, then let go (conversation.pushedOnce tells you whether you already pushed):
+- Offer >= askPrice → accept it.
+- First offer below askPrice and pushedOnce is false → push once: action "counter" with price = askPrice. Be warm and give ONE short reason it is worth it, taken ONLY from the ad's title/description (condition, what is included); if the ad gives none, say the price is already fair compared to similar ads. Never invent details.
+- pushedOnce is true and the offer >= floorPrice → drop it: accept their offer, no second push.
+- Offer below floorPrice after your push → one final "counter" at floorPrice ("lager kan ik echt niet"); if they stay below it after that, action "decline", politely.
+Never apologise for slow or late replies and never mention timing; just answer and negotiate.
 
 Stages (conversation.stage):
 - "open": negotiate.
-  - Offer acceptable for the goal → ACCEPT (action "accept", price = the offer). In the same reply propose 2 or 3 pickup times picked from freeSlots (use their "label").
-  - Offer below floorPrice → action "counter" with price between floorPrice and askPrice (first time you can meet halfway; if they push back, go to floorPrice). Never reveal the floor.
+  - Follow the push-once rule above. When you accept, propose 2 or 3 pickup times from freeSlots in the same reply (use their "label").
   - Questions (still available? size? condition?) → action "answer" using ONLY facts stated in the ad. If the ad does not say (stains, exact size, smoke-free…), never guess: say you will check and that they are welcome to look at it at pickup. Invite an offer.
   - Buyer says they want it at the asking price → "accept" with price = askPrice and propose pickup times.
 - "deal": price is agreed, you need a pickup time.
@@ -44,14 +46,28 @@ const floor = Number(ctx.context.item.floorPrice) || 0;
 const ask = Number(ctx.context.item.askPrice) || floor;
 const offer = d.offer ?? ctx.detectedOffer ?? null;
 let action = d.action, price = d.price != null ? Math.round(d.price) : null, reply = d.reply || '', guard = null, pickup = null;
-if (action === 'accept') {
-  price = price ?? offer;
-  if (price == null || price < floor) { action = 'counter'; price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager ga ik helaas niet.'; guard = 'accept below minimum turned into counter at minimum'; }
+// Push once, then let go (owner's rule, enforced here whatever the model says):
+// pushes = our earlier messages that named a price in this conversation.
+const pushes = ctx.pushes || 0;
+if (offer != null && ctx.stage === 'open' && ['accept', 'counter', 'answer', 'wait'].includes(action)) {
+  if (offer >= ask) { action = 'accept'; price = offer; }
+  else if (pushes === 0) {
+    if (action !== 'counter' || price !== ask) guard = 'first low offer: push once to the asking price';
+    action = 'counter'; price = ask;
+    if (!/[0-9]/.test(reply)) reply = 'Voor €' + ask + ' is hij van jou, dat is echt een nette prijs voor wat je krijgt.';
+  } else if (offer >= floor) {
+    if (action !== 'accept' || price !== offer) guard = 'already pushed once: accept offer at/above minimum';
+    action = 'accept'; price = offer;
+  } else if (pushes === 1) {
+    action = 'counter'; price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager kan ik echt niet.'; guard = 'below minimum after push: final offer at minimum';
+  } else {
+    action = 'decline'; price = null; reply = 'Dan komen we er helaas niet uit. Succes met zoeken!'; guard = 'still below minimum after final offer: declined';
+  }
 }
+if (action === 'accept' && (price == null || price < floor)) { action = 'counter'; price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager kan ik echt niet.'; guard = 'accept below minimum turned into counter at minimum'; }
 if (action === 'counter') {
-  if (price == null || price < floor) { price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager ga ik helaas niet.'; guard = guard || 'counter raised to minimum'; }
+  if (price == null || price < floor) { price = floor; guard = guard || 'counter raised to minimum'; }
   if (price > ask) price = ask;
-  if (offer != null && offer >= floor && (ctx.context.item.goal || 'week') === 'week') { action = 'accept'; price = offer; guard = 'sell-this-week: offer at/above minimum → accepted'; }
 }
 if (action === 'confirm_pickup') {
   const s = ctx.slots.find(s => s.start === d.pickupStart) || ctx.slots.find(s => Math.abs(Date.parse(s.start) - Date.parse(d.pickupStart)) < 31 * 60e3);
@@ -229,10 +245,11 @@ for (const c of threads) {
   out.push({ json: {
     itemId: it.id, conversationId: c.conversationId, platform: 'marktplaats', buyer: c.buyer?.name || 'Buyer', itemStatus: it.status, sessionStore: it.mpStore,
     stage: prev?.state || 'open', lastOffer: prev?.lastOffer ?? null, slots,
+    pushes: msgs.filter(m => m.from !== 'buyer' && /(€|eur) *[0-9]/i.test(m.text || '')).length,
     detectedOffer: fresh.map(m => offerIn(m.text)).filter(Boolean).at(-1) ?? (bidOffers.length ? Math.max(...bidOffers) : null),
     context: {
       item: { title: it.title, description: it.description, condition: it.condition, askPrice: it.askPrice, floorPrice: it.floorPrice, goal: it.goal || 'week', marketRange: it.priceRange, pickupCity: it.pickupCity },
-      conversation: { stage: prev?.state || 'open', agreedPrice: it.sale?.price ?? prev?.lastOffer ?? null, pickup: it.pickup || null,
+      conversation: { pushedOnce: msgs.some(m => m.from !== 'buyer' && /(€|eur) *[0-9]/i.test(m.text || '')), stage: prev?.state || 'open', agreedPrice: it.sale?.price ?? prev?.lastOffer ?? null, pickup: it.pickup || null,
         messages: msgs.map(m => ({ from: m.from === 'buyer' ? 'buyer' : 'seller', text: m.text, ts: m.ts })) },
       latestBuyerMessages: fresh.map(m => m.text), bids: c.bids || [],
       freeSlots: slots.map(s => ({ start: s.start, label: s.label })),
@@ -245,7 +262,8 @@ for (const c of threads) {
 return out;`));
   w.link("Free pickup slots", "Needs a reply");
 
-  w.add("Sales agent (AI)", agent({ text: "={{ JSON.stringify($json.context) }}", system: SYSTEM }));
+  // Groq free tier: 8k tokens/min. Retry instead of failing (a failed run would leave the buyer unanswered).
+  w.add("Sales agent (AI)", agent({ text: "={{ JSON.stringify($json.context) }}", system: SYSTEM }), { retryOnFail: true, maxTries: 5, waitBetweenTries: 5000 });
   w.add("Model", chatModel(env), { position: [w.x - 260, 240] });
   w.add("Decision format", outputParser(SCHEMA), { position: [w.x - 60, 240] });
   w.sub("Model", "Sales agent (AI)", "ai_languageModel");

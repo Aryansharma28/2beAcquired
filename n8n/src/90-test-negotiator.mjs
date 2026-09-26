@@ -17,15 +17,17 @@ const buyerTail = []; for (let i = msgs.length - 1; i >= 0 && msgs[i].from === '
 return [{ json: {
   itemId: 'test', conversationId: 'test', platform: 'marktplaats', buyer: b.buyer || 'Test buyer', itemStatus: 'live',
   stage: b.stage || 'open', lastOffer: b.lastOffer ?? null, slots, detectedOffer: null,
+  pushes: msgs.filter(m => m.from === 'seller' && /(€|eur) *[0-9]/i.test(m.text || '')).length,
   context: {
     item: { title: 'IKEA POÄNG schommelstoel', description: 'Gebruikt, goede staat. Ophalen in Amsterdam.', condition: 'Gebruikt', askPrice: 40, floorPrice: 30, goal: 'week', pickupCity: 'Amsterdam', ...(b.item || {}) },
-    conversation: { stage: b.stage || 'open', agreedPrice: b.lastOffer ?? null, pickup: null, messages: msgs },
+    conversation: { pushedOnce: msgs.some(m => m.from === 'seller' && /(€|eur) *[0-9]/i.test(m.text || '')), stage: b.stage || 'open', agreedPrice: b.lastOffer ?? null, pickup: null, messages: msgs },
     latestBuyerMessages: buyerTail, bids: [], freeSlots: slots.map(s => ({ start: s.start, label: s.label })),
     reservedForSomeoneElse: !!b.reservedForSomeoneElse,
   },
   pickupAddress: 'Teststraat 1, Amsterdam',
 } }];`));
-  w.add("Sales agent (AI)", agent({ text: "={{ JSON.stringify($json.context) }}", system: SYSTEM }));
+  // Groq free tier: 8k tokens/min. Retry instead of failing (a failed run would leave the buyer unanswered).
+  w.add("Sales agent (AI)", agent({ text: "={{ JSON.stringify($json.context) }}", system: SYSTEM }), { retryOnFail: true, maxTries: 5, waitBetweenTries: 5000 });
   w.add("Model", chatModel(env), { position: [w.x - 260, 240] });
   w.add("Decision format", outputParser(SCHEMA), { position: [w.x - 60, 240] });
   w.sub("Model", "Sales agent (AI)", "ai_languageModel");
