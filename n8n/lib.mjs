@@ -86,7 +86,7 @@ export class Workflow {
 // ---------- core nodes ----------
 
 // Every webhook requires the X-Poof-Key header (the app's shared secret) once that credential exists.
-// { auth: false } only for callers that can't send our header (Mollie); such workflows must verify the payload themselves.
+// { auth: false } only for callers that can't send our header (Stripe); such workflows must verify the payload themselves.
 export const webhook = (path, method = "POST", { auth = true } = {}) => [
   "n8n-nodes-base.webhook", 2.1,
   { httpMethod: method, path, responseMode: "responseNode", ...(auth && CREDS.appKey ? { authentication: "headerAuth" } : {}), options: {} },
@@ -241,13 +241,13 @@ export const actor = (env, inputExpr, { timeout = 280, soft = false, local = fal
         { ...cred("apify", "httpHeaderAuth"), ...(soft ? { onError: "continueRegularOutput" } : {}) },
       ];
 
-// Mollie REST call (payment links; test mode with a test_ key). The API key comes from .env at deploy time.
-export const mollie = (env, method, urlExpr, bodyExpr) => [
+// Stripe REST call (form-encoded body built by a Code node; test mode with an sk_test_ key from .env at deploy time).
+export const stripe = (env, method, urlExpr, formExpr) => [
   "n8n-nodes-base.httpRequest", 4.2,
   {
     method, url: urlExpr,
-    sendHeaders: true, headerParameters: { parameters: [{ name: "Authorization", value: `Bearer ${env.MOLLIE_API_KEY || ""}` }] },
-    ...(bodyExpr ? { sendBody: true, specifyBody: "json", jsonBody: bodyExpr } : {}),
+    sendHeaders: true, headerParameters: { parameters: [{ name: "Authorization", value: `Bearer ${env.STRIPE_SECRET_KEY || ""}` }] },
+    ...(formExpr ? { sendBody: true, contentType: "raw", rawContentType: "application/x-www-form-urlencoded", body: formExpr } : {}),
     options: { timeout: 30000 },
   },
 ];

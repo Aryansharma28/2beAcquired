@@ -1,4 +1,4 @@
-import { Workflow, subTrigger, codeEach, code, tableGet, tableUpdate, tableInsert, actor, mollie, calendarCreate, HAS_CALENDAR } from "../lib.mjs";
+import { Workflow, subTrigger, codeEach, code, tableGet, tableUpdate, tableInsert, actor, stripe, calendarCreate, HAS_CALENDAR } from "../lib.mjs";
 
 // W5 · Close the deal: pickup booked → put it in the owner's calendar, record the sale, delist everywhere.
 export default (env, ids) => {
@@ -47,23 +47,29 @@ return $('${last}').all().map(i => {
   w.chain("Save pickup", "Listings to remove", "Delist on Marktplaats (Apify)", "Fresh items", "All removed", "Save removed");
   w.log("Save removed", "=Removed from every platform", { type: "notify" });
 
-  // Payment: with MOLLIE_API_KEY, a Mollie payment link (iDEAL) for the agreed price goes to the buyer right after
-  // the pickup is booked. Cash at pickup stays possible. Paid → "poof · 6 Payments" marks the item sold.
-  if (env.MOLLIE_API_KEY) {
-    w.add("Payment link (Mollie)", mollie(env, "POST", "https://api.mollie.com/v2/payment-links",
-      `={{ JSON.stringify({ description: $('${last}').item.json.title.slice(0, 80) + ' · poof ' + $('${last}').item.json.itemId, amount: { currency: 'EUR', value: Number($('${last}').item.json.price).toFixed(2) }, webhookUrl: '${env.N8N_BASE_URL}/webhook/tba/mollie' }) }}`),
-      { onError: "continueRegularOutput" });
+  // Payment: once the pickup is booked the buyer gets a payment link for the agreed price (cash at pickup stays
+  // possible). Stripe Payment Links (STRIPE_SECRET_KEY; test mode needs no KvK). Paid → W6 marks it sold.
+  if (env.STRIPE_SECRET_KEY) {
+      w.add("Price (Stripe)", stripe(env, "POST", "https://api.stripe.com/v1/prices",
+        `={{ 'currency=eur&unit_amount=' + Math.round(Number($('${last}').item.json.price) * 100) + '&product_data[name]=' + encodeURIComponent($('${last}').item.json.title.slice(0, 80)) + '&metadata[itemId]=' + $('${last}').item.json.itemId }}`),
+        { onError: "continueRegularOutput" });
+      w.add("Payment link (Stripe)", stripe(env, "POST", "https://api.stripe.com/v1/payment_links",
+        `={{ 'line_items[0][price]=' + $json.id + '&line_items[0][quantity]=1&metadata[itemId]=' + $('${last}').item.json.itemId + '&after_completion[type]=hosted_confirmation&after_completion[hosted_confirmation][custom_message]=' + encodeURIComponent('Betaald! Tot bij het ophalen.') }}`),
+        { onError: "continueRegularOutput" });
+      w.link("Save pickup", "Price (Stripe)");
+      w.link("Price (Stripe)", "Payment link (Stripe)");
+    const linkNode = "Payment link (Stripe)";
     w.add("Pay message", code(`
 const deals = $('${last}').all();
 return $input.all().map((i, k) => {
   const r = deals[k] ? deals[k].json : null;
-  const url = i.json._links?.paymentLink?.href;
-  if (!r || !url) return null;   // Mollie failed: no link, cash at pickup still works
+  const url = i.json.url;
+  if (!r || !url) return null;   // provider failed: no link, cash at pickup still works
   const item = r.item;
-  item.payment = { provider: 'mollie', id: i.json.id, url, amount: r.price, status: 'open', mode: i.json.mode || null, createdAt: new Date().toISOString() };
+  item.payment = { provider: 'stripe', id: i.json.id, url, amount: r.price, status: 'open', test: i.json.livemode === false, createdAt: new Date().toISOString() };
   return { json: { itemId: r.itemId, data: JSON.stringify(item), sessionStore: item.mpStore, conversationId: item.sale.conversationId,
     platform: item.sale.platform, buyer: item.sale.buyer, price: r.price, url,
-    text: 'Betalen kan contant bij het ophalen, of alvast via iDEAL: ' + url } };
+    text: 'Betalen kan contant bij het ophalen, of alvast online (iDEAL of kaart): ' + url } };
 }).filter(Boolean);`));
     w.add("Save payment link", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { data: "={{ $json.data }}" }));
     w.add("Send pay link", actor(env, "={{ JSON.stringify({ action: 'reply', useProxy: true, sessionStore: $('Pay message').item.json.sessionStore, conversationId: $('Pay message').item.json.conversationId, text: $('Pay message').item.json.text }) }}", { timeout: 90, soft: true, local: true }));
@@ -72,9 +78,8 @@ return $input.all().map((i, k) => {
       buyer: "={{ $('Pay message').item.json.buyer }}", msgId: "={{ 'agent_pay_' + Date.now() }}", from: "agent", text: "={{ $('Pay message').item.json.text }}",
       ts: "={{ $now.toISO() }}", "offer:number": "={{ $('Pay message').item.json.price }}",
     }));
-    w.link("Save pickup", "Payment link (Mollie)");
-    w.chain("Payment link (Mollie)", "Pay message", "Save payment link", "Send pay link", "Store pay message");
-    w.log("Save payment link", "=Payment link sent to the buyer (iDEAL, €{{ $('Pay message').item.json.price }})", { itemId: "={{ $('Pay message').item.json.itemId }}" });
+    w.chain(linkNode, "Pay message", "Save payment link", "Send pay link", "Store pay message");
+    w.log("Save payment link", "=Payment link sent to the buyer (€{{ $('Pay message').item.json.price }})", { itemId: "={{ $('Pay message').item.json.itemId }}" });
   }
   return w;
 };

@@ -36,7 +36,7 @@ Hard requirements for running poof against real Marktplaats. Each one exists bec
 | `MP_POSTCODE` | the pickup postcode | Marktplaats requires a postcode; used when a user's pickup address has none. Keep the pickup city in the app consistent with it (buyers see the location). |
 | `LOCAL_RUNNER_URL` | set by `start-local.mjs` | Routes Marktplaats-session actions to the laptop. |
 | `RUNNER_KEY` | random, created by `start-local.mjs` | Shared secret n8n sends to the runner. |
-| `MOLLIE_API_KEY` | `test_…` for the demo | Once a pickup is booked the buyer gets a Mollie iDEAL payment link (cash at pickup still possible); paid → "poof · 6 Payments" marks the item sold. Empty = payments off. Use a `live_` key only with a verified Mollie account. |
+| `STRIPE_SECRET_KEY` | `sk_test_…` for the demo | Once a pickup is booked the buyer gets a Stripe payment link (iDEAL/card; cash at pickup still possible); paid → "poof · 6 Payments" marks the item sold. Empty = payments off. Test mode needs no KvK; real payouts need an activated Stripe account. Register the webhook once: `node n8n/stripe-setup.mjs`. |
 
 ## Ads
 
