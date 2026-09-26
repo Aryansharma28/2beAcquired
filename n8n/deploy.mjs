@@ -4,6 +4,7 @@ import { readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { loadEnv } from "./lib.mjs";
+import { lintWorkflow } from "./lint.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const env = loadEnv();
@@ -47,6 +48,8 @@ for (let round = 0; queue.length && round < 5; round++) {
   for (const m of queue) {
     const wf = m.build(env, ids);
     const json = wf.toJSON();
+    const problems = lintWorkflow(json);
+    if (problems.length) { console.log(problems.map((p) => `LINT ${p}`).join("\n")); process.exit(1); }
     writeFileSync(join(here, "workflows", m.file.replace(".mjs", ".json")), JSON.stringify(json, null, 2));
     const found = existing.find((w) => w.name === json.name);
     try {

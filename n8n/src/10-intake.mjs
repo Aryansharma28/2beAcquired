@@ -31,10 +31,25 @@ return n.photosB64.map((b64, i) => ({ json: { key: n.itemId + '-' + i + '.jpg' }
   w.add("Store photos (Apify)", apify("PUT", `=${photoUrl}{{ $json.key }}`, { sendBody: true, contentType: "binaryData", inputDataFieldName: "data" }));
   w.chain("Reply with itemId", "Photos as files", "Store photos (Apify)");
 
+  // Identify the exact product with Google Lens (Apify actor): open vision models can't tell a Poäng from a Wegner.
+  w.add("Identify product (Google Lens · Apify)", apify("POST", "https://api.apify.com/v2/acts/borderline~google-lens/run-sync-get-dataset-items?timeout=150", {
+    sendBody: true, specifyBody: "json",
+    jsonBody: "={{ JSON.stringify({ searchTypes: ['visual-match', 'products'], language: 'nl', imagesBase64: [$('New item').first().json.photosB64[0]] }) }}",
+    options: { timeout: 170000 },
+  }), { executeOnce: true, onError: "continueRegularOutput", alwaysOutputData: true });
+  w.add("Lens matches", code(`
+const s = JSON.stringify($input.all().map(i => i.json));
+const titles = [...s.matchAll(/"title":"([^"]{5,120})"/g)].map(m => m[1]).filter((t, i, a) => a.indexOf(t) === i).slice(0, 15);
+return [{ json: { itemId: $('New item').first().json.itemId, lensTitles: titles } }];`), { executeOnce: true });
+  w.link("Store photos (Apify)", "Identify product (Google Lens · Apify)");
+  w.log("Store photos (Apify)", "=Looking it up with Google Lens…", { itemId: "={{ $('New item').first().json.itemId }}" });
+  w.link("Identify product (Google Lens · Apify)", "Lens matches");
+  w.log("Lens matches", "={{ $json.lensTitles.length ? 'Google Lens: looks like ' + $json.lensTitles[0] : 'Google Lens found no exact match' }}");
+
   w.add("Recognise item (vision LLM)", llm(env, {
     vision: true,
-    system: JSON.stringify("You identify second-hand items from photos for a Dutch reseller. Be specific (brand, model, material, era) but never invent facts you cannot see. Search queries must be what a Dutch buyer types on Marktplaats (usually Dutch, 2-4 words)."),
-    content: "[{ type: 'text', text: 'Identify this item. Owner notes: ' + ($('New item').first().json.item.notes || 'none') }, ...$('New item').first().json.photosB64.slice(0, 2).map(d => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + d } }))]",
+    system: JSON.stringify("You identify second-hand items from photos for a Dutch reseller. Most items are mass-market products: first ask yourself which well-known product this is (IKEA, HEMA, Philips, Gazelle, Apple, Lego, ...) and name the exact model if you recognise it (e.g. 'IKEA POÄNG armchair'). Only call something vintage/designer if it clearly is. If the owner gives a hint, trust it. Google Lens matches are strong evidence for brand/model: if several agree, use that product. Use the photo itself for condition, colour and defects. searchQuery = what a Dutch buyer types on Marktplaats for THIS product (brand + model, 2-4 words, e.g. 'ikea poang'); searchQueryBroad = the generic category in Dutch (e.g. 'fauteuil')."),
+    content: "[{ type: 'text', text: 'Identify this item. Owner hint: ' + ($('New item').first().json.item.notes || 'none') + '. Google Lens visual matches (most reliable for brand/model, ignore outliers): ' + $('Lens matches').first().json.lensTitles.join(' | ') }].concat($('New item').first().json.photosB64.slice(0, 2).map(d => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + d } })))",
     tool: {
       name: "record_item", description: "Record what the item is",
       input_schema: {
@@ -52,7 +67,7 @@ return n.photosB64.map((b64, i) => ({ json: { key: n.itemId + '-' + i + '.jpg' }
       },
     },
   }), { executeOnce: true });
-  w.link("Store photos (Apify)", "Recognise item (vision LLM)");
+  w.link("Lens matches", "Recognise item (vision LLM)");
   w.add("Recognised", code(`return [{ json: { itemId: $('New item').first().json.itemId, recognition: ${ARGS.replaceAll("$json", "$input.first().json")} } }];`));
   w.link("Recognise item (vision LLM)", "Recognised");
   w.log("Recognised", "=Recognised: {{ $json.recognition.name }} ({{ $json.recognition.condition }})");
@@ -60,10 +75,23 @@ return n.photosB64.map((b64, i) => ({ json: { key: n.itemId + '-' + i + '.jpg' }
   w.add("Comparables (Apify)", actor(env, `={{ JSON.stringify({ action: 'comps', query: $json.recognition.searchQuery, fallbackQuery: $json.recognition.searchQueryBroad, limit: 40 }) }}`, { timeout: 120, soft: true }), { alwaysOutputData: true });
   w.link("Recognised", "Comparables (Apify)");
 
+  // Keep only listings that are really the same product before pricing (a Poäng is not a designer lounge chair).
+  w.add("Same product? (LLM)", llm(env, {
+    system: JSON.stringify("You are pricing a second-hand item. From the candidate listings, select only those that are the same product (same brand/model or truly equivalent item). Exclude accessories, parts, bundles, children's versions, and different/luxury models."),
+    content: "JSON.stringify({ item: $('Recognised').first().json.recognition, candidates: $input.all().map((c, i) => ({ i, title: c.json.title, price: c.json.price })).filter(c => typeof c.price === 'number').slice(0, 40) })",
+    tool: { name: "select_matches", description: "Indexes of candidates that are the same product",
+      input_schema: { type: "object", properties: { matches: { type: "array", items: { type: "integer" } }, note: { type: "string" } }, required: ["matches"] } },
+    maxTokens: 600,
+  }), { executeOnce: true, onError: "continueRegularOutput" });
+
   // Sell ASAP: price just under the typical market price, never below the owner's minimum, leave a little room to negotiate.
   w.add("Price strategy", code(`
 const n = $('New item').first().json;
-const comps = $input.all().map(i => i.json).filter(c => typeof c.price === 'number' && c.price > 0);
+const all = $('Comparables (Apify)').all().map(i => i.json);
+let picked = null;
+try { picked = ${ARGS.replaceAll("$json", "$input.first().json")}.matches; } catch (e) { picked = null; }
+const matched = Array.isArray(picked) && picked.length >= 3 ? picked.map(i => all[i]).filter(Boolean) : all;
+const comps = matched.filter(c => typeof c.price === 'number' && c.price > 0);
 const sorted = comps.map(c => c.price).sort((a, b) => a - b);
 const q = (arr, p) => arr.length ? arr[Math.min(arr.length - 1, Math.floor(p * (arr.length - 1)))] : null;
 const lo = q(sorted, 0.25), hi = q(sorted, 0.75), iqr = (hi ?? 0) - (lo ?? 0);
@@ -71,7 +99,7 @@ const clean = sorted.filter(p => lo == null || (p >= lo - 1.5 * iqr && p <= hi +
 const nice = (x) => x >= 50 ? Math.round(x / 5) * 5 : Math.max(1, Math.round(x));
 const floor = n.item.floorPrice;
 const range = clean.length >= 3 ? { low: q(clean, 0.25), mid: q(clean, 0.5), high: q(clean, 0.8) } : null;
-let ask = range ? range.mid * 0.95 : floor * 1.25;
+let ask = range ? q(clean, 0.4) : floor * 1.25;
 ask = nice(Math.max(ask, floor * 1.1, floor + 5));
 const strategy = range && range.mid < floor
   ? 'Market is below your minimum: listed just above it, will hold at the minimum'
@@ -80,11 +108,12 @@ return [{ json: {
   itemId: n.itemId, askPrice: ask, priceRange: range, strategy, compsCount: clean.length,
   comps: comps.filter(c => clean.includes(c.price)).slice(0, 12).map(c => ({ title: c.title, price: c.price, url: c.url, image: c.image, platform: 'marktplaats' })),
 } }];`));
-  w.link("Comparables (Apify)", "Price strategy");
+  w.link("Comparables (Apify)", "Same product? (LLM)");
+  w.link("Same product? (LLM)", "Price strategy");
   w.log("Price strategy", "={{ $json.priceRange ? $json.compsCount + ' comparable listings (€' + $json.priceRange.low + '–€' + $json.priceRange.high + ')' : 'Few comparables found, priced from your minimum' }}. Asking €{{ $json.askPrice }}");
 
   w.add("Write ad (LLM)", llm(env, {
-    system: JSON.stringify("You write second-hand ads that sell fast. Marktplaats ads are in Dutch: honest, warm, specific, no hype, no emojis, mention condition and pickup. Title under 60 characters, brand/type first. Also write an English version."),
+    system: JSON.stringify(`You write second-hand ads that sell fast. Marktplaats ads are in Dutch: honest, warm, specific, no hype, no emojis, mention condition and that it can be picked up in ${env.PICKUP_CITY || "Amsterdam"}. Never use placeholders like [jouw regio] and never put the price in the title. Title under 60 characters, brand + model first (e.g. 'IKEA Poäng schommelstoel, eiken/antraciet'). Also write an English version.`),
     content: "JSON.stringify({ item: $('Recognised').first().json.recognition, askPrice: $json.askPrice, ownerNotes: $('New item').first().json.item.notes, comparableTitles: $json.comps.slice(0, 8).map(c => c.title) })",
     tool: {
       name: "write_ad", description: "The finished ad",

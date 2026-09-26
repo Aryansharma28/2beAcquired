@@ -49,7 +49,7 @@ export class Workflow {
     const node = this.nodes.find((n) => n.name === after);
     const label = name ?? `Log · ${after}`;
     this.add(label, tableInsert("events", { itemId, ts: "={{ $now.toISO() }}", type, text, meta: "{}" }),
-      { position: [node.position[0], node.position[1] + 200] });
+      { position: [node.position[0], node.position[1] - 200] });
     this.link(after, label);
     return label;
   }
@@ -184,9 +184,12 @@ export const tableGet = (table, match = null) => [
 
 // ---------- integrations ----------
 
-// LLM via any OpenAI-compatible endpoint (Groq, OpenRouter, Together, Jev…) with a forced function call → reliable JSON.
-// Read the result with ARGS: the parsed arguments of the forced tool call.
+// LLM via any OpenAI-compatible endpoint (Groq, OpenRouter, Together, Jev…) with JSON-schema structured output.
+// Read the result with ARGS (also accepts tool-call style responses).
 export const ARGS = "(() => { const m = $json.choices[0].message; const a = m.tool_calls?.[0]?.function?.arguments ?? m.content; return typeof a === 'string' ? JSON.parse(a.replace(/^```(json)?|```$/g, '')) : a; })()";
+
+// n8n ends an expression at the first "}}", so nested object literals must never touch.
+const safe = (inner) => inner.replace(/\}\}/g, "} }").replace(/\}\}/g, "} }").replace(/\{\{/g, "{ {");
 
 export const llm = (env, { system, content, tool, maxTokens = 1500, vision = false }) => [
   "n8n-nodes-base.httpRequest", 4.2,
@@ -194,10 +197,9 @@ export const llm = (env, { system, content, tool, maxTokens = 1500, vision = fal
     method: "POST", url: `${env.LLM_BASE_URL}/chat/completions`,
     authentication: "genericCredentialType", genericAuthType: "httpHeaderAuth",
     sendBody: true, specifyBody: "json",
-    jsonBody: `={{ JSON.stringify({ model: "${vision ? env.LLM_VISION_MODEL || env.LLM_MODEL : env.LLM_MODEL}", max_tokens: ${maxTokens}, temperature: 0.3,
-      messages: [{ role: "system", content: ${system} }, { role: "user", content: ${content} }],
-      tools: [{ type: "function", function: ${JSON.stringify({ name: tool.name, description: tool.description, parameters: tool.input_schema })} }],
-      tool_choice: { type: "function", function: { name: "${tool.name}" } } }) }}`,
+    jsonBody: "={{ " + safe(`JSON.stringify({ model: "${vision ? env.LLM_VISION_MODEL || env.LLM_MODEL : env.LLM_MODEL}", max_tokens: ${maxTokens}, temperature: 0.3,
+      messages: [{ role: "system", content: ${system} + ${JSON.stringify(" Respond with JSON only: " + tool.description + ".")} }, { role: "user", content: ${content} }],
+      response_format: { type: "json_schema", json_schema: ${JSON.stringify({ name: tool.name, schema: tool.input_schema })} } })`) + " }}",
     options: { timeout: 120000 },
   },
   { ...cred("llmHttp", "httpHeaderAuth"), retryOnFail: true, maxTries: 3, waitBetweenTries: 3000 },

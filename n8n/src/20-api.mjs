@@ -17,7 +17,8 @@ item.status = row.status;
 item.listings ??= [];
 const parse = (s) => { try { return s ? JSON.parse(s) : undefined; } catch { return undefined; } };
 item.events = $('Item events').all().map(i => i.json).filter(e => e.itemId)
-  .map(e => ({ ts: e.ts, type: e.type, text: e.text, meta: parse(e.meta) }));
+  .map(e => ({ ts: e.ts, type: e.type, text: e.text, meta: parse(e.meta) }))
+  .sort((a, b) => String(a.ts).localeCompare(String(b.ts)));
 const msgs = $('Item messages').all().map(i => i.json).filter(m => m.conversationId);
 item.conversations = $('Item conversations').all().map(i => i.json).filter(c => c.conversationId).map(c => ({
   id: c.conversationId, platform: c.platform, buyer: c.buyer, state: c.state, lastOffer: c.lastOffer ?? undefined,

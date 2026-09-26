@@ -45,7 +45,7 @@ if (!active.length) return [];
 return [{ json: { listingIds: active.flatMap(a => a.listings.map(l => l.listingId)), count: active.length } }];`));
   w.add("Known messages", tableGet("messages"), { executeOnce: true });
   w.add("Conversations", tableGet("conversations"), { executeOnce: true });
-  w.add("Read inbox (Apify)", actor(env, "={{ JSON.stringify({ action: 'inbox', listingIds: $('Active listings').first().json.listingIds, sinceHours: 72 }) }}", { timeout: 120 }), { executeOnce: true });
+  w.add("Read inbox (Apify)", actor(env, "={{ JSON.stringify({ action: 'inbox', useProxy: true, sellingOnly: true, includeBids: true, listingIds: $('Active listings').first().json.listingIds, sinceHours: 72 }) }}", { timeout: 120 }), { executeOnce: true });
   w.chain("Every 2 min", "Items", "Active listings", "Known messages", "Conversations", "Read inbox (Apify)");
 
   const common = `
