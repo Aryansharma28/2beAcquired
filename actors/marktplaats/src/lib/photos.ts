@@ -19,7 +19,10 @@ export async function downloadPhotos(entries: string[], photoStore = 'tba-photos
         let buffer: Buffer;
         let type = 'image/jpeg';
         if (/^https?:\/\//i.test(entry)) {
-            const res = await fetch(entry, { redirect: 'follow' });
+            // Our own photo store isn't public: authenticate Apify API URLs with the run's token.
+            const headers: Record<string, string> = {};
+            if (/^https:\/\/api\.apify\.com\//i.test(entry) && process.env.APIFY_TOKEN) headers.Authorization = `Bearer ${process.env.APIFY_TOKEN}`;
+            const res = await fetch(entry, { redirect: 'follow', headers });
             if (!res.ok) throw new MpError('INPUT', `photo ${i + 1} could not be downloaded (HTTP ${res.status}): ${entry}`);
             type = (res.headers.get('content-type') ?? type).split(';')[0].trim();
             buffer = Buffer.from(await res.arrayBuffer());
