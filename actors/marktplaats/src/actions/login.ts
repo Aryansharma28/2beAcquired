@@ -12,7 +12,7 @@
 import http from 'node:http';
 
 import { Actor, log } from 'apify';
-import type { BrowserContext } from 'playwright';
+import type { BrowserContext, CDPSession, Page } from 'playwright';
 
 import { acceptCookies, launch } from '../lib/browser.js';
 import { MpError, inputError } from '../lib/errors.js';
@@ -52,39 +52,55 @@ export async function login(input: Input) {
         broadcast('state', JSON.stringify({ state, name: doneName, detail: extra }));
     };
 
-    const cdp = await context.newCDPSession(page);
-    cdp.on('Page.screencastFrame', (f: { data: string; sessionId: number }) => {
-        lastFrame = f.data;
-        broadcast('frame', f.data);
-        cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => undefined);
-    });
-    await cdp.send('Page.startScreencast', {
-        format: 'jpeg',
-        quality: 60,
-        maxWidth: VIEWPORT.width * 2,
-        maxHeight: VIEWPORT.height * 2,
+    // The viewer shows (and sends input to) the active page: the login page, or a popup it opened ("Doorgaan met
+    // Google"); when the popup closes, back to the login page.
+    let active: Page = page;
+    let cdp: CDPSession | null = null;
+    const watch = async (p: Page) => {
+        if (cdp) await cdp.detach().catch(() => undefined);
+        active = p;
+        cdp = await context.newCDPSession(p);
+        const session = cdp;
+        session.on('Page.screencastFrame', (f: { data: string; sessionId: number }) => {
+            if (session !== cdp) return;
+            lastFrame = f.data;
+            broadcast('frame', f.data);
+            session.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => undefined);
+        });
+        await session.send('Page.startScreencast', { format: 'jpeg', quality: 60, maxWidth: VIEWPORT.width * 2, maxHeight: VIEWPORT.height * 2 });
+    };
+    await watch(page);
+    context.on('page', (popup) => {
+        log.info(`popup opened: ${popup.url()}`);
+        popup.on('close', () => {
+            if (active === popup && !page.isClosed()) watch(page).catch(() => undefined);
+        });
+        watch(popup).catch((err) => log.warning(`popup view failed: ${(err as Error).message}`));
     });
 
     let inputLock: Promise<unknown> = Promise.resolve(); // apply inputs strictly in arrival order
     const handleInput = async (msg: { type: string; x?: number; y?: number; text?: string; key?: string; count?: number; dy?: number }) => {
         if (state !== 'ready') return { focus: false };
         if (msg.type === 'tap' && typeof msg.x === 'number' && typeof msg.y === 'number') {
-            await page.mouse.click(msg.x * VIEWPORT.width, msg.y * VIEWPORT.height);
-            await page.waitForTimeout(150);
+            // Map to the ACTIVE page's real size: a popup (Google sign-in) is smaller than the login page.
+            const vp = active.viewportSize() ?? (await active.evaluate(() => ({ width: innerWidth, height: innerHeight })));
+            await active.mouse.click(msg.x * vp.width, msg.y * vp.height);
+            await active.waitForTimeout(150);
         } else if (msg.type === 'text' && msg.text) {
-            await page.keyboard.type(msg.text.slice(0, 200), { delay: 25 });
+            await active.keyboard.type(msg.text.slice(0, 200), { delay: 25 });
         } else if (msg.type === 'key' && msg.key && ['Backspace', 'Enter', 'Tab'].includes(msg.key)) {
-            for (let i = 0; i < Math.min(Math.max(Number(msg.count) || 1, 1), 60); i++) await page.keyboard.press(msg.key);
+            for (let i = 0; i < Math.min(Math.max(Number(msg.count) || 1, 1), 60); i++) await active.keyboard.press(msg.key);
         } else if (msg.type === 'scroll' && typeof msg.dy === 'number') {
-            await page.mouse.wheel(0, Math.max(-2000, Math.min(2000, msg.dy)));
+            await active.mouse.wheel(0, Math.max(-2000, Math.min(2000, msg.dy)));
         } else if (msg.type === 'back') {
-            await page.goBack().catch(() => undefined);
+            await active.goBack().catch(() => undefined);
         } else if (msg.type === 'restart') {
+            if (active !== page) await active.close().catch(() => undefined);
             await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
         }
         // Tell the viewer whether a text field has focus, so it can keep the phone keyboard open.
         // Which kind of field has focus, so the viewer's own input box can match it (password dots, number pad).
-        const kind = await page
+        const kind = await active
             .evaluate(() => {
                 const el = document.activeElement as HTMLElement | null;
                 if (!el) return null;
