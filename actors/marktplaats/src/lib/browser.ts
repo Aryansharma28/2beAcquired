@@ -56,7 +56,8 @@ async function launch(input: Input): Promise<{ browser: Browser; cloak: boolean 
                 proxy,
                 locale: LOCALE,
                 timezone: TIMEZONE,
-                humanize: process.env.MP_HUMANIZE !== '0',
+                // Opt-in: humanize can't resolve getByRole/chained locators, which the actions use throughout.
+                humanize: process.env.MP_HUMANIZE === '1',
                 args: ['--disable-dev-shm-usage'],
             })) as unknown as Browser;
             log.info(`CloakBrowser ${browser.version()}`);

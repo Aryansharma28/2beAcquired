@@ -11,11 +11,13 @@
  *   npx tsx scripts/mp-login/index.ts              # log in (or reuse the profile) and upload
  *   npx tsx scripts/mp-login/index.ts --check      # is the saved session still valid?
  *   npx tsx scripts/mp-login/index.ts --upload-only  # re-upload .mp-session/state.json
+ *   npx tsx scripts/mp-login/index.ts --cloak      # log in inside CloakBrowser (same browser as the actor)
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { launchPersistentContext as cloakPersistent } from 'cloakbrowser';
 import { chromium, type BrowserContext } from 'playwright';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -40,6 +42,21 @@ interface StorageState {
 }
 
 async function launch(): Promise<BrowserContext> {
+    if (args.has('--cloak')) {
+        const userDataDir = join(SESSION_DIR, 'cloak-profile');
+        mkdirSync(userDataDir, { recursive: true });
+        const context = await cloakPersistent({
+            userDataDir,
+            headless: false,
+            viewport: null,
+            locale: 'nl-NL',
+            timezone: 'Europe/Amsterdam',
+            humanize: true,
+            args: ['--start-maximized'],
+        });
+        console.log(`Opened CloakBrowser with profile ${userDataDir}`);
+        return context as unknown as BrowserContext;
+    }
     mkdirSync(PROFILE_DIR, { recursive: true });
     const options = {
         headless: false,

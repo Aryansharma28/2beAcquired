@@ -19,7 +19,7 @@ return [{ json: { itemId: row.itemId, status: 'publishing', data: JSON.stringify
 
   w.add("Post on Marktplaats (Apify)", actor(env, `={{ JSON.stringify((() => { const it = $('Mark publishing').first().json.item; return {
     action: 'post', title: it.title, description: it.description, price: it.askPrice, categoryHint: it.category,
-    condition: it.condition, delivery: 'pickup', priceType: 'Vraagprijs', allowBids: true, minBid: it.floorPrice, photoUrls: it.photos, useProxy: true, sessionStore: it.mpStore, dryRun: ${env.MP_DRY_RUN === "1"} }; })()) }}`), { executeOnce: true });
+    condition: it.condition, delivery: 'pickup', priceType: 'Vraagprijs', allowBids: true, minBid: it.floorPrice, photoUrls: it.photos, postcode: ((it.pickupAddress || '').match(/\\b\\d{4} ?[A-Za-z]{2}\\b/) || [])[0], useProxy: true, sessionStore: it.mpStore, dryRun: ${env.MP_DRY_RUN === "1"} }; })()) }}`), { executeOnce: true });
   w.link("Save publishing", "Post on Marktplaats (Apify)");
 
   w.add("Live", code(`

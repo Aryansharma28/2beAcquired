@@ -202,6 +202,13 @@ export async function post(input: Input): Promise<PostResult> {
         await page.waitForTimeout(2000); // client-side redirect to the login page happens here
         await guard(response);
         if (await acceptCookies(page)) step('cookie banner accepted', true);
+        // One-time "Type verkoper" modal (private vs business seller): poof sells personal items.
+        const privateSeller = await firstByName(page, [/^particuliere verkoper$/i], { timeout: 3000, roles: ['button'] });
+        if (privateSeller) {
+            await privateSeller.click();
+            await page.waitForTimeout(1000);
+            step('seller type: particulier', true);
+        }
         step('logged in', true, page.url());
         await shot('start');
 
@@ -294,7 +301,7 @@ export async function post(input: Input): Promise<PostResult> {
         });
 
         await attempt('category attributes', async () => {
-            const fields: any[] = await page.evaluate(ATTRIBUTE_FIELDS_JS);
+            const fields: any[] = await page.evaluate(`(${ATTRIBUTE_FIELDS_JS})()`);
             const given = Object.entries(input.attributes ?? {});
             const lookup = (f: any) =>
                 given.find(([k]) => k === f.name || k.toLowerCase() === String(f.label).toLowerCase())?.[1] ??
