@@ -9,3 +9,4 @@ Built at Build Weekend 2026 with **n8n** (the brain) and **Apify** (eyes and han
 - `scripts/mp-login` — log in to Marktplaats once by hand; saves the session for the actor (`npx tsx scripts/mp-login/index.ts`)
 - `n8n/workflows` — n8n workflows as JSON, pushed with `scripts/`
 - `docs/PLAN.md` — architecture, API contract, build order
+- **`docs/REQUIREMENTS.md` — must-haves for real Marktplaats use: CloakBrowser only, posting runs on a laptop (`node actors/marktplaats/start-local.mjs`), manual login, demo settings**
