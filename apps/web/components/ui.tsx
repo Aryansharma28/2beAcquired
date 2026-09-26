@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { PLATFORM, STATUS, eur } from "@/lib/format";
 import type { Platform, Status } from "@/lib/types";
 
@@ -11,8 +11,8 @@ export function cx(...c: (string | false | null | undefined)[]) {
 
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={cx("font-display font-extrabold tracking-[-0.04em]", className)}>
-      <span className="text-cobalt">2be</span>Acquired
+    <span className={cx("font-display font-extrabold lowercase tracking-[-0.05em]", className)}>
+      poof<span className="text-cobalt">.</span>
     </span>
   );
 }
@@ -27,7 +27,7 @@ const TONES = {
 
 export function StatusPill({ status, className }: { status: Status; className?: string }) {
   const s = STATUS[status] ?? STATUS.error;
-  const live = status === "analyzing" || status === "publishing" || status === "negotiating" || status === "needs_you";
+  const live = status === "live" || status === "negotiating" || status === "needs_you";
   return (
     <span className={cx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold", TONES[s.tone], className)}>
       {live && <span className="size-1.5 animate-blink rounded-full bg-current" />}
@@ -159,4 +159,95 @@ export function BackButton({ href = "/" }: { href?: string }) {
       </svg>
     </Link>
   );
+}
+
+/** Small square platform mark. */
+export function PlatformLogo({ platform, className, muted }: { platform: Platform | "vinted" | "facebook"; className?: string; muted?: boolean }) {
+  const m = {
+    marktplaats: ["M", "bg-[#f59a23] text-white"],
+    ebay: ["e", "bg-[#3665f3] text-white"],
+    vinted: ["V", "bg-[#09b1ba] text-white"],
+    facebook: ["f", "bg-[#1877f2] text-white"],
+  }[platform];
+  return (
+    <span
+      aria-hidden
+      className={cx("inline-grid size-5 shrink-0 place-items-center rounded-[6px] font-display text-[12px] font-extrabold leading-none", m[1], muted && "opacity-35 grayscale", className)}
+    >
+      {m[0]}
+    </span>
+  );
+}
+
+export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
+  return <p className={cx("font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-mute", className)}>{children}</p>;
+}
+
+export function Soon({ className }: { className?: string }) {
+  return <span className={cx("rounded-full bg-line px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-mute", className)}>soon</span>;
+}
+
+/** Bottom navbar shown on every screen after the ad went live. */
+export function NavBar({ active = "ads" }: { active?: "ads" | "none" }) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[440px] px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-2">
+      <div className="flex items-center gap-2 rounded-[26px] bg-ink p-1.5 shadow-[0_18px_40px_-14px_rgba(11,13,18,0.55)]">
+        <Link
+          href="/"
+          className={cx("flex flex-1 items-center justify-center gap-2 rounded-[20px] py-3 text-[15px] font-semibold transition active:scale-95", active === "ads" ? "text-white" : "text-white/60")}
+        >
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round">
+            <rect x="4" y="4" width="7" height="7" rx="2" /><rect x="13" y="4" width="7" height="7" rx="2" /><rect x="4" y="13" width="7" height="7" rx="2" /><rect x="13" y="13" width="7" height="7" rx="2" />
+          </svg>
+          Ads
+        </Link>
+        <Link
+          href="/new"
+          className="flex flex-[1.4] items-center justify-center gap-2 rounded-[20px] bg-tag py-3 font-display text-[17px] font-extrabold tracking-[-0.02em] text-ink transition active:scale-95"
+        >
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          Sell
+        </Link>
+      </div>
+    </nav>
+  );
+}
+
+/** Sticky primary action at the bottom of a wizard-style screen. */
+export function BottomAction({ children }: { children: ReactNode }) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[440px] bg-gradient-to-t from-paper via-paper/95 to-transparent px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-8">
+      {children}
+    </div>
+  );
+}
+
+/** Bottom sheet. */
+export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode }) {
+  useEffect(() => {
+    if (!open) return;
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal>
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 animate-fade bg-ink/50" />
+      <div className="no-scrollbar relative max-h-[80dvh] w-full max-w-[440px] animate-rise overflow-y-auto rounded-t-[30px] bg-paper px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-3">
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line" />
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-display text-[22px] font-extrabold tracking-[-0.03em]">{title}</h3>
+          <button onClick={onClose} className="grid size-9 place-items-center rounded-full bg-card ring-1 ring-line" aria-label="Close">
+            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function Spinner({ className }: { className?: string }) {
+  return <span className={cx("inline-block size-4 animate-spin rounded-full border-2 border-current/25 border-t-current", className)} />;
 }

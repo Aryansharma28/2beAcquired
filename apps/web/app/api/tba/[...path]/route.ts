@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const ALLOWED = new Set(["intake", "item", "items", "approve", "sold"]);
+const ALLOWED = new Set(["intake", "details", "item", "items", "approve", "sold"]);
 
 async function forward(req: NextRequest, path: string[], method: "GET" | "POST") {
   const base = process.env.N8N_WEBHOOK_BASE?.replace(/\/+$/, "");

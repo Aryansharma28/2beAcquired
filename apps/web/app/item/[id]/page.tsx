@@ -1,84 +1,93 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { POLL_MS, getItem } from "@/lib/api";
+import { useEffect, useRef, useState } from "react";
+import { useItem, coverFirst } from "@/lib/useItem";
+import { eur } from "@/lib/format";
 import type { Item, Status } from "@/lib/types";
-import { AdReady, ListingPreviews } from "@/components/AdReady";
-import { AgentAtWork } from "@/components/AgentAtWork";
+import { AdReview } from "@/components/AdReview";
 import { AgentLog } from "@/components/AgentLog";
-import { ChatLive } from "@/components/ChatLive";
+import { GoingLive } from "@/components/GoingLive";
+import { Overview } from "@/components/Overview";
+import { Looking, Writing } from "@/components/Setup";
 import { Sold } from "@/components/Sold";
-import { BackButton, Button, ListingPill, Segmented, StatusPill } from "@/components/ui";
+import { Wizard } from "@/components/Wizard";
+import { BackButton, Button, Eyebrow, NavBar, PriceTag } from "@/components/ui";
 
-type Screen = "agent" | "ad" | "chat" | "sold" | "error";
-type View = "now" | "ad" | "log";
+type Screen = "looking" | "wizard" | "writing" | "ad" | "going" | "overview" | "sold" | "error";
 
 function screenFor(s: Status): Screen {
-  if (s === "analyzing") return "agent";
-  if (s === "ad_ready" || s === "publishing") return "ad";
-  if (s === "live" || s === "negotiating" || s === "needs_you") return "chat";
-  if (s === "deal" || s === "pickup_scheduled" || s === "sold" || s === "delisted") return "sold";
-  return "error";
+  switch (s) {
+    case "recognizing": case "analyzing": return "looking";
+    case "needs_details": return "wizard";
+    case "writing": return "writing";
+    case "ad_ready": return "ad";
+    case "publishing": return "going";
+    case "live": case "negotiating": case "needs_you": return "overview";
+    case "deal": case "pickup_scheduled": case "sold": case "delisted": return "sold";
+    default: return "error";
+  }
 }
 
-const NOW_LABEL: Record<Screen, string> = { agent: "Agent", ad: "Launch", chat: "Chats", sold: "Sold", error: "Status" };
+const TITLE: Partial<Record<Screen, string>> = {
+  looking: "New ad", writing: "New ad", ad: "New ad", going: "New ad", overview: "How this ad is going", error: "Ad",
+};
 
 export default function ItemPage() {
   const { id } = useParams<{ id: string }>();
-  const [item, setItem] = useState<Item | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<View>("now");
-  const alive = useRef(true);
+  const { item: server, error } = useItem(id);
 
-  const refresh = useCallback(async () => {
-    try {
-      const it = await getItem(id);
-      if (alive.current) { setItem(it); setError(null); }
-    } catch (e) {
-      if (alive.current) setError((e as Error).message);
-    }
-  }, [id]);
+  // Optimistic step after /details or /approve, dropped once the server moves on.
+  const [patch, setPatch] = useState<{ from: Status; data: Partial<Item> } | null>(null);
+  const item = server && patch && server.status === patch.from ? { ...server, ...patch.data } : server;
 
+  // Keep 08 on screen briefly after the ad went live.
+  const [holdGoing, setHoldGoing] = useState(false);
+  const prev = useRef<Status | null>(null);
   useEffect(() => {
-    alive.current = true;
-    let t: ReturnType<typeof setTimeout>;
-    const loop = async () => {
-      await refresh();
-      if (alive.current) t = setTimeout(loop, POLL_MS);
-    };
-    loop();
-    return () => { alive.current = false; clearTimeout(t); };
-  }, [refresh]);
-
-  // Jump back to the live screen whenever the item moves to a new stage.
-  const screen = item ? screenFor(item.status) : null;
-  const lastScreen = useRef(screen);
-  useEffect(() => {
-    if (screen && lastScreen.current && screen !== lastScreen.current) {
-      setView("now");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    const s = server?.status ?? null;
+    if (prev.current === "publishing" && s && s !== "publishing" && screenFor(s) === "overview") {
+      setHoldGoing(true);
+      const t = setTimeout(() => setHoldGoing(false), 3500);
+      prev.current = s;
+      return () => clearTimeout(t);
     }
-    lastScreen.current = screen;
+    prev.current = s;
+  }, [server?.status]);
+
+  const [overview, setOverview] = useState(false);
+  let screen = item ? screenFor(item.status) : null;
+  if (screen === "overview" && holdGoing) screen = "going";
+  if (screen === "sold" && overview) screen = "overview";
+
+  const last = useRef(screen);
+  useEffect(() => {
+    if (screen && last.current && screen !== last.current) window.scrollTo({ top: 0, behavior: "smooth" });
+    last.current = screen;
   }, [screen]);
 
+  const nav = screen === "overview" || screen === "sold";
+
   return (
-    <main className="flex flex-1 flex-col px-5 pb-8 pt-[max(16px,env(safe-area-inset-top))]">
-      <header className="flex items-center gap-3 py-2">
-        <BackButton />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-[19px] font-bold leading-tight tracking-[-0.03em]">
-            {item?.title ?? (item ? "New item" : " ")}
-          </p>
-        </div>
-        {item && <StatusPill status={item.status} />}
-      </header>
+    <main className={`flex flex-1 flex-col px-5 pt-[max(16px,env(safe-area-inset-top))] ${nav ? "pb-28" : "pb-10"}`}>
+      {screen !== "wizard" && (
+        <header className="flex items-center gap-3 py-2">
+          {screen === "overview" && overview ? (
+            <button onClick={() => setOverview(false)} aria-label="Back" className="grid size-10 place-items-center rounded-full bg-card ring-1 ring-line transition active:scale-95">
+              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
+            </button>
+          ) : (
+            <BackButton />
+          )}
+          <p className="truncate font-display text-[19px] font-bold tracking-[-0.03em]">{screen ? TITLE[screen] ?? "" : ""}</p>
+        </header>
+      )}
 
       {error && !item && (
         <div className="mt-8 rounded-3xl bg-alert-soft p-5 text-alert">
-          <p className="font-semibold">Can&apos;t load this item.</p>
+          <p className="font-semibold">Can&apos;t load this ad.</p>
           <p className="mt-1 text-[14px]">{error}</p>
-          <Button href="/" variant="ghost" className="mt-4">Back to your items</Button>
+          <Button href="/" variant="ghost" className="mt-4">Back to your ads</Button>
         </div>
       )}
 
@@ -90,63 +99,51 @@ export default function ItemPage() {
       )}
 
       {item && screen && (
-        <>
-          <div className="sticky top-0 z-20 -mx-5 bg-paper/90 px-5 pb-3 pt-2 backdrop-blur">
-            <Segmented<View>
-              value={view}
-              onChange={setView}
-              options={[
-                { value: "now", label: NOW_LABEL[screen] },
-                { value: "ad", label: "Ad" },
-                { value: "log", label: "Agent log" },
-              ]}
-            />
-          </div>
-
-          <div key={view === "now" ? screen : view} className="flex-1 animate-fade pt-2">
-            {view === "log" && <AgentLog item={item} />}
-            {view === "ad" && <AdTab item={item} />}
-            {view === "now" && screen === "agent" && <AgentAtWork item={item} />}
-            {view === "now" && screen === "ad" && <AdReady item={item} />}
-            {view === "now" && screen === "chat" && <ChatLive item={item} />}
-            {view === "now" && screen === "sold" && <Sold item={item} />}
-            {view === "now" && screen === "error" && (
-              <div className="rounded-3xl bg-alert-soft p-5 text-alert">
-                <p className="font-display text-[20px] font-bold">The agent hit a problem</p>
-                <p className="mt-1 text-[15px]">{item.events.filter((e) => e.type === "error").at(-1)?.text ?? "Check the agent log for details."}</p>
-              </div>
-            )}
-          </div>
-        </>
+        <div key={screen} className="flex-1 animate-fade pt-2">
+          {screen === "looking" && <Looking item={item} />}
+          {screen === "wizard" && <Wizard item={item} onSubmitted={(data) => setPatch({ from: item.status, data })} />}
+          {screen === "writing" && <Writing item={item} />}
+          {screen === "ad" && <AdReview item={item} onApproved={(data) => setPatch({ from: item.status, data })} />}
+          {screen === "going" && <GoingLive item={item} />}
+          {screen === "overview" && <Overview item={item} />}
+          {screen === "sold" && <Sold item={item} onOverview={() => { setOverview(true); window.scrollTo({ top: 0 }); }} />}
+          {screen === "error" && <ErrorCard item={item} />}
+        </div>
       )}
+
+      {nav && <NavBar />}
     </main>
   );
 }
 
-function AdTab({ item }: { item: Item }) {
-  if (!item.description) {
-    return (
-      <div className="space-y-3">
-        <p className="px-1 text-[15px] text-ink-2">The agent is still writing the ad.</p>
-        <div className="skeleton aspect-[4/3] rounded-[22px]" />
-        <div className="skeleton h-24 rounded-[22px]" />
-      </div>
-    );
-  }
+function ErrorCard({ item }: { item: Item }) {
+  const last = item.events.filter((e) => e.type === "error").at(-1);
+  const photo = coverFirst(item)[0];
   return (
     <div className="space-y-4">
-      {item.listings.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {item.listings.map((l) =>
-            l.url && l.status === "live" ? (
-              <a key={l.platform} href={l.url} target="_blank" rel="noreferrer"><ListingPill platform={l.platform} status={l.status} /></a>
-            ) : (
-              <ListingPill key={l.platform} platform={l.platform} status={l.status} />
-            ),
-          )}
+      <div className="rounded-[26px] bg-alert-soft p-5 text-alert">
+        <p className="font-display text-[24px] font-extrabold leading-tight tracking-[-0.03em]">Your agent hit a problem</p>
+        <p className="mt-1.5 text-[15px] font-medium">{last?.text ?? "No details were logged. Check the activity log below."}</p>
+      </div>
+      <section>
+        <Eyebrow className="mb-2 px-1">The ad so far</Eyebrow>
+        <div className="overflow-hidden rounded-[26px] bg-card ring-1 ring-line/60">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {photo && <img src={photo} alt="" className="aspect-[16/10] w-full object-cover" />}
+          <div className="space-y-2 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-display text-[19px] font-bold leading-tight tracking-[-0.02em]">{item.title ?? item.recognition?.name ?? "Not recognised yet"}</p>
+              {item.askPrice != null && <PriceTag amount={item.askPrice} size="sm" />}
+            </div>
+            {item.floorPrice != null && <p className="text-[13.5px] text-mute">Minimum {eur(item.floorPrice)}</p>}
+            {item.description && <p className="line-clamp-4 whitespace-pre-line text-[14.5px] text-ink-2">{item.description}</p>}
+          </div>
         </div>
-      )}
-      <ListingPreviews item={item} />
+      </section>
+      <section>
+        <Eyebrow className="mb-2 px-1">Activity log</Eyebrow>
+        <AgentLog item={item} />
+      </section>
     </div>
   );
 }

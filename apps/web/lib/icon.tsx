@@ -1,4 +1,4 @@
-// App icon: a yellow swing tag reading "2b" on cobalt. Rendered with next/og for
+// App icon: a yellow swing tag reading "poof" on cobalt. Rendered with next/og for
 // favicon, apple-touch-icon and PWA icons. The tag shape is SVG; text is real type.
 import { ImageResponse } from "next/og";
 
@@ -24,10 +24,10 @@ export function iconResponse(px: number, maskable = false) {
             style={{
               position: "absolute", left: w * 0.3, top: 0, width: w * 0.66, height: h,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: h * 0.62, fontWeight: 700, color: "#0b0d12", letterSpacing: -h * 0.04,
+              fontSize: h * 0.4, fontWeight: 700, color: "#0b0d12", letterSpacing: -h * 0.03,
             }}
           >
-            2b
+            poof
           </div>
         </div>
       </div>

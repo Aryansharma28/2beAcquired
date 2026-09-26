@@ -8,10 +8,10 @@ const body = Instrument_Sans({ variable: "--font-instrument", subsets: ["latin"]
 const mono = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], weight: ["500", "700"] });
 
 export const metadata: Metadata = {
-  title: "2beAcquired — Your stuff, sold.",
-  description: "Snap a photo, set a floor price. The agent prices, lists, negotiates and delists on Marktplaats and eBay.",
-  applicationName: "2beAcquired",
-  appleWebApp: { capable: true, title: "2beAcquired", statusBarStyle: "default" },
+  title: "poof — Snap it. poof. Sold.",
+  description: "Snap it. poof. Sold. Your agent prices, lists, haggles and plans the pickup on Marktplaats.",
+  applicationName: "poof",
+  appleWebApp: { capable: true, title: "poof", statusBarStyle: "default" },
   formatDetection: { telephone: false },
 };
 

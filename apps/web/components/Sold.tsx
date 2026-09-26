@@ -1,21 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PLATFORM, eur, pickupWhen } from "@/lib/format";
+import { PLATFORM, eur, pickupWhen, recapOf } from "@/lib/format";
 import type { Item, Pickup, Platform } from "@/lib/types";
-import { Thread } from "./ChatLive";
+import { Thread } from "./Chats";
 import { Button, PlatformDot, Tick, cx } from "./ui";
 
-/** Screen 5: sold. While status is deal / pickup_scheduled it's the
+/** 14 · Sold. While status is deal / pickup_scheduled it's the
  *  "Sold, pickup planned" variant; at `sold` everything is wrapped up. */
-export function Sold({ item }: { item: Item }) {
+export function Sold({ item, onOverview }: { item: Item; onOverview: () => void }) {
   const sale = item.sale;
   const [now] = useState(() => Date.now());
   const done = item.status === "sold" || item.status === "delisted";
   const conv = item.conversations.find((c) => c.state === "deal" || c.state === "pickup_scheduled");
-  const buyer = sale?.buyer ?? item.pickup?.buyer ?? conv?.buyer;
-  const platforms: Platform[] = item.listings.length ? item.listings.map((l) => l.platform) : ["marktplaats"];
-  const allGone = item.listings.length > 0 && item.listings.every((l) => l.status === "removed");
+  const buyer = (sale?.buyer ?? item.pickup?.buyer ?? conv?.buyer)?.split(" ")[0];
+  // Only platforms we really listed on.
+  const platforms: Platform[] = item.listings.length ? [...new Set(item.listings.map((l) => l.platform))] : ["marktplaats"];
+  const recap = recapOf(item);
 
   const confetti = useMemo(
     () =>
@@ -32,8 +33,8 @@ export function Sold({ item }: { item: Item }) {
   );
 
   return (
-    <div className="-mx-5 -mb-8">
-      <div className="relative min-h-[calc(100dvh-170px)] overflow-hidden rounded-t-[36px] bg-cobalt px-6 pb-10 pt-4 text-white">
+    <div className="-mx-5">
+      <div className="relative overflow-hidden rounded-t-[36px] bg-cobalt px-6 pb-8 pt-4 text-white">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           {confetti.map((c, i) => (
             <span
@@ -71,21 +72,28 @@ export function Sold({ item }: { item: Item }) {
 
         <div className="relative mt-6 animate-rise text-center [animation-delay:400ms]">
           <h2 className="font-display text-[44px] font-extrabold leading-[0.95] tracking-[-0.045em]">
-            Sold for {eur(sale?.price)}
+            {done ? `Sold for ${eur(sale?.price)}` : "Sold, pickup planned"}
           </h2>
-          <p className="mt-2 text-[16px] text-white/75">
+          <p className="mt-2 text-[16px] text-white/80">
             {done
-              ? [buyer && `to ${buyer.split(" ")[0]}`, sale && `on ${PLATFORM[sale.platform]}`].filter(Boolean).join(" ")
-              : ["Pickup planned", buyer?.split(" ")[0], sale && PLATFORM[sale.platform]].filter(Boolean).join(" · ")}
+              ? [buyer && `to ${buyer}`, sale && `on ${PLATFORM[sale.platform]}`].filter(Boolean).join(" ")
+              : [`Deal at ${eur(sale?.price)}`, buyer, sale && PLATFORM[sale.platform]].filter(Boolean).join(" · ")}
+          </p>
+          <p className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full bg-white/12 px-3.5 py-1.5 font-mono text-[12px] font-bold tracking-[0.02em]">
+            {recap.duration} · {recap.messages} message{recap.messages === 1 ? "" : "s"} · {recap.counters} counter{recap.counters === 1 ? "" : "s"}
           </p>
         </div>
 
-        {item.pickup && <PickupCard pickup={item.pickup} done={new Date(item.pickup.end).getTime() < now} />}
+        {/* Next step */}
+        {item.pickup && (
+          <div className="relative mt-6">
+            <p className="mb-2 px-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">Next step</p>
+            <PickupCard pickup={item.pickup} done={new Date(item.pickup.end).getTime() < now} />
+          </div>
+        )}
 
         <section className="relative mt-3 animate-rise rounded-3xl bg-white/10 p-4 backdrop-blur [animation-delay:700ms]">
-          <p className="mb-3 font-display text-[17px] font-bold tracking-[-0.02em]">
-            {allGone ? "Removed from every platform" : "Removing from every platform…"}
-          </p>
+          <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">Removed</p>
           <ul className="space-y-2">
             {platforms.map((p, i) => {
               const gone = item.listings.find((l) => l.platform === p)?.status === "removed";
@@ -93,6 +101,7 @@ export function Sold({ item }: { item: Item }) {
                 <li key={p} className="flex items-center gap-3 rounded-2xl bg-white/10 px-3.5 py-2.5">
                   <PlatformDot platform={p} className="size-2.5 ring-2 ring-white/80" />
                   <span className="flex-1 text-[15px] font-semibold">{PLATFORM[p]}</span>
+                  <span className="text-[12.5px] text-white/70">{gone ? "ad taken down" : "taking the ad down…"}</span>
                   <span className={cx("grid size-7 place-items-center rounded-full transition-colors duration-500", gone ? "bg-tag text-ink" : "bg-white/15")}>
                     {gone ? <Tick className="size-4" delay={i * 120} /> : <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
                   </span>
@@ -105,11 +114,14 @@ export function Sold({ item }: { item: Item }) {
         <Button href="/new" variant="ghost" className="relative mt-5 w-full !bg-tag !py-4 !text-[17px] !text-ink !ring-0">
           Sell something else
         </Button>
+        <button onClick={onOverview} className="relative mt-3 w-full py-2 text-center text-[14.5px] font-semibold text-white/85 underline decoration-white/40 underline-offset-4">
+          How this ad went
+        </button>
       </div>
 
       {conv && (
         <div className="bg-cobalt">
-          <div className="rounded-t-[28px] bg-paper px-5 pb-10 pt-5">
+          <div className="rounded-t-[28px] bg-paper px-5 pb-6 pt-5">
             <p className="mb-2.5 px-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-mute">How the agent closed it</p>
             <Thread c={conv} />
           </div>
@@ -119,13 +131,16 @@ export function Sold({ item }: { item: Item }) {
   );
 }
 
-/** Calendar-leaf pickup card: "Sat 3 Oct, 14:30 · Daan picks up · in your calendar". */
-export function PickupCard({ pickup, done }: { pickup: Pickup; done?: boolean }) {
+/** Calendar-leaf pickup card: "Sat 3 Oct, 14:00 · Mila picks up · address shared". */
+export function PickupCard({ pickup, done, light }: { pickup: Pickup; done?: boolean; light?: boolean }) {
   const w = pickupWhen(pickup.start);
   const end = pickupWhen(pickup.end);
   const first = pickup.buyer.split(" ")[0];
   return (
-    <section className="relative mt-6 flex animate-pop items-center gap-4 rounded-3xl bg-white p-3 pr-4 text-ink shadow-[0_18px_40px_-18px_rgba(0,0,0,0.5)] [animation-delay:550ms]">
+    <section className={cx(
+      "relative flex animate-pop items-center gap-4 rounded-3xl bg-white p-3 pr-4 text-ink",
+      light ? "ring-1 ring-line/60" : "shadow-[0_18px_40px_-18px_rgba(0,0,0,0.5)] [animation-delay:550ms]",
+    )}>
       <div className="w-[64px] shrink-0 overflow-hidden rounded-2xl text-center ring-1 ring-line">
         <div className="bg-alert py-0.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-white">{w.month}</div>
         <div className="font-display text-[30px] font-extrabold leading-[1.15] tracking-[-0.04em]">{w.date}</div>
@@ -133,12 +148,14 @@ export function PickupCard({ pickup, done }: { pickup: Pickup; done?: boolean })
       </div>
       <div className="min-w-0 flex-1">
         <p className="font-mono text-[10.5px] font-bold uppercase tracking-[0.16em] text-cobalt">
-          {done ? "Picked up" : "Pickup"} · {w.day}
+          {done ? "Picked up" : "Pickup"} · {pickup.label ?? w.day}
         </p>
         <p className="tabular font-display text-[21px] font-bold leading-tight tracking-[-0.02em]">
           {w.time}<span className="text-mute"> – {end.time}</span>
         </p>
-        <p className="text-[13.5px] text-ink-2">{first} picks up</p>
+        <p className="text-[13.5px] text-ink-2">
+          {first} picks up{pickup.addressShared && <> · address shared with {first}</>}
+        </p>
         {pickup.calendarEventId && (
           <p className="mt-0.5 flex items-center gap-1 text-[12.5px] font-semibold text-go">
             <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></svg>

@@ -1,14 +1,16 @@
-# 2beAcquired — web app
+# poof — web app
 
-Phone-first Next.js PWA (App Router, TypeScript, Tailwind v4). Screens:
+Snap it. poof. Sold. Phone-first Next.js PWA (App Router, TypeScript, Tailwind v4) for the v2 flow in `docs/PLAN.md` › "v2 contract".
+
+The owner sets up the ad (screens 01–07) and approves it. After that the agent is **fully autonomous**: there are no accept / decline / counter buttons, no "your call" screen and no push UI. Offers below the minimum are countered at the minimum by the agent. Only Marktplaats is connected; Vinted, eBay and Facebook are shown as "soon".
 
 | Route | Screen |
 |---|---|
-| `/` | Your items (selling / sold) |
-| `/new` | 1 · Photo(s) + minimum price → **Sell it** (always sends `goal: "fast"`) |
-| `/item/[id]` | Picks the screen from `item.status`: `analyzing` → 2 Agent at work · `ad_ready`/`publishing` → 3 Ad ready (informational 10 s countdown; the backend publishes itself) · `live`/`negotiating` → 4 Chats · `deal`/`pickup_scheduled` → 5 "Sold, pickup planned" (pickup card + the closing chat) · `sold`/`delisted` → 5 Sold. Tabs to view the Ad and Agent log at any time. |
-
-The app is **status-only**: the agent is fully autonomous, so there are no approve/accept/counter/edit controls and the app never calls `/tba/approve`. A `Pickup` card shows whenever `item.pickup` (`{ start, end, buyer, platform, calendarEventId? }`) is set.
+| `/` | 09 Your ads — cards with status chip, price tag, new-message count; navbar (Ads · + Sell) |
+| `/new` | 01 Snap it — live camera (getUserMedia) with file-picker fallback, 1–5 photos → `POST /tba/intake {photos}` |
+| `/item/[id]` | Picks the screen from `item.status`: `recognizing` → "Looking at your photos…" · `needs_details` → local wizard 02 Is this it? / 03 When should it be gone? / 04 What's your minimum? / 05 How does it get to the buyer? → `POST /tba/details` · `writing` → 06 Your agent is on it · `ad_ready` → 07 Here's your ad → `POST /tba/approve` (only edited fields) · `publishing` → 08 Putting it online · `live`/`negotiating` → 10 How this ad is going (stepper, numbers, "Now", price plan, activity log) · `deal`/`pickup_scheduled` → 14 "Sold, pickup planned" · `sold` → 14 Sold (10 reachable via "How this ad went") · `error` → error card + ad so far + log |
+| `/item/[id]/chats` | 11 Chats — Best offers, Recent, folded "Lowballers and scams" (`state === "declined"`) |
+| `/item/[id]/chats/[cid]` | 12 Negotiating — read-only thread with offer chips, strategy line, deal card |
 
 ## Run
 
@@ -34,23 +36,23 @@ The browser only calls same-origin routes; `app/api/tba/[...path]/route.ts` forw
 | Browser | n8n |
 |---|---|
 | `POST /api/tba/intake` | `POST ${N8N_WEBHOOK_BASE}/tba/intake` |
+| `POST /api/tba/details` | `POST ${N8N_WEBHOOK_BASE}/tba/details` |
+| `POST /api/tba/approve` | `POST ${N8N_WEBHOOK_BASE}/tba/approve` |
 | `GET /api/tba/item?id=…` | `GET ${N8N_WEBHOOK_BASE}/tba/item?id=…` |
 | `GET /api/tba/items` | `GET ${N8N_WEBHOOK_BASE}/tba/items` |
 
 Query string and JSON body are forwarded as-is; status and JSON come back unchanged (an n8n single-item array is unwrapped client-side). Because the proxy runs on our server, the n8n webhooks do **not** need `Access-Control-Allow-Origin`.
 
-Photos are downscaled client-side to max 1280 px JPEG (q 0.8), sent as base64 without the `data:` prefix — roughly 150–400 KB per photo, max 6 photos. Route handlers have no body limit locally; on Vercel the serverless request limit is 4.5 MB, so keep to ~4 photos there.
+Photos are downscaled client-side to max 1280 px JPEG (q 0.8), sent as base64 without the `data:` prefix — roughly 150–400 KB per photo, max 5 photos. Route handlers have no body limit locally; on Vercel the serverless request limit is 4.5 MB, so keep to ~4 photos there.
 
 `/tba/item` is polled every 2.5 s on the item page. The app expects `/tba/items` to return `{ items: [...] }` (a bare array also works) where each entry has at least `id` and `status`, and ideally `title`, `askPrice`, `photos` (or `photo`), `createdAt`, `sale`, `conversations`.
 
 ## Mock mode
 
-`NEXT_PUBLIC_MOCK=1` swaps `lib/api.ts` onto `lib/mock.ts`, a simulated backend in the browser (state in `localStorage`, so reloads keep working). It plays a scripted timeline (~45 s) for a vintage oak chair, Marktplaats only:
+`NEXT_PUBLIC_MOCK=1` swaps `lib/api.ts` onto `lib/mock.ts`, a simulated backend in the browser (state in `localStorage`). Like the real backend it waits for the owner at `/details` and `/approve`. Story: an IKEA POÄNG rocking chair (`public/demo/poang.jpg` via **Use sample photo**):
 
-- 0–6 s: photo received → *Recognised: Vintage oak chair* → *23 comparable listings (€60–€120)* → *Strategy: ask €95, never below €70* → `ad_ready`
-- 10 s countdown → the agent publishes → live on Marktplaats
-- Daan: *"Would you do 50?"* → agent counters €85 → Daan €80 → deal (minimum €70) → `deal`
-- Agent: *"Top! Wanneer kun je hem ophalen? Ik kan za 14:30 of zo 11:00"* → Daan: *"za 14:30 prima"* → `pickup_scheduled` (next Saturday 14:30, in the calendar)
-- Removed from Marktplaats → `sold`
+- intake: Google Lens → 40 similar listings (€25–€50) → `needs_details` after ~5 s
+- details: price €45, never below the minimum (default €30) → ad written → `ad_ready` after ~6 s
+- approve: Marktplaats agent posts → `live` after ~5 s, then over ~35 s: Mila "Wil je 25?" → countered €40 · Tom asks for bank details + courier → declined and folded · Mila "35 en ik haal hem zaterdag op?" → deal €35 → pickup za 14:00 in the calendar → removed from Marktplaats → `sold`
 
-The mock polls every 0.8 s so the steps animate smoothly on video. **Use sample photo** on `/new` and **Demo · reset** on `/` only appear in mock mode.
+**Demo · reset** on `/` wipes the mock state.

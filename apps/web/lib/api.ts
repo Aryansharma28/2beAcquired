@@ -1,9 +1,9 @@
-import type { IntakeRequest, Item, ItemSummary } from "./types";
+import type { ApproveRequest, DetailsRequest, IntakeRequest, Item, ItemSummary, Status } from "./types";
 import * as mock from "./mock";
 
 /** Mock mode: in-browser simulated backend. Enabled with NEXT_PUBLIC_MOCK=1. */
 export const MOCK = process.env.NEXT_PUBLIC_MOCK === "1";
-/** Item page poll interval. The mock polls faster so the agent log animates smoothly on video. */
+/** Item page poll interval. The mock polls faster so the agent steps animate smoothly on video. */
 export const POLL_MS = MOCK ? 800 : 2500;
 
 // Same-origin proxy (app/api/tba/[...path]) forwards to ${N8N_WEBHOOK_BASE}/tba/*.
@@ -27,12 +27,26 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
+const post = <T,>(path: string, body: unknown) => req<T>(path, { method: "POST", body: JSON.stringify(body) });
+
 export async function intake(body: IntakeRequest): Promise<{ itemId: string }> {
   if (MOCK) return mock.intake(body);
-  const r = await req<{ itemId?: string; id?: string }>("/intake", { method: "POST", body: JSON.stringify(body) });
+  const r = await post<{ itemId?: string; id?: string }>("/intake", body);
   const itemId = r?.itemId ?? r?.id;
   if (!itemId) throw new Error("Intake did not return an itemId");
   return { itemId };
+}
+
+/** Screens 02–05: the owner's answers. Starts pricing + ad writing. */
+export async function details(body: DetailsRequest): Promise<void> {
+  if (MOCK) return mock.details(body);
+  await post("/details", body);
+}
+
+/** Screen 07: approve the ad (only edited fields are sent). Starts publishing. */
+export async function approve(body: ApproveRequest): Promise<void> {
+  if (MOCK) return mock.approve(body);
+  await post("/approve", body);
 }
 
 export async function getItem(id: string): Promise<Item> {
@@ -45,7 +59,15 @@ export async function listItems(): Promise<ItemSummary[]> {
   if (MOCK) return mock.listItems();
   const r = await req<{ items?: ItemSummary[] } | ItemSummary[]>("/items");
   const items = Array.isArray(r) ? r : r?.items ?? [];
-  return [...items].map((i) => ({ ...i, photo: photoUrl(i.photo) })).sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+  return items
+    .filter((i) => i && i.id)
+    .map((i) => ({
+      ...i,
+      status: normStatus(i.status),
+      photo: photoUrl(i.photo ?? i.photos?.[i.coverIndex ?? 0] ?? i.photos?.[0]),
+      conversations: Array.isArray(i.conversations) ? i.conversations.map((c) => ({ ...c, messages: c.messages ?? [] })) : undefined,
+    }))
+    .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
 }
 
 /** Our photo store is private: route Apify record URLs through /api/photo/<key>. */
@@ -55,13 +77,37 @@ export const photoUrl = (url?: string) => {
   return m ? `/api/photo/${m[1]}` : url;
 };
 
+const KNOWN: Status[] = [
+  "recognizing", "needs_details", "writing", "ad_ready", "publishing", "live", "negotiating",
+  "deal", "pickup_scheduled", "sold", "error", "analyzing", "delisted", "needs_you",
+];
+function normStatus(s: unknown): Status {
+  if (s === "analyzing") return "recognizing";
+  if (s === "delisted") return "sold";
+  if (s === "needs_you") return "negotiating";
+  return KNOWN.includes(s as Status) ? (s as Status) : "recognizing";
+}
+
+const num = (v: unknown) => (v == null || v === "" || Number.isNaN(Number(v)) ? undefined : Number(v));
+const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+
 /** Defensive defaults so a half-filled n8n row never crashes a screen. */
 function normalize(item: Item): Item {
+  const pr = item.priceRange;
   return {
     ...item,
-    photos: (item.photos ?? []).map((p) => photoUrl(p) ?? p),
-    listings: item.listings ?? [],
-    conversations: (item.conversations ?? []).map((c) => ({ ...c, messages: c.messages ?? [] })),
-    events: item.events ?? [],
+    status: normStatus(item.status),
+    createdAt: item.createdAt ?? new Date().toISOString(),
+    photos: arr<string>(item.photos).map((p) => photoUrl(p) ?? p),
+    floorPrice: num(item.floorPrice),
+    askPrice: num(item.askPrice),
+    priceRange: pr && num(pr.low) != null && num(pr.high) != null
+      ? { low: Number(pr.low), mid: num(pr.mid) ?? (Number(pr.low) + Number(pr.high)) / 2, high: Number(pr.high) }
+      : undefined,
+    pricePlan: arr<{ price: number; from: string }>(item.pricePlan).filter((p) => num(p?.price) != null),
+    comps: arr(item.comps),
+    listings: arr(item.listings),
+    conversations: arr<Item["conversations"][number]>(item.conversations).map((c) => ({ ...c, messages: arr(c.messages) })),
+    events: arr(item.events),
   };
 }

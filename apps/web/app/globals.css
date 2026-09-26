@@ -76,6 +76,10 @@
   from { transform: scaleX(1); }
   to { transform: scaleX(0); }
 }
+@keyframes posting {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(320%); }
+}
 @keyframes confetti {
   0% { transform: translate3d(0, -20px, 0) rotate(0); opacity: 1; }
   100% { transform: translate3d(var(--dx), 110vh, 0) rotate(var(--rot)); opacity: 0.9; }
