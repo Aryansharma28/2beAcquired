@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { getAccount } from "@/lib/account";
 import { details, rename } from "@/lib/api";
 import { CONDITIONS, CONDITION_NL, GOALS, attrText, chipFor, eur, type ConditionChip } from "@/lib/format";
 import type { Goal, Item } from "@/lib/types";
@@ -20,7 +21,13 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
   const [attrs, setAttrs] = useState<string[]>((rec.attributes ?? []).map(attrText).filter(Boolean));
   const [goal, setGoal] = useState<Goal>("week");
   const [floor, setFloor] = useState(() => round5(item.priceRange?.low ?? 70));
-  const [city, setCity] = useState("Amsterdam");
+  const [city, setCity] = useState(item.pickupCity || "");
+  // Default the pickup city to the owner's profile (the ad's location), not a fixed city.
+  useEffect(() => {
+    if (city) return;
+    getAccount().then((a) => setCity((c) => c || a?.pickupCity || "Amsterdam")).catch(() => setCity((c) => c || "Amsterdam"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Market picture: from intake, or re-checked after the owner corrected the name.

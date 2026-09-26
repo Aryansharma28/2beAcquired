@@ -20,7 +20,11 @@ export function AdReview({ item, onApproved }: { item: Item; onApproved: (patch:
 
   const priceNum = Number(price.replace(",", "."));
   const priceOk = priceNum > 0 && (item.floorPrice == null || priceNum >= item.floorPrice);
-  const plan = planLine(item);
+  // An edited price replaces the plan (approve starts a fresh plan at that price), so show that, not the old steps.
+  const priceEdited = priceOk && priceNum !== item.askPrice;
+  const plan = priceEdited
+    ? `${eur(priceNum)} now${item.floorPrice != null ? `, never below ${eur(item.floorPrice)}` : ""}`
+    : planLine(item);
 
   async function go() {
     const body: ApproveRequest = { itemId: item.id };
@@ -92,8 +96,14 @@ export function AdReview({ item, onApproved }: { item: Item; onApproved: (patch:
       {/* Description */}
       <Field label="Description" onEdit={() => setEditing("desc")} editing={editing === "desc"}>
         {editing === "desc" ? (
-          <textarea autoFocus value={desc} onChange={(e) => setDesc(e.target.value)} onBlur={() => setEditing(null)} rows={8}
-            className="w-full rounded-[12px] border-2 border-ink bg-card px-3.5 py-2.5 text-[15px] leading-relaxed outline-none" />
+          <div>
+            {/* Scroll the box above the fixed "Approve and sell" bar; Done closes it (Enter is a newline here). */}
+            <textarea autoFocus value={desc} onChange={(e) => setDesc(e.target.value)} onBlur={() => setEditing(null)} rows={8}
+              onFocus={(e) => { const el = e.currentTarget; setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 250); }}
+              className="w-full rounded-[12px] border-2 border-ink bg-card px-3.5 py-2.5 text-[15px] leading-relaxed outline-none" />
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setEditing(null)}
+              className="mt-2 rounded-full bg-ink px-4 py-2 text-[14px] font-bold text-white">Done</button>
+          </div>
         ) : (
           <p className="whitespace-pre-line text-[15px] leading-[1.5]">{desc}</p>
         )}
