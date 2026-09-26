@@ -26,8 +26,35 @@ npm run build && npm start   # production (service worker only registers here)
 
 | Var | Where | Meaning |
 |---|---|---|
-| `N8N_WEBHOOK_BASE` | server only | e.g. `https://aryansharma28.app.n8n.cloud/webhook`. Used by the proxy. |
-| `NEXT_PUBLIC_MOCK` | client, build-time | `1` = simulated backend in the browser. Anything else = real n8n. |
+| `N8N_WEBHOOK_BASE` | server | e.g. `https://aryansharma28.app.n8n.cloud/webhook`. Used by the proxy and the account/connect routes. |
+| `POOF_APP_KEY` | server | Shared secret, sent to n8n as `X-Poof-Key` on every call. |
+| `POOF_SESSION_SECRET` | server | HMAC key for the `poof_uid` cookie and the Connector `deviceToken`. Required in production. |
+| `APIFY_TOKEN` | server | Photos (`/api/photo`) and the per-user Marktplaats session stores `mp-session-<userId>`. |
+| `APIFY_PHOTO_STORE` | server | Private KV store holding the photos. |
+| `NEXT_PUBLIC_MOCK` | client, build-time | `1` = simulated backend in the browser (demo video). Unset in production. |
+
+## Accounts and Marktplaats (v3)
+
+No passwords. `POST /api/account` creates `usr_<random>` and sets the httpOnly cookie `poof_uid=<userId>.<hmac>` (1 year, SameSite=Lax, Secure in production). `GET /api/account` reads `n8n GET /tba/me`; `PATCH /api/account` → `n8n POST /tba/me`. First run goes to `/welcome` (what poof does → name + pickup city/address/hours → Connect Marktplaats). Settings (avatar on `/`) shows the Marktplaats status and pickup details.
+
+Connecting uses the **poof Connector** Chrome extension (`/connector` explains the install; zip at `/poof-connector.zip`):
+
+| Route | Caller | Does |
+|---|---|---|
+| `POST /api/connect/code` | app | `n8n POST /tba/pair/new` → `{code, expiresAt}` (the app refreshes it when it expires and polls `/api/account` every 2 s) |
+| `POST /api/connect/claim` | extension (CORS) | `{code, cookies[], userAgent, mpUser{id,name}, extVersion}` → `n8n POST /tba/pair/claim {code}` → `{userId}`; writes the Playwright storageState to Apify KV `mp-session-<userId>` key `state`; `n8n POST /tba/mp-connected {userId, name, store, storeId, mpUserId, extVersion}` → `{ok, name, deviceToken}` |
+| `POST /api/connect/refresh` | extension (CORS) | `{deviceToken, cookies[], userAgent}` → overwrites the stored session |
+| `POST /api/connect/disconnect` | extension (CORS) or app | `{deviceToken}` or the cookie → deletes the session record + `n8n POST /tba/mp-disconnected {userId}` |
+| `DELETE /api/connect` | app | same, via the cookie |
+
+An item in status `needs_connection` (approved while not connected) shows "Connect Marktplaats to put this online"; after connecting the app calls `/tba/approve` again.
+
+## Deploy (Vercel)
+
+1. New project → import the repo → **Root Directory `apps/web`** (framework: Next.js, default build).
+2. Set the env vars above (Production + Preview): `N8N_WEBHOOK_BASE`, `POOF_APP_KEY`, `POOF_SESSION_SECRET`, `APIFY_TOKEN`, `APIFY_PHOTO_STORE`. Leave `NEXT_PUBLIC_MOCK` unset (set it to `1` only on a separate demo deployment).
+3. API routes run on the Node runtime; `/api/tba/*` and `/api/connect/claim` export `maxDuration = 60`. Serverless request bodies are capped at 4.5 MB, so intake photos are downscaled client-side (max 5).
+4. Put the Connector zip at `public/poof-connector.zip`, and point the extension at the deployment URL.
 
 ## Talking to n8n (no CORS needed)
 
@@ -35,13 +62,14 @@ The browser only calls same-origin routes; `app/api/tba/[...path]/route.ts` forw
 
 | Browser | n8n |
 |---|---|
+| `GET/POST /api/tba/me` | `${N8N_WEBHOOK_BASE}/tba/me` |
 | `POST /api/tba/intake` | `POST ${N8N_WEBHOOK_BASE}/tba/intake` |
 | `POST /api/tba/details` | `POST ${N8N_WEBHOOK_BASE}/tba/details` |
 | `POST /api/tba/approve` | `POST ${N8N_WEBHOOK_BASE}/tba/approve` |
 | `GET /api/tba/item?id=…` | `GET ${N8N_WEBHOOK_BASE}/tba/item?id=…` |
 | `GET /api/tba/items` | `GET ${N8N_WEBHOOK_BASE}/tba/items` |
 
-Query string and JSON body are forwarded as-is; status and JSON come back unchanged (an n8n single-item array is unwrapped client-side). Because the proxy runs on our server, the n8n webhooks do **not** need `Access-Control-Allow-Origin`.
+The proxy requires the `poof_uid` cookie (401 otherwise; the app then goes to `/welcome`) and adds `X-Poof-Key` + `X-Poof-User`. Query string and JSON body are forwarded as-is; status and JSON come back unchanged (an n8n single-item array is unwrapped client-side). Because the proxy runs on our server, the n8n webhooks do **not** need `Access-Control-Allow-Origin`.
 
 Photos are downscaled client-side to max 1280 px JPEG (q 0.8), sent as base64 without the `data:` prefix — roughly 150–400 KB per photo, max 5 photos. Route handlers have no body limit locally; on Vercel the serverless request limit is 4.5 MB, so keep to ~4 photos there.
 
@@ -55,4 +83,4 @@ Photos are downscaled client-side to max 1280 px JPEG (q 0.8), sent as base64 wi
 - details: price €45, never below the minimum (default €30) → ad written → `ad_ready` after ~6 s
 - approve: Marktplaats agent posts → `live` after ~5 s, then over ~35 s: Mila "Wil je 25?" → countered €40 · Tom asks for bank details + courier → declined and folded · Mila "35 en ik haal hem zaterdag op?" → deal €35 → pickup za 14:00 in the calendar → removed from Marktplaats → `sold`
 
-**Demo · reset** on `/` wipes the mock state.
+The mock also fakes the account: onboarding stores it in `localStorage`, and the fake Connector "connects" ~6 s after the code is shown. Approving while not connected gives `needs_connection`, like the real backend. **Demo · reset** on `/` wipes the mock state, including the account (back to onboarding).

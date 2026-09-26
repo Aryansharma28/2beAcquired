@@ -24,6 +24,7 @@ export const STATUS: Record<Status, { label: string; tone: Tone }> = {
   needs_details: { label: "Setting up", tone: "mute" },
   writing: { label: "Setting up", tone: "mute" },
   ad_ready: { label: "Setting up", tone: "mute" },
+  needs_connection: { label: "Connect Marktplaats", tone: "tag" },
   publishing: { label: "Setting up", tone: "mute" },
   live: { label: "Live", tone: "go" },
   negotiating: { label: "Negotiating", tone: "cobalt" },
@@ -36,7 +37,7 @@ export const STATUS: Record<Status, { label: string; tone: Tone }> = {
 };
 
 export const isSetup = (s: Status) =>
-  ["recognizing", "analyzing", "needs_details", "writing", "ad_ready", "publishing"].includes(s);
+  ["recognizing", "analyzing", "needs_details", "writing", "ad_ready", "needs_connection", "publishing"].includes(s);
 export const isClosed = (s: Status) => ["deal", "pickup_scheduled", "sold", "delisted"].includes(s);
 
 export const GOALS: { value: Goal; label: string; hint: string }[] = [

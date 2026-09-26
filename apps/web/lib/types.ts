@@ -2,7 +2,7 @@
 // is optional in practice: the backend fills the row in as the agent works.
 
 export type Status =
-  | "recognizing" | "needs_details" | "writing" | "ad_ready" | "publishing"
+  | "recognizing" | "needs_details" | "writing" | "ad_ready" | "needs_connection" | "publishing"
   | "live" | "negotiating" | "deal" | "pickup_scheduled" | "sold" | "error"
   /** Legacy alias of `recognizing`. */
   | "analyzing"

@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getAccount, type Account } from "@/lib/account";
+import { SettingsSheet } from "@/components/Settings";
 import { MOCK, listItems } from "@/lib/api";
 import { eur, isClosed, isSetup, recentBuyerMessages } from "@/lib/format";
 import { reset } from "@/lib/mock";
@@ -10,10 +13,21 @@ import { Button, NavBar, PriceTag, StatusPill, Wordmark } from "@/components/ui"
 
 /** 09 · Your ads (home). */
 export default function Home() {
+  const router = useRouter();
+  const [account, setAccount] = useState<Account | null>(null);
+  const [settings, setSettings] = useState(false);
   const [items, setItems] = useState<ItemSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // First run → onboarding.
   useEffect(() => {
+    getAccount()
+      .then((a) => (a?.onboarded ? setAccount(a) : router.replace("/welcome")))
+      .catch((e: Error) => setError(e.message));
+  }, [router]);
+
+  useEffect(() => {
+    if (!account) return;
     let alive = true;
     const load = () =>
       listItems()
@@ -22,7 +36,7 @@ export default function Home() {
     load();
     const t = setInterval(load, MOCK ? 2000 : 5000);
     return () => { alive = false; clearInterval(t); };
-  }, []);
+  }, [account]);
 
   const count = (f: (i: ItemSummary) => boolean) => items?.filter(f).length ?? 0;
   const summary = [
@@ -36,15 +50,38 @@ export default function Home() {
     <main className="flex flex-1 flex-col px-5 pb-32 pt-[max(18px,env(safe-area-inset-top))]">
       <header className="flex items-center justify-between py-2">
         <Wordmark className="text-[20px]" />
-        {MOCK && (
-          <button
-            onClick={() => { reset(); location.reload(); }}
-            className="rounded-full bg-card px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-mute ring-1 ring-line"
-          >
-            Demo · reset
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {MOCK && (
+            <button
+              onClick={() => { reset(); location.reload(); }}
+              className="rounded-full bg-card px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-mute ring-1 ring-line"
+            >
+              Demo · reset
+            </button>
+          )}
+          {account && (
+            <button
+              onClick={() => setSettings(true)}
+              aria-label="Settings"
+              className="relative grid size-10 place-items-center rounded-full bg-ink font-display text-[17px] font-bold text-white transition active:scale-95"
+            >
+              {(account.name ?? "?")[0]?.toUpperCase()}
+              <span className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full ring-2 ring-paper ${account.mpConnected ? "bg-go" : "bg-tag"}`} />
+            </button>
+          )}
+        </div>
       </header>
+
+      {account && !account.mpConnected && (
+        <button onClick={() => setSettings(true)} className="mt-3 flex w-full animate-rise items-center gap-3 rounded-[22px] bg-tag px-4 py-3.5 text-left">
+          <span className="flex-1 text-[14.5px] font-semibold leading-snug">Connect Marktplaats so your agent can put ads online.</span>
+          <span className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-[13px] font-bold text-white">Connect</span>
+        </button>
+      )}
+
+      {account && (
+        <SettingsSheet key={String(settings)} open={settings} onClose={() => setSettings(false)} account={account} onChange={setAccount} />
+      )}
 
       <section className="animate-rise pb-5 pt-5">
         <h1 className="font-display text-[46px] font-extrabold leading-[0.92] tracking-[-0.05em]">Your ads</h1>

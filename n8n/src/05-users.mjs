@@ -4,9 +4,10 @@ import { Workflow, webhook, respond, code, tableGet, tableUpsert, tableInsert, t
 // which forwards the signed-in user as X-Poof-User.
 const ME = `
 const u = (row) => { const d = row && row.data ? JSON.parse(row.data) : {};
+  const hours = Array.isArray(d.pickupHours) ? d.pickupHours : (d.pickupHours ? [d.pickupHours] : []);
   return { userId: row?.userId, name: d.name || '', onboarded: !!d.onboarded,
-    marktplaats: { connected: !!d.mpConnected, name: d.mpName || null, connectedAt: d.connectedAt || null },
-    pickup: { city: d.pickupCity || '', address: d.pickupAddress || '', hours: d.pickupHours || 'anytime' } }; };`;
+    pickupCity: d.pickupCity || '', pickupAddress: d.pickupAddress || '', pickupHours: hours,
+    mpConnected: !!d.mpConnected, mpName: d.mpName || null, connectedAt: d.connectedAt || null }; };`;
 
 export default (env, ids) => {
   const w = new Workflow("poof · Accounts + connect", { errorWorkflow: ids.error });
@@ -20,7 +21,13 @@ export default (env, ids) => {
 const userId = $('Create account').first().json.headers['x-poof-user'];
 if (!/^usr_[A-Za-z0-9_-]{6,40}$/.test(userId || '')) throw new Error('Bad user id');
 const row = $input.all().map(i => i.json).find(r => r.userId);
-return [{ json: { userId, data: row ? row.data : JSON.stringify({ createdAt: new Date().toISOString() }) } }];`), { y });
+if (row) return [{ json: { userId, data: row.data } }];
+// First visit may carry the onboarding profile already.
+const b = $('Create account').first().json.body || {};
+const d = { createdAt: new Date().toISOString() };
+for (const k of ['name', 'pickupCity', 'pickupAddress']) if (typeof b[k] === 'string') d[k] = b[k].slice(0, 160);
+if (Array.isArray(b.pickupHours)) d.pickupHours = b.pickupHours.filter(h => typeof h === 'string').slice(0, 6);
+return [{ json: { userId, data: JSON.stringify(d) } }];`), { y });
   w.add("Upsert user", tableUpsert("users", { userId: "={{ $json.userId }}" }, { userId: "={{ $json.userId }}", status: "active", data: "={{ $json.data }}" }), { y });
   w.add("Created", respond("={{ { ok: true, userId: $('Keep or new').first().json.userId } }}"), { y });
   w.chain("Create account", "Existing?", "Keep or new", "Upsert user", "Created");
@@ -45,7 +52,8 @@ const req = $('Update me').first().json;
 const b = req.body || {};
 const row = $input.all().map(i => i.json).find(r => r.userId) || { userId: req.headers['x-poof-user'], data: '{}' };
 const d = JSON.parse(row.data || '{}');
-for (const [k, max] of [['name', 60], ['pickupCity', 60], ['pickupAddress', 160], ['pickupHours', 30]]) if (typeof b[k] === 'string') d[k] = b[k].slice(0, max);
+for (const [k, max] of [['name', 60], ['pickupCity', 60], ['pickupAddress', 160]]) if (typeof b[k] === 'string') d[k] = b[k].slice(0, max);
+if (Array.isArray(b.pickupHours)) d.pickupHours = b.pickupHours.filter(h => typeof h === 'string').slice(0, 6).map(h => h.slice(0, 40));
 if (typeof b.onboarded === 'boolean') d.onboarded = b.onboarded;
 return [{ json: { userId: row.userId, data: JSON.stringify(d), me: u({ userId: row.userId, data: JSON.stringify(d) }) } }];`), { y });
   w.add("Save profile", tableUpsert("users", { userId: "={{ $json.userId }}" }, { userId: "={{ $json.userId }}", status: "active", data: "={{ $json.data }}" }), { y });

@@ -8,6 +8,7 @@
 // separate key per item, falling back to memory if the quota is exceeded.
 // Each item has a queue of timed steps; every read applies the steps that are due.
 
+import type { Account, PairCode, Profile } from "./account";
 import type {
   ApproveRequest, Comp, Conversation, DetailsRequest, Goal, IntakeRequest, Item, ItemEvent, ItemSummary,
 } from "./types";
@@ -379,6 +380,13 @@ export async function approve(body: ApproveRequest): Promise<void> {
     item.askPrice = body.askPrice;
     if (item.pricePlan?.length) item.pricePlan[0].price = body.askPrice;
   }
+  // Like the real backend: no Marktplaats session yet → needs_connection.
+  if (!readAccount()?.mpConnected) {
+    item.status = "needs_connection";
+    ev(item, now, "error", "Marktplaats isn't connected yet — connect it to put this online");
+    save(s);
+    return;
+  }
   item.status = "publishing";
   item.listings = [];
   ev(item, now, "step", "Approved by you — publishing");
@@ -423,4 +431,66 @@ export function reset() {
   try {
     for (const k of Object.keys(localStorage)) if (k.startsWith("tba-mock")) localStorage.removeItem(k);
   } catch { /* ignore */ }
+}
+
+// ---------------------------------------------------------------- account (mock)
+
+const ACCOUNT_KEY = "tba-mock-account";
+type MockAccount = Account & { pairIssuedAt?: number };
+
+function readAccount(): MockAccount | null {
+  try {
+    const raw = localStorage.getItem(ACCOUNT_KEY);
+    return raw ? (JSON.parse(raw) as MockAccount) : null;
+  } catch {
+    return null;
+  }
+}
+function writeAccount(a: MockAccount) {
+  try { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(a)); } catch { /* ignore */ }
+  return a;
+}
+const publicAccount = ({ pairIssuedAt: _p, ...a }: MockAccount): Account => { void _p; return a; };
+
+/** The fake Connector "completes" ~6 s after a code was shown. */
+export async function getAccount(): Promise<Account | null> {
+  await delay(80);
+  const a = readAccount();
+  if (!a) return null;
+  if (!a.mpConnected && a.pairIssuedAt && Date.now() - a.pairIssuedAt > 6000) {
+    a.mpConnected = true;
+    a.mpName = a.name ? a.name.split(" ")[0] : "Marktplaats user";
+    a.connectedAt = new Date().toISOString();
+    delete a.pairIssuedAt;
+    writeAccount(a);
+  }
+  return publicAccount(a);
+}
+
+export async function createAccount(profile: Profile): Promise<Account> {
+  await delay(300);
+  const a = readAccount() ?? { userId: `usr_mock${Date.now().toString(36)}`, mpConnected: false };
+  return publicAccount(writeAccount({ ...a, ...profile }));
+}
+
+export async function updateAccount(profile: Profile): Promise<Account> {
+  await delay(250);
+  const a = readAccount();
+  if (!a) throw new Error("No account");
+  return publicAccount(writeAccount({ ...a, ...profile }));
+}
+
+export async function newPairCode(): Promise<PairCode> {
+  await delay(300);
+  const a = readAccount();
+  if (!a) throw new Error("No account");
+  writeAccount({ ...a, pairIssuedAt: Date.now() });
+  const code = String(100000 + Math.floor(Math.random() * 900000));
+  return { code, expiresAt: new Date(Date.now() + 15 * 60_000).toISOString() };
+}
+
+export async function disconnectMarktplaats(): Promise<void> {
+  await delay(300);
+  const a = readAccount();
+  if (a) writeAccount({ ...a, mpConnected: false, mpName: undefined, connectedAt: undefined, pairIssuedAt: undefined });
 }

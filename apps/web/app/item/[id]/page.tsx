@@ -8,13 +8,14 @@ import type { Item, Status } from "@/lib/types";
 import { AdReview } from "@/components/AdReview";
 import { AgentLog } from "@/components/AgentLog";
 import { GoingLive } from "@/components/GoingLive";
+import { NeedsConnection } from "@/components/NeedsConnection";
 import { Overview } from "@/components/Overview";
 import { Looking, Writing } from "@/components/Setup";
 import { Sold } from "@/components/Sold";
 import { Wizard } from "@/components/Wizard";
 import { BackButton, Button, Eyebrow, NavBar, PriceTag } from "@/components/ui";
 
-type Screen = "looking" | "wizard" | "writing" | "ad" | "going" | "overview" | "sold" | "error";
+type Screen = "looking" | "wizard" | "writing" | "ad" | "connect" | "going" | "overview" | "sold" | "error";
 
 function screenFor(s: Status): Screen {
   switch (s) {
@@ -22,6 +23,7 @@ function screenFor(s: Status): Screen {
     case "needs_details": return "wizard";
     case "writing": return "writing";
     case "ad_ready": return "ad";
+    case "needs_connection": return "connect";
     case "publishing": return "going";
     case "live": case "negotiating": case "needs_you": return "overview";
     case "deal": case "pickup_scheduled": case "sold": case "delisted": return "sold";
@@ -30,7 +32,7 @@ function screenFor(s: Status): Screen {
 }
 
 const TITLE: Partial<Record<Screen, string>> = {
-  looking: "New ad", writing: "New ad", ad: "New ad", going: "New ad", overview: "How this ad is going", error: "Ad",
+  looking: "New ad", writing: "New ad", ad: "New ad", connect: "New ad", going: "New ad", overview: "How this ad is going", error: "Ad",
 };
 
 export default function ItemPage() {
@@ -104,6 +106,7 @@ export default function ItemPage() {
           {screen === "wizard" && <Wizard item={item} onSubmitted={(data) => setPatch({ from: item.status, data })} />}
           {screen === "writing" && <Writing item={item} />}
           {screen === "ad" && <AdReview item={item} onApproved={(data) => setPatch({ from: item.status, data })} />}
+          {screen === "connect" && <NeedsConnection item={item} onApproved={(data) => setPatch({ from: item.status, data })} />}
           {screen === "going" && <GoingLive item={item} />}
           {screen === "overview" && <Overview item={item} />}
           {screen === "sold" && <Sold item={item} onOverview={() => { setOverview(true); window.scrollTo({ top: 0 }); }} />}

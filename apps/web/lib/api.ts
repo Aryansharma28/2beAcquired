@@ -18,6 +18,11 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const text = await res.text();
   let data: unknown = null;
   try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
+  if (res.status === 401 && typeof window !== "undefined" && location.pathname !== "/welcome") {
+    // Outside React (plain fetch helper): the session is gone, restart onboarding.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    location.href = "/welcome";
+  }
   if (!res.ok) {
     const msg = (data as { error?: string } | null)?.error ?? `Request failed (${res.status})`;
     throw new Error(msg);
@@ -78,7 +83,7 @@ export const photoUrl = (url?: string) => {
 };
 
 const KNOWN: Status[] = [
-  "recognizing", "needs_details", "writing", "ad_ready", "publishing", "live", "negotiating",
+  "recognizing", "needs_details", "writing", "ad_ready", "needs_connection", "publishing", "live", "negotiating",
   "deal", "pickup_scheduled", "sold", "error", "analyzing", "delisted", "needs_you",
 ];
 function normStatus(s: unknown): Status {

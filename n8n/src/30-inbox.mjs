@@ -135,12 +135,17 @@ const busy = ${HAS_CALENDAR ? "$('Owner calendar').all().map(i => i.json).filter
 const now = DateTime.now().setZone(zone);
 // Pickup windows per preference: [allowed weekdays (1=Mon..7=Sun), fromHour, toHour]
 const WINDOWS = { weekday_evenings: [[1, 2, 3, 4, 5], 18, 21], weekend: [[6, 7], 10, 18], anytime: [[1, 2, 3, 4, 5, 6, 7], 10, 21] };
-const slotsFor = (pref, useCalendar) => {
-  const [days, h0, h1] = WINDOWS[pref] || WINDOWS.anytime;
+// The app sends labels like "Weekday evenings", "Weekend daytime", "Anytime 10–21" (multi-select).
+const keyOf = (l) => /evening/i.test(l) ? 'weekday_evenings' : /weekend/i.test(l) ? 'weekend' : 'anytime';
+const slotsFor = (prefs, useCalendar) => {
+  const list = (Array.isArray(prefs) ? prefs : prefs ? [prefs] : ['anytime']).map(keyOf);
+  const wins = (list.length ? list : ['anytime']).map(k => WINDOWS[k]);
   const out = [];
   for (let d = 0; d < 7 && out.length < 8; d++) {
     const day = now.plus({ days: d }).startOf('day');
-    if (!days.includes(day.weekday)) continue;
+    const w = wins.find(([days]) => days.includes(day.weekday));
+    if (!w) continue;
+    const [, h0, h1] = w;
     let perDay = 0;
     for (let h = h0; h < h1 && perDay < 3; h += 0.5) {
       const s = day.plus({ minutes: h * 60 }), e = s.plus({ minutes: 30 });
