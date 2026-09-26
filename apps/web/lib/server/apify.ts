@@ -7,7 +7,8 @@ function token() {
   return t;
 }
 
-export const storeName = (userId: string) => `mp-session-${userId}`;
+// Apify store names allow only a-z, 0-9 and "-" (no "_"), so usr_abc → mp-session-usr-abc.
+export const storeName = (userId: string) => `mp-session-${userId.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 
 /** Get-or-create the named store; returns its id. */
 export async function ensureStore(name: string): Promise<string> {

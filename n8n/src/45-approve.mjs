@@ -11,7 +11,7 @@ export default (env, ids) => {
 const req = $('Approve and sell').first().json;
 const b = req.body;
 const row = $('Get item').all().map(i => i.json).find(r => r.itemId);
-if (!row || !['ad_ready', 'needs_connection'].includes(row.status)) return [];
+if (!row || !['ad_ready', 'needs_connection', 'error'].includes(row.status)) return [];
 const it = JSON.parse(row.data);
 if (it.ownerId && it.ownerId !== req.headers['x-poof-user']) throw new Error('Not your item');
 const user = $input.all().map(i => i.json).find(r => r.userId);

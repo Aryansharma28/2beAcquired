@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useItem, coverFirst } from "@/lib/useItem";
+import { approve } from "@/lib/api";
 import { eur } from "@/lib/format";
 import type { Item, Status } from "@/lib/types";
 import { AdReview } from "@/components/AdReview";
@@ -110,7 +111,7 @@ export default function ItemPage() {
           {screen === "going" && <GoingLive item={item} />}
           {screen === "overview" && <Overview item={item} />}
           {screen === "sold" && <Sold item={item} onOverview={() => { setOverview(true); window.scrollTo({ top: 0 }); }} />}
-          {screen === "error" && <ErrorCard item={item} />}
+          {screen === "error" && <ErrorCard item={item} onRetry={() => setPatch({ from: item.status, data: { status: "publishing" } })} />}
         </div>
       )}
 
@@ -119,14 +120,30 @@ export default function ItemPage() {
   );
 }
 
-function ErrorCard({ item }: { item: Item }) {
+function ErrorCard({ item, onRetry }: { item: Item; onRetry: () => void }) {
   const last = item.events.filter((e) => e.type === "error").at(-1);
   const photo = coverFirst(item)[0];
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const loginIssue = /login|log in|session/i.test(last?.text ?? "");
+  // Only an ad that was written can be retried (publishing failed); earlier failures need a new photo.
+  const canRetry = !!item.title;
+  const retry = async () => {
+    setBusy(true); setErr(null);
+    try { await approve({ itemId: item.id }); onRetry(); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Could not retry"); }
+    finally { setBusy(false); }
+  };
   return (
     <div className="space-y-4">
       <div className="rounded-[26px] bg-alert-soft p-5 text-alert">
         <p className="font-display text-[24px] font-extrabold leading-tight tracking-[-0.03em]">Your agent hit a problem</p>
         <p className="mt-1.5 text-[15px] font-medium">{last?.text ?? "No details were logged. Check the activity log below."}</p>
+        {loginIssue && <p className="mt-2 text-[14px]">Open the poof Connector on your laptop while logged in to Marktplaats, then try again.</p>}
+        {canRetry && (
+          <Button onClick={retry} disabled={busy} variant="ink" className="mt-4 w-full">{busy ? "Trying again…" : "Try again"}</Button>
+        )}
+        {err && <p className="mt-2 text-[13.5px]">{err}</p>}
       </div>
       <section>
         <Eyebrow className="mb-2 px-1">The ad so far</Eyebrow>

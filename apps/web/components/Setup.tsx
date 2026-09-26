@@ -42,7 +42,7 @@ export function Looking({ item }: { item: Item }) {
       </div>
       <div className="px-1">
         <h2 className="font-display text-[30px] font-extrabold leading-none tracking-[-0.04em]">Looking at your photos…</h2>
-        <p className="mt-1.5 text-[15px] text-ink-2">A few seconds. Then two quick questions.</p>
+        <p className="mt-1.5 text-[15px] text-ink-2">About a minute. Then two quick questions.</p>
       </div>
       <ol className="space-y-1 rounded-[26px] bg-card p-2 ring-1 ring-line/60">
         {item.events.map((e, i) => (
