@@ -1,6 +1,6 @@
 import { Workflow, schedule, code, codeEach, tableGet, tableInsert, actor, agent, chatModel, outputParser, callWorkflow, calendarEvents, HAS_CALENDAR } from "../lib.mjs";
 
-const SYSTEM = `You are an autonomous agent selling one second-hand item on Marktplaats (Netherlands) for its owner. The owner is never asked anything: you handle the whole sale yourself, from first message to pickup.
+export const SYSTEM = `You are an autonomous agent selling one second-hand item on Marktplaats (Netherlands) for its owner. The owner is never asked anything: you handle the whole sale yourself, from first message to pickup.
 The owner set a minimum price (floorPrice, never go below it, never reveal it) and a goal:
 - goal "week": sell fast. Accept ANY offer >= floorPrice immediately.
 - goal "two_weeks": accept offers >= (floorPrice + askPrice) / 2 immediately; lower offers (still >= floorPrice) get a counter halfway, accept on the second round.
@@ -10,7 +10,7 @@ Stages (conversation.stage):
 - "open": negotiate.
   - Offer acceptable for the goal → ACCEPT (action "accept", price = the offer). In the same reply propose 2 or 3 pickup times picked from freeSlots (use their "label").
   - Offer below floorPrice → action "counter" with price between floorPrice and askPrice (first time you can meet halfway; if they push back, go to floorPrice). Never reveal the floor.
-  - Questions (still available? size? condition?) → action "answer" using ONLY facts from the ad, and invite an offer or a pickup.
+  - Questions (still available? size? condition?) → action "answer" using ONLY facts stated in the ad. If the ad does not say (stains, exact size, smoke-free…), never guess: say you will check and that they are welcome to look at it at pickup. Invite an offer.
   - Buyer says they want it at the asking price → "accept" with price = askPrice and propose pickup times.
 - "deal": price is agreed, you need a pickup time.
   - Buyer picks or suggests a time that matches one of freeSlots → action "confirm_pickup", pickupStart = that slot's "start" (copy exactly). Reply confirming day and time and give the pickup address (pickupAddress).
@@ -21,7 +21,7 @@ Stages (conversation.stage):
 Scam signals (buyer's own payment link / Tikkie trick, courier arranged by buyer, asks for WhatsApp/phone/email/bank details early, overpaying) → action "decline", buyerType "scam", short reply without details.
 Write like a real, friendly Dutch Marktplaats seller: buyer's language (usually Dutch), 1-3 short sentences, no emojis, never mention being an AI.`;
 
-const SCHEMA = {
+export const SCHEMA = {
   type: "object",
   properties: {
     buyerType: { type: "string", enum: ["serious", "lowballer", "scam", "question"] },
@@ -34,6 +34,39 @@ const SCHEMA = {
   },
   required: ["buyerType", "offer", "action", "price", "pickupStart", "reply", "reasoning"],
 };
+
+// Deterministic guardrails on top of the model (shared with the test harness).
+export const GUARDRAILS = `
+const ctx = $('Needs a reply').item.json;
+const d = $json.output || {};
+const floor = Number(ctx.context.item.floorPrice) || 0;
+const ask = Number(ctx.context.item.askPrice) || floor;
+const offer = d.offer ?? ctx.detectedOffer ?? null;
+let action = d.action, price = d.price != null ? Math.round(d.price) : null, reply = d.reply || '', guard = null, pickup = null;
+if (action === 'accept') {
+  price = price ?? offer;
+  if (price == null || price < floor) { action = 'counter'; price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager ga ik helaas niet.'; guard = 'accept below minimum turned into counter at minimum'; }
+}
+if (action === 'counter') {
+  if (price == null || price < floor) { price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager ga ik helaas niet.'; guard = guard || 'counter raised to minimum'; }
+  if (price > ask) price = ask;
+  if (offer != null && offer >= floor && (ctx.context.item.goal || 'week') === 'week') { action = 'accept'; price = offer; guard = 'sell-this-week: offer at/above minimum → accepted'; }
+}
+if (action === 'confirm_pickup') {
+  const s = ctx.slots.find(s => s.start === d.pickupStart) || ctx.slots.find(s => Math.abs(Date.parse(s.start) - Date.parse(d.pickupStart)) < 31 * 60e3);
+  if (!s || ctx.stage === 'open') { action = 'propose_pickup'; guard = 'pickup time not in free slots'; reply = 'Ik kan ' + ctx.slots.slice(0, 3).map(s => s.label).join(', of ') + '. Wat past jou?'; }
+  else pickup = { start: s.start, end: s.end, label: s.label };
+}
+if (ctx.context.reservedForSomeoneElse && ['accept', 'confirm_pickup', 'counter'].includes(action)) { action = 'decline'; reply = 'Sorry, hij is helaas al verkocht.'; guard = 'already sold to another buyer'; }
+if (action === 'wait') reply = '';
+const state = action === 'accept' ? 'deal' : action === 'confirm_pickup' ? 'pickup_scheduled' : action === 'decline' ? 'declined'
+  : ['deal', 'pickup_scheduled'].includes(ctx.stage) ? ctx.stage : 'open';
+return { json: {
+  itemId: ctx.itemId, conversationId: ctx.conversationId, platform: ctx.platform, buyer: ctx.buyer, itemStatus: ctx.itemStatus,
+  action, price, offer, text: reply, state, pickup, lastOffer: action === 'accept' ? price : (offer ?? ctx.lastOffer),
+  buyerType: d.buyerType, reasoning: (d.reasoning || '') + (guard ? ' [guardrail: ' + guard + ']' : ''),
+  buyerMessage: ctx.context.latestBuyerMessages.join(' / '),
+} };`;
 
 // W3 · Inbox: every few minutes read Marktplaats chats, let the agent decide and act, log everything.
 export default (env, ids) => {
@@ -145,37 +178,7 @@ return out;`));
   w.link("Needs a reply", "Sales agent (AI)");
 
   // Deterministic guardrails on top of the model: the minimum price is law, pickup slots must be real.
-  w.add("Guardrails", codeEach(`
-const ctx = $('Needs a reply').item.json;
-const d = $json.output || {};
-const floor = Number(ctx.context.item.floorPrice) || 0;
-const ask = Number(ctx.context.item.askPrice) || floor;
-const offer = d.offer ?? ctx.detectedOffer ?? null;
-let action = d.action, price = d.price != null ? Math.round(d.price) : null, reply = d.reply || '', guard = null, pickup = null;
-if (action === 'accept') {
-  price = price ?? offer;
-  if (price == null || price < floor) { action = 'counter'; price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager ga ik helaas niet.'; guard = 'accept below minimum turned into counter at minimum'; }
-}
-if (action === 'counter') {
-  if (price == null || price < floor) { price = floor; reply = 'Voor €' + floor + ' mag je hem hebben, lager ga ik helaas niet.'; guard = guard || 'counter raised to minimum'; }
-  if (price > ask) price = ask;
-  if (offer != null && offer >= floor && (ctx.context.item.goal || 'week') === 'week') { action = 'accept'; price = offer; guard = 'sell-this-week: offer at/above minimum → accepted'; }
-}
-if (action === 'confirm_pickup') {
-  const s = ctx.slots.find(s => s.start === d.pickupStart) || ctx.slots.find(s => Math.abs(Date.parse(s.start) - Date.parse(d.pickupStart)) < 31 * 60e3);
-  if (!s || ctx.stage === 'open') { action = 'propose_pickup'; guard = 'pickup time not in free slots'; reply = 'Ik kan ' + ctx.slots.slice(0, 3).map(s => s.label).join(', of ') + '. Wat past jou?'; }
-  else pickup = { start: s.start, end: s.end, label: s.label };
-}
-if (ctx.context.reservedForSomeoneElse && ['accept', 'confirm_pickup', 'counter'].includes(action)) { action = 'decline'; reply = 'Sorry, hij is helaas al verkocht.'; guard = 'already sold to another buyer'; }
-if (action === 'wait') reply = '';
-const state = action === 'accept' ? 'deal' : action === 'confirm_pickup' ? 'pickup_scheduled' : action === 'decline' ? 'declined'
-  : ['deal', 'pickup_scheduled'].includes(ctx.stage) ? ctx.stage : 'open';
-return { json: {
-  itemId: ctx.itemId, conversationId: ctx.conversationId, platform: ctx.platform, buyer: ctx.buyer, itemStatus: ctx.itemStatus,
-  action, price, offer, text: reply, state, pickup, lastOffer: action === 'accept' ? price : (offer ?? ctx.lastOffer),
-  buyerType: d.buyerType, reasoning: (d.reasoning || '') + (guard ? ' [guardrail: ' + guard + ']' : ''),
-  buyerMessage: ctx.context.latestBuyerMessages.join(' / '),
-} };`));
+  w.add("Guardrails", codeEach(GUARDRAILS));
   w.link("Sales agent (AI)", "Guardrails");
 
   w.add("Log decision", tableInsert("decisions", {
