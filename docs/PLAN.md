@@ -79,3 +79,17 @@ Session: storageState JSON in named KV store `mp-session` (key `state`), written
 4. W3 Inbox + negotiation agent → app screen 4
 5. W5 Sold, W4 Reprice, W0 Error
 6. List 3–5 real items Saturday night, let it run overnight, record Sunday morning
+
+## v2 contract — follows the board's "Demo UX flow, detailed" (26 Sept, 15:15)
+
+Setup (owner, before launch) → then fully autonomous. No "Your call" screen, no pushes except session-expired.
+
+Statuses: `recognizing` → `needs_details` → `writing` → `ad_ready` → `publishing` → `live` → `negotiating` → `deal` → `pickup_scheduled` → `sold` (+ `error`). (`analyzing` = legacy alias of `recognizing`.)
+
+- `POST /tba/intake {photos: string[]}` → `{itemId}`. Runs Google Lens + vision + comparables. Ends in `needs_details` with
+  `recognition: {name, brand, category, condition, attributes[]}`, `priceRange {low, mid, high}`, `compsCount`, `comps[]`, `coverIndex`.
+- `POST /tba/details {itemId, name, condition, goal: "week"|"two_weeks"|"no_rush", floorPrice, delivery: "pickup", pickupCity}` → `{ok}`.
+  Runs pricing + ad writing. Ends in `ad_ready` with `title, description, askPrice, floorPrice, goal, pricePlan[] ({price, from})`.
+- `POST /tba/approve {itemId, title?, description?, askPrice?}` → `{ok}`. Applies edits, publishes. `publishing` → `live`.
+- `GET /tba/item?id=` adds `recap {days, messages, counters}`, `now` (latest agent step), `stats {views, saves, chats}` when known.
+- Condition values: "Nieuw" | "Zo goed als nieuw" | "Gebruikt" | "Niet werkend" (UI chips: New · Like new · Good · Used map to these; Good = "Gebruikt" with good note).
