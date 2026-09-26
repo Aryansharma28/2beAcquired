@@ -14,7 +14,7 @@ COPY --chown=myuser:myuser package*.json ./
 RUN npm --quiet set progress=false \
     && npm install --omit=dev --omit=optional --audit=false \
     && echo "Node.js version:" && node --version \
-    && rm -r ~/.npm
+    && rm -r ~/.npm     && npx cloakbrowser install
 
 COPY --from=builder --chown=myuser:myuser /home/myuser/dist ./dist
 COPY --chown=myuser:myuser . ./

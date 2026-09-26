@@ -3,8 +3,12 @@
  * stored session, NL locale/timezone, optional residential proxy, resource blocking,
  * a screenshot per step into the default KV store, a log of the site's own XHR writes
  * (to learn endpoints), and login-wall / captcha detection.
+ *
+ * The browser is CloakBrowser (stealth Chromium, source-level fingerprint patches) unless
+ * MP_BROWSER=playwright; if its binary can't be fetched we fall back to plain Playwright.
  */
 import { Actor, log } from 'apify';
+import { launch as cloakLaunch } from 'cloakbrowser';
 import { chromium, type Browser, type BrowserContext, type Locator, type Page, type Response } from 'playwright';
 
 import { MpError, inputError } from './errors.js';
@@ -40,10 +44,34 @@ function parseProxy(url: string | undefined) {
     };
 }
 
-async function launch(input: Input): Promise<Browser> {
+const LOCALE = 'nl-NL';
+const TIMEZONE = 'Europe/Amsterdam';
+
+async function launch(input: Input): Promise<{ browser: Browser; cloak: boolean }> {
+    const proxy = parseProxy(await proxyUrlFor(input.useProxy));
+    if (process.env.MP_BROWSER !== 'playwright') {
+        try {
+            const browser = (await cloakLaunch({
+                headless: !input.headful,
+                proxy,
+                locale: LOCALE,
+                timezone: TIMEZONE,
+                humanize: process.env.MP_HUMANIZE !== '0',
+                args: ['--disable-dev-shm-usage'],
+            })) as unknown as Browser;
+            log.info(`CloakBrowser ${browser.version()}`);
+            return { browser, cloak: true };
+        } catch (err) {
+            log.warning(`CloakBrowser unavailable, falling back to Playwright: ${(err as Error).message}`);
+        }
+    }
+    return { browser: await launchPlaywright(input, proxy), cloak: false };
+}
+
+async function launchPlaywright(input: Input, proxy: ReturnType<typeof parseProxy>): Promise<Browser> {
     const options = {
         headless: !input.headful,
-        proxy: parseProxy(await proxyUrlFor(input.useProxy)),
+        proxy,
         args: ['--disable-blink-features=AutomationControlled', '--lang=nl-NL', '--disable-dev-shm-usage'],
         ignoreDefaultArgs: ['--enable-automation'],
     };
@@ -83,14 +111,19 @@ export async function withBrowser<T>(
         throw new MpError('SESSION_EXPIRED', `no stored session in KV store '${storeName}'; run scripts/mp-login first`);
     }
 
-    const browser = await launch(input);
+    const { browser, cloak } = await launch(input);
     const context = await browser.newContext({
         storageState: playwrightState(state),
-        locale: 'nl-NL',
-        timezoneId: 'Europe/Amsterdam',
         viewport: { width: 1366, height: 900 },
-        userAgent: userAgentFor(browser.version()),
-        extraHTTPHeaders: { 'Accept-Language': 'nl-NL,nl;q=0.9,en;q=0.8' },
+        // CloakBrowser sets UA/locale/timezone in the binary; CDP emulation on top would be detectable.
+        ...(cloak
+            ? {}
+            : {
+                  locale: LOCALE,
+                  timezoneId: TIMEZONE,
+                  userAgent: userAgentFor(browser.version()),
+                  extraHTTPHeaders: { 'Accept-Language': 'nl-NL,nl;q=0.9,en;q=0.8' },
+              }),
     });
     await context.route('**/*', (route) => {
         const type = route.request().resourceType();
