@@ -391,6 +391,9 @@ body {
 .gtile .ph img{object-fit:contain}
 .gtile span.t{display:block;margin-top:10px;font-weight:700;line-height:1.3;font-size:14px}
 .tile-status{display:block;margin-top:4px}
+/* Long chips (a pickup day and time) wrap inside the tile instead of widening the column. */
+.grid-ads{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.tile-status .tag{white-space:normal}
 /* An ad without a photo yet: a blank sticker. */
 .gtile .ph-empty{display:block;width:100%;height:100%;border-radius:12px;background:var(--limetint)}
 /* The app scrolls the page, so the navbar is fixed (the prototype's phone is one fixed-size screen). */

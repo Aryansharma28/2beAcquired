@@ -252,12 +252,12 @@ export function Icon({ name, className }: { name: IconName; className?: string }
 export type ItemStatusKind = "needs" | "negotiating" | "uploading" | "progress" | "new" | "live" | "deal" | "pending" | "sold" | "error";
 export type ItemStatus = { kind: ItemStatusKind; label: string };
 
-/** "Saturday 14:30" for a pickup slot. */
+/** "Sat 14:30" for a pickup slot. */
 function pickupLabel(start?: string) {
   if (!start) return null;
   const d = new Date(start);
   if (Number.isNaN(d.getTime())) return null;
-  const day = d.toLocaleDateString("en-GB", { weekday: "long" });
+  const day = d.toLocaleDateString("en-GB", { weekday: "short" });
   const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   return `${day} ${time}`;
 }
