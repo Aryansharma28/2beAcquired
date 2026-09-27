@@ -1,4 +1,4 @@
-import { Workflow, subTrigger, webhook, respond, codeEach, code, tableGet, tableUpdate, tableInsert, actor, stripe, calendarCreate, HAS_CALENDAR } from "../lib.mjs";
+import { Workflow, subTrigger, webhook, respond, codeEach, code, tableGet, tableUpdate, tableInsert, actor, stripe, delistAfter, calendarCreate, HAS_CALENDAR } from "../lib.mjs";
 
 // W5 · Close the deal: pickup booked → put it in the owner's calendar, record the sale, delist everywhere.
 export default (env, ids) => {
@@ -37,22 +37,7 @@ return { json: { itemId: $json.itemId, item, price: deal.price, buyer: deal.buye
   w.link(last, "Save pickup");
   w.log("Save pickup", `=Sold for €{{ $('${last}').item.json.price }} to {{ $('${last}').item.json.buyer }}. Pickup {{ $('${last}').item.json.pickup.label }}${HAS_CALENDAR ? ", added to your calendar" : ""}`, { type: "decision", itemId: `={{ $('${last}').item.json.itemId }}` });
 
-  w.add("Listings to remove", code(`
-return $('${last}').all().filter(i => i.json.item.mpStore).flatMap(i => (i.json.item.listings || []).filter(l => l.status === 'live' && l.listingId)
-  .map(l => ({ json: { itemId: i.json.itemId, platform: l.platform, listingId: l.listingId, sessionStore: i.json.item.mpStore } })));`));
-  w.add("Delist on Marktplaats (Apify)", actor(env, "={{ JSON.stringify({ action: 'delist', delistReason: 'sold_on_marktplaats', useProxy: true, sessionStore: $json.sessionStore, listingId: $json.listingId, dryRun: " + (env.MP_DRY_RUN === "1") + " }) }}", { soft: true, local: true }));
-  // Re-read the items: the payment branch may have saved to them meanwhile.
-  w.add("Fresh items", tableGet("items"), { executeOnce: true });
-  w.add("All removed", code(`
-const fresh = Object.fromEntries($('Fresh items').all().map(r => [r.json.itemId, r.json]));
-return $('${last}').all().map(i => {
-  const item = fresh[i.json.itemId] ? JSON.parse(fresh[i.json.itemId].data) : i.json.item;
-  item.listings = (item.listings || []).map(l => ({ ...l, status: 'removed' }));
-  return { json: { itemId: i.json.itemId, data: JSON.stringify(item) } };
-});`));
-  w.add("Save removed", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { data: "={{ $json.data }}" }));
-  w.chain("Save pickup", "Listings to remove", "Delist on Marktplaats (Apify)", "Fresh items", "All removed", "Save removed");
-  w.log("Save removed", "=Removed from every platform", { type: "notify" });
+  delistAfter(w, env, "Save pickup", last);
 
   // Payment: once the pickup is booked the buyer gets a payment link for the agreed price (cash at pickup stays
   // possible). Stripe Payment Links (STRIPE_SECRET_KEY; test mode needs no KvK). Paid → W6 marks it sold.

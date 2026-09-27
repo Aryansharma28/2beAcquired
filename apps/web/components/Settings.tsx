@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { disconnectMarktplaats, updateAccount, type Account, type Profile } from "@/lib/account";
 import { ConnectMarktplaats, ProfileFields } from "./Connect";
-import { Button, Eyebrow, PlatformLogo, Sheet } from "./ui";
+import { PlatformLogo, Sheet } from "./ui";
 
-/** Settings sheet: Marktplaats status + pickup details. */
+/** Profile sheet (navbar "Profile"): Marktplaats status + pickup details. */
 export function SettingsSheet({ open, onClose, account, onChange }: {
   open: boolean; onClose: () => void; account: Account; onChange: (a: Account) => void;
 }) {
@@ -43,9 +43,9 @@ export function SettingsSheet({ open, onClose, account, onChange }: {
   }
 
   return (
-    <Sheet open={open} onClose={() => { setConnecting(false); onClose(); }} title="Settings">
+    <Sheet open={open} onClose={() => { setConnecting(false); onClose(); }} title="Profile">
       <section>
-        <Eyebrow className="mb-2">Marktplaats</Eyebrow>
+        <p className="sec" style={{ marginTop: 0 }}>Marktplaats</p>
         {connecting ? (
           <ConnectMarktplaats
             compact
@@ -54,32 +54,31 @@ export function SettingsSheet({ open, onClose, account, onChange }: {
             skipLabel="Cancel"
           />
         ) : (
-          <div className="flex items-center gap-3 rounded-[20px] bg-card p-4 shadow-soft">
-            <PlatformLogo platform="marktplaats" muted={!account.mpConnected} className="!size-9" />
-            <div className="min-w-0 flex-1">
-              <p className="text-[15.5px] font-bold">{account.mpConnected ? `Connected as ${account.mpName ?? "you"}` : "Not connected"}</p>
-              <p className="text-[13px] text-moss">{account.mpConnected ? "Poof can post and answer buyers." : "Connect to put ads online."}</p>
-            </div>
+          <div className="card pad row" style={{ boxShadow: "var(--shadow-soft)" }}>
+            <PlatformLogo platform="marktplaats" muted={!account.mpConnected} className="!size-10" />
+            <span className="grow">
+              <b style={{ display: "block", fontWeight: 700 }}>{account.mpConnected ? `Connected as ${account.mpName ?? "you"}` : "Not connected"}</b>
+              <span className="xs muted">{account.mpConnected ? "Poof can post and answer buyers." : "Connect to put ads online."}</span>
+            </span>
             {account.mpConnected ? (
-              <button onClick={disconnect} disabled={busy !== null} className="h-[34px] rounded-full border border-alert px-3.5 text-[13px] font-bold text-alert disabled:opacity-50">
+              <button type="button" onClick={disconnect} disabled={busy !== null} className="btn small" style={{ borderColor: "var(--alert)", color: "var(--alert)", background: "transparent" }}>
                 {busy === "disconnect" ? "…" : "Disconnect"}
               </button>
             ) : (
-              <button onClick={() => setConnecting(true)} className="h-[34px] rounded-full bg-ink px-3.5 text-[13px] font-bold text-lime">Connect</button>
+              <button type="button" onClick={() => setConnecting(true)} className="btn small" style={{ background: "var(--ink)", color: "var(--lime)" }}>Connect</button>
             )}
           </div>
         )}
       </section>
 
       {!connecting && (
-        <section className="mt-6">
-          <div className="puff-line mb-4" />
-          <Eyebrow className="mb-2">Pickup details</Eyebrow>
+        <section>
+          <p className="sec">Pickup details</p>
           <ProfileFields value={profile} onChange={setProfile} />
-          {error && <p className="mt-3 rounded-[20px] bg-alert-soft p-3 text-[14px] text-alert">{error}</p>}
-          <Button onClick={save} disabled={busy !== null} variant={saved ? "go" : "primary"} className="mt-5 w-full">
+          {error && <p className="xs" style={{ color: "var(--alert)", marginTop: 12 }}>{error}</p>}
+          <button type="button" className="btn" onClick={save} disabled={busy !== null} style={{ marginTop: 20 }}>
             {busy === "save" ? "Saving…" : saved ? "Saved" : "Save"}
-          </Button>
+          </button>
         </section>
       )}
     </Sheet>

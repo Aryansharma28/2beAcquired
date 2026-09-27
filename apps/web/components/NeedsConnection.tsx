@@ -1,21 +1,22 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { approve } from "@/lib/api";
 import { getAccount } from "@/lib/account";
-import { eur } from "@/lib/format";
 import { coverFirst } from "@/lib/useItem";
 import type { Item } from "@/lib/types";
 import { ConnectMarktplaats } from "./Connect";
-import { Button, Eyebrow, PlatformLogo, PriceTag } from "./ui";
+import { CtaArrow, Ic, MpIcon, SfScreen, Sticker } from "./Wizard";
 
-/** status === "needs_connection": connect Marktplaats, then approve again. */
+/** status === "needs_connection": connect Marktplaats, then approve again. Same sheet look as the sell flow. */
 export function NeedsConnection({ item, onApproved }: { item: Item; onApproved: (patch: Partial<Item>) => void }) {
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const photo = coverFirst(item)[0];
+  const name = item.title ?? item.recognition?.name ?? "Your item";
 
   useEffect(() => {
     getAccount().then((a) => setConnected(!!a?.mpConnected)).catch(() => {});
@@ -33,43 +34,46 @@ export function NeedsConnection({ item, onApproved }: { item: Item; onApproved: 
     }
   }
 
-  if (connecting) {
-    return (
-      <div>
-        <Eyebrow>One more step</Eyebrow>
-        <h2 className="mb-5 mt-1 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">Connect Marktplaats</h2>
-        <ConnectMarktplaats onConnected={() => { setConnecting(false); setConnected(true); publish(); }} onSkip={() => setConnecting(false)} skipLabel="Not now" />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="overflow-hidden rounded-[20px] bg-card shadow-soft">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {photo && <img src={photo} alt="" className="aspect-[16/10] w-full object-cover" />}
-        <div className="flex items-start justify-between gap-3 p-4">
-          <div className="min-w-0">
-            <p className="text-[18px] font-extrabold leading-tight">{item.title ?? item.recognition?.name}</p>
-            {item.floorPrice != null && <p className="mt-1 text-[13.5px] text-moss">Never below {eur(item.floorPrice)}</p>}
+    <SfScreen>
+      <div className="layer">
+        <div className="top2">
+          {connecting ? (
+            <button className="icon-btn" type="button" aria-label="Back" onClick={() => setConnecting(false)}><Ic n="back" /></button>
+          ) : (
+            <Link href="/" className="icon-btn" aria-label="Back"><Ic n="back" /></Link>
+          )}
+          <div className="grow" style={{ flex: 1, minWidth: 0 }}>
+            <p className="eyebrow">One more step</p>
+            <h1 className="bar-title" style={{ fontSize: 19 }}>Connect Marktplaats</h1>
           </div>
-          {item.askPrice != null && <PriceTag amount={item.askPrice} size="sm" />}
         </div>
+        <div className="body2">
+          <div className="context">
+            <Sticker src={photo} tilt={-3} />
+            <div className="info"><b>{name}</b>{item.askPrice != null && <span>· €{item.askPrice}{item.floorPrice != null ? `, never below €${item.floorPrice}` : ""}</span>}</div>
+          </div>
+          {connecting ? (
+            <ConnectMarktplaats onConnected={() => { setConnecting(false); setConnected(true); publish(); }} onSkip={() => setConnecting(false)} skipLabel="Not now" />
+          ) : (
+            <>
+              <div className="row" style={{ marginBottom: 14 }}><MpIcon size={40} /></div>
+              <h2 className="q">{connected ? "Marktplaats is connected" : "Connect Marktplaats to put this online"}</h2>
+              <p className="sub">
+                Your ad is approved and ready. {connected ? "Tap below and Poof posts it." : "Link your account once, on this phone or with the poof Connector on your laptop; Poof posts it right after."}
+              </p>
+              {error && <p className="sf-error">{error}</p>}
+            </>
+          )}
+        </div>
+        {!connecting && (
+          <div className="foot2">
+            <button className="btn" type="button" onClick={connected ? publish : () => setConnecting(true)} disabled={busy}>
+              {busy ? <><span className="sf-spin" /> Putting it online…</> : connected ? <>Put it online<CtaArrow /></> : <>Connect Marktplaats<CtaArrow /></>}
+            </button>
+          </div>
+        )}
       </div>
-
-      <div className="rounded-[20px] bg-lime p-5">
-        <PlatformLogo platform="marktplaats" className="!size-9" />
-        <p className="mt-3 text-[24px] font-extrabold leading-tight tracking-[-0.02em]">
-          {connected ? "Marktplaats is connected" : "Connect Marktplaats to put this online"}
-        </p>
-        <p className="mt-2 text-[14.5px] leading-snug text-ink/75">
-          Your ad is approved and ready. {connected ? "Tap below and Poof posts it." : "Link your account once, on this phone or with the poof Connector on your laptop; Poof posts it right after."}
-        </p>
-        {error && <p className="mt-3 rounded-[16px] bg-alert-soft p-3 text-[14px] text-alert">{error}</p>}
-        <Button onClick={connected ? publish : () => setConnecting(true)} disabled={busy} variant="ink" className="mt-4 w-full">
-          {busy ? "Putting it online…" : connected ? "Put it online" : "Connect Marktplaats"}
-        </Button>
-      </div>
-    </div>
+    </SfScreen>
   );
 }
