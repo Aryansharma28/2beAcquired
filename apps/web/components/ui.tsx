@@ -315,8 +315,15 @@ export const SOON_PLATFORMS = [
   { key: "facebook", name: "Facebook" },
 ] as const;
 export type SoonPlatform = (typeof SOON_PLATFORMS)[number]["key"];
-/** A quiet one-liner: tiny greyed-out logos + "Soon on eBay, Vinted and Facebook". */
+/**
+ * Demo: eBay, Vinted and Facebook look live next to Marktplaats (as in the prototype); only the Marktplaats
+ * listing and link are real. We applied for their developer programs. Turn off with NEXT_PUBLIC_DEMO_PLATFORMS=0.
+ */
+export const DEMO_PLATFORMS = process.env.NEXT_PUBLIC_DEMO_PLATFORMS !== "0";
+
+/** A quiet one-liner: tiny greyed-out logos + "Soon on eBay, Vinted and Facebook". Hidden in the demo. */
 export function SoonStrip({ style }: { style?: CSSProperties }) {
+  if (DEMO_PLATFORMS) return null;
   return (
     <p className="soon-strip" style={style}>
       <span className="soon-logos" aria-hidden>{SOON_PLATFORMS.map((p) => <SoonPlatIcon key={p.key} platform={p.key} size={14} />)}</span>

@@ -7,7 +7,7 @@ import { attrText, chipFor } from "@/lib/format";
 import { coverFirst } from "@/lib/useItem";
 import type { ApproveRequest, Item } from "@/lib/types";
 import { CtaArrow, Ic, MpIcon, SfScreen, goalPriceKey } from "./Wizard";
-import { SoonStrip } from "./ui";
+import { DEMO_PLATFORMS, SOON_PLATFORMS, SoonPlatIcon, SoonStrip } from "./ui";
 
 const STEP = 5;
 
@@ -154,6 +154,12 @@ export function AdReview({ item, onApproved }: { item: Item; onApproved: (patch:
               <input type="checkbox" checked disabled readOnly />
               <span><MpIcon size={28} /><span>Marktplaats</span><Ic n="check" /></span>
             </label>
+            {DEMO_PLATFORMS && SOON_PLATFORMS.map((p) => (
+              <label key={p.key} className="ptog">
+                <input type="checkbox" checked disabled readOnly />
+                <span><SoonPlatIcon platform={p.key} size={28} /><span>{p.name}</span><Ic n="check" /></span>
+              </label>
+            ))}
           </div>
           <SoonStrip style={{ marginTop: 8 }} />
           {error && <p className="sf-error">{error}</p>}

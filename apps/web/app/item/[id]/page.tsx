@@ -17,7 +17,7 @@ import { NeedsConnection } from "@/components/NeedsConnection";
 import { Looking } from "@/components/Setup";
 import { HANDOVER_DONE_LABEL, Sold, soldRevealed } from "@/components/Sold";
 import { PoofAtWork, Wizard } from "@/components/Wizard";
-import { BackButton, Button, Eyebrow, PriceTag, SoonStrip } from "@/components/ui";
+import { BackButton, Button, Eyebrow, PriceTag, DEMO_PLATFORMS, SOON_PLATFORMS, SoonPlatIcon, SoonStrip } from "@/components/ui";
 
 type Screen = "looking" | "wizard" | "writing" | "ad" | "connect" | "going" | "product" | "sold" | "error";
 
@@ -155,6 +155,8 @@ function Product({ item, going, onSkipGoing, onMarkDone }: { item: Item; going: 
   const nowDoing = talking ? `Poof is negotiating with ${talking.c.buyer.split(" ")[0]}` : adLive ? "Poof is watching for offers" : "Getting ready to go live";
 
   const allRemoved = item.listings.length > 0 && item.listings.every((l) => l.status === "removed");
+  // Demo platforms mirror the Marktplaats listing: only shown once it is live or taken offline.
+  const mpShown = item.listings.some((l) => l.platform === "marktplaats" && (l.status === "live" || l.status === "removed"));
 
   return (
     <div className="body2 has-nav" style={{ padding: 0 }}>
@@ -219,6 +221,16 @@ function Product({ item, going, onSkipGoing, onMarkDone }: { item: Item; going: 
                   {l.status === "removed" ? <Ic n="check" /> : l.status === "live" && l.url ? (
                     <a className="viewlink" href={l.url} target="_blank" rel="noreferrer">View on {PLATFORM[l.platform]} ↗</a>
                   ) : null}
+                </li>
+              ))}
+              {DEMO_PLATFORMS && mpShown && SOON_PLATFORMS.map((p, i) => (
+                <li key={p.key} style={{ animation: "fadeUp .28s var(--out) backwards", animationDelay: `${(item.listings.length + i) * 35}ms` }}>
+                  <SoonPlatIcon platform={p.key} size={40} />
+                  <span className="grow">
+                    <b>{p.name}</b>
+                    <span className="xs muted">{allRemoved ? "Taken offline after the sale" : "Live"}</span>
+                  </span>
+                  {allRemoved ? <Ic n="check" /> : <span className="viewlink" aria-disabled>View on {p.name} ↗</span>}
                 </li>
               ))}
             </ul>
