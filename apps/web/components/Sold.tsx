@@ -67,11 +67,12 @@ export function Sold({ item, onProduct, onMarkDone }: { item: Item; onProduct: (
   useEffect(() => {
     if (settled) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    let played = false;
     const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const finish = () => {
       setShowText(true);
-      at(250, () => { setShowPanel(true); markRevealed(item.id); });
+      at(250, () => { setShowPanel(true); played = true; });
     };
     at(260, () => {
       const el = sticker.current, host = stage.current;
@@ -91,12 +92,15 @@ export function Sold({ item, onProduct, onMarkDone }: { item: Item; onProduct: (
       });
       at(850, () => { sound("/brand/poof-success.mp3", 0.6); finish(); });
     });
-    return () => timers.forEach(clearTimeout);
+    // Remember it on the way out, so this visit keeps the sold screen and the next one skips the reveal.
+    const onHide = () => { if (played) markRevealed(item.id); };
+    window.addEventListener("pagehide", onHide);
+    return () => { timers.forEach(clearTimeout); window.removeEventListener("pagehide", onHide); onHide(); };
   }, [settled, item.id]);
 
   const markDone = async () => {
     setBusy(true); setErr(null);
-    try { await onMarkDone(); }
+    try { await onMarkDone(); markRevealed(item.id); }
     catch (e) { setErr(e instanceof Error ? e.message : "Could not mark it as done"); }
     finally { setBusy(false); }
   };

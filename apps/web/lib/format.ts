@@ -74,8 +74,9 @@ export function offerIn(m: Message, c: Conversation): OfferChip | null {
   if (amount == null) {
     const match =
       m.text.match(/€\s?(\d{2,5})(?![–-]\s?€?\d)/) ??
-      m.text.match(/\b(?:do|at|for|offer|pay|je|voor|bied|bod)\s+(\d{2,5})\b/i) ??
-      m.text.match(/^\s*(\d{2,5})\b/);
+      m.text.match(/\b(?:do|at|for|offer|pay|je|voor|bied|bod)\s+(\d{2,5})\b(?!\s*[:.]\d)/i) ??
+      // Not a time like "11:00 is prima".
+      m.text.match(/^\s*(\d{2,5})\b(?!\s*[:.]\d)/);
     if (!match) return null;
     amount = Number(match[1]);
     if (m.from === "agent") {
