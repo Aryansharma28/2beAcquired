@@ -4,6 +4,8 @@
 //
 //   POST /run?timeout=280   X-Runner-Key: <RUNNER_KEY>   body: actor input
 //   -> answers like Apify's run-sync-get-dataset-items (a JSON array of the dataset items).
+//   GET /unread             X-Runner-Key: <RUNNER_KEY>
+//   -> { unread: <Marktplaats unread-message count> | null }; n8n polls this every 15 s (n8n/src/31-chat-check.mjs).
 //
 // Headers are sent right away and a space every 10 s, so tunnels with a first-byte timeout (Cloudflare: 100 s)
 // don't cut long runs. Jobs run one at a time. The session store is pulled from Apify before a run and pushed
@@ -67,11 +69,36 @@ function readResult(dir) {
   return { items, output };
 }
 
+// Marktplaats has no push for sellers. Its unread-message counter (the bell on the site) is one small request; we make it
+// from this laptop with the owner's session so the session never shows up from a cloud IP.
+const WATCH_STORE = process.env.WATCH_MP_STORE || process.env.DEMO_MP_STORE;
+let session = null, loadedAt = 0;
+async function unreadCount() {
+  if (!WATCH_STORE) return null;
+  if (!session || Date.now() - loadedAt > 5 * 60_000) { // runs write refreshed cookies back
+    const r = await fetch(`${API}/key-value-stores/${await storeId(WATCH_STORE)}/records/state`, { headers: apifyHeaders });
+    if (r.ok) { session = await r.json(); loadedAt = Date.now(); }
+  }
+  if (!session) return null;
+  const cookie = session.cookies.filter((c) => c.domain.includes("marktplaats.nl")).map((c) => `${c.name}=${c.value}`).join("; ");
+  const r = await fetch("https://www.marktplaats.nl/header/messages/message-count", {
+    headers: { Cookie: cookie, Accept: "application/json", "X-Requested-With": "XMLHttpRequest", Referer: "https://www.marktplaats.nl/",
+      "User-Agent": session.meta?.userAgent || "Mozilla/5.0" },
+  });
+  if (r.status !== 200) throw new Error(`message-count HTTP ${r.status}`);
+  return Number((await r.json()).unreadMessagesCount ?? 0);
+}
+
 let queue = Promise.resolve();
 const server = http.createServer((req, res) => {
   const url = new URL(req.url ?? "/", "http://x");
   if (url.pathname === "/health") return void res.writeHead(200).end("ok");
   if (req.headers["x-runner-key"] !== KEY) return void res.writeHead(403).end("Forbidden");
+  if (url.pathname === "/unread" && req.method === "GET") {
+    return void unreadCount()
+      .then((unread) => res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify({ unread })))
+      .catch((e) => res.writeHead(502, { "Content-Type": "application/json" }).end(JSON.stringify({ error: e.message })));
+  }
   if (url.pathname !== "/run" || req.method !== "POST") return void res.writeHead(404).end();
   let body = "";
   req.on("data", (c) => (body += c));
@@ -106,41 +133,4 @@ const server = http.createServer((req, res) => {
       .finally(() => clearInterval(keepAlive));
   });
 });
-server.listen(PORT, () => console.log(`poof local runner on http://localhost:${PORT}`));
-
-// --- Real-time chat watcher --------------------------------------------------------------------------------
-// Marktplaats has no push for sellers. Every 15 s, ask its unread-message counter (the bell on the site, one small
-// request, from this laptop with the owner's session); when it goes up, poke n8n's inbox workflow right away.
-const WATCH_STORE = process.env.WATCH_MP_STORE || process.env.DEMO_MP_STORE;
-const N8N = process.env.N8N_BASE_URL;
-const APP_KEY = process.env.POOF_APP_KEY;
-if (WATCH_STORE && N8N && APP_KEY) {
-  let session = null, loadedAt = 0, lastCount = null, lastPoke = 0;
-  const loadSession = async () => {
-    const r = await fetch(`${API}/key-value-stores/${await storeId(WATCH_STORE)}/records/state`, { headers: apifyHeaders });
-    if (r.ok) { session = await r.json(); loadedAt = Date.now(); }
-  };
-  const tick = async () => {
-    if (!session || Date.now() - loadedAt > 5 * 60_000) await loadSession(); // runs write refreshed cookies back
-    if (!session) return;
-    const cookie = session.cookies.filter((c) => c.domain.includes("marktplaats.nl")).map((c) => `${c.name}=${c.value}`).join("; ");
-    const r = await fetch("https://www.marktplaats.nl/header/messages/message-count", {
-      headers: { Cookie: cookie, Accept: "application/json", "X-Requested-With": "XMLHttpRequest", Referer: "https://www.marktplaats.nl/",
-        "User-Agent": session.meta?.userAgent || "Mozilla/5.0" },
-    });
-    if (r.status !== 200) return console.warn(`watcher: message-count HTTP ${r.status}`);
-    const count = Number((await r.json()).unreadMessagesCount ?? 0);
-    const rose = lastCount !== null && count > lastCount;
-    lastCount = count;
-    if (rose && Date.now() - lastPoke > 20_000) {
-      lastPoke = Date.now();
-      console.log(`
-✉ ${count} unread on Marktplaats → running the inbox now`);
-      await fetch(`${N8N}/webhook/tba/inbox-now`, { method: "POST", headers: { "X-Poof-Key": APP_KEY, "Content-Type": "application/json" }, body: "{}" })
-        .catch((e) => console.warn("watcher: poke failed", e.message));
-    }
-  };
-  const loop = () => tick().catch((e) => console.warn("watcher:", e.message)).finally(() => setTimeout(loop, 15_000));
-  loop();
-  console.log(`chat watcher on for '${WATCH_STORE}' (every 15 s)`);
-}
+server.listen(PORT, () => console.log(`poof local runner on http://localhost:${PORT}${WATCH_STORE ? ` (unread counter for '${WATCH_STORE}')` : ""}`));
