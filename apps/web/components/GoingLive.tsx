@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { coverFirst } from "@/lib/useItem";
+import { coverFirst, stickerSrc } from "@/lib/useItem";
 import type { Item } from "@/lib/types";
 import { PoofCloud } from "./PoofCloud";
 import { Ic, MpIcon, SfScreen } from "./Wizard";
@@ -44,6 +44,9 @@ export function realListing(item: Item) {
 export function GoingLive({ item, onDone, onLive, inline }: { item: Item; onDone?: () => void; onLive?: () => void; inline?: boolean }) {
   const { failed, url } = realListing(item);
   const photo = coverFirst(item)[0];
+  // The photo turns into the item's cutout sticker (transparent PNG) when there is one.
+  const sticker = stickerSrc(item);
+  const isCut = sticker !== photo;
   const rootRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLSpanElement>(null);
@@ -103,7 +106,7 @@ export function GoingLive({ item, onDone, onLive, inline }: { item: Item; onDone
       const dx = w.left + w.width / 2 - c.left - sx, dy = w.top + w.height / 2 - c.top - sy;
       const fly = document.createElement("span");
       fly.className = "gfly";
-      fly.innerHTML = `<img src="${photo.replace(/"/g, "&quot;")}" alt="" style="object-fit:cover;border-radius:10px">`;
+      fly.innerHTML = `<img src="${sticker.replace(/"/g, "&quot;")}" alt="" style="object-fit:${isCut ? "contain" : "cover"};border-radius:${isCut ? 0 : 10}px">`;
       fly.style.left = `${sx - 42}px`;
       fly.style.top = `${sy - 42}px`;
       root.appendChild(fly);
@@ -131,7 +134,7 @@ export function GoingLive({ item, onDone, onLive, inline }: { item: Item; onDone
     // 5. the empty spot where the item was folds away, so the live state sits centred.
     at(t.collapse, () => setCollapsed(true));
     return () => timers.forEach(clearTimeout);
-  }, [failed, reduce, photo]);
+  }, [failed, reduce, photo, sticker, isCut]);
 
   if (hidden) return null;
 
@@ -143,7 +146,7 @@ export function GoingLive({ item, onDone, onLive, inline }: { item: Item; onDone
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {photo && <img className="photo" src={photo} alt="" style={{ opacity: stickered ? 0 : 1, transition: "opacity .55s var(--out)" }} />}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {photo && <img className="sticker-img" src={photo} alt="" style={{ opacity: stickered ? 1 : 0, transition: "opacity .55s var(--out)" }} />}
+        {photo && <img className="sticker-img" src={sticker} alt="" style={{ opacity: stickered ? 1 : 0, transition: "opacity .55s var(--out)", ...(isCut ? { objectFit: "contain" } : {}) }} />}
       </div>
       {cloud && <PoofCloud {...cloud} onGone={() => setCloud(null)} />}
       <h1 className="golive-head" aria-live="polite" style={{ transition: "opacity .2s var(--out)", opacity: head === "fade" ? 0 : 1 }}>
