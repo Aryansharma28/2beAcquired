@@ -85,7 +85,7 @@ export function AdReview({ item, onApproved }: { item: Item; onApproved: (patch:
               <span className="ph-note">{shown + 1} / {n}</span>
             </span>
           </div>
-          {photos.length > 1 && (
+          {photos.length > 0 && (
             <div className="thumbs" style={{ marginTop: 8 }}>
               {photos.map((p, i) => (
                 <button key={i} type="button" aria-pressed={shown === i} aria-label={`Photo ${i + 1}`} onClick={() => setShown(i)}>
