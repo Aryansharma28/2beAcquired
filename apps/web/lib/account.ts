@@ -18,10 +18,10 @@ export type PairCode = { code: string; expiresAt: string };
 export const PICKUP_HOURS = ["Weekday evenings", "Weekend daytime", "Anytime 10–21"];
 
 export const CONSENT = [
-  "poof uses your Marktplaats account to post your ads, read and answer buyer messages, change prices and remove ads once sold.",
+  "Poof uses your Marktplaats account to post your ads, read and answer buyer messages, change prices and remove ads once sold.",
   "It never asks for or sees your password: you log in to Marktplaats yourself.",
   "Automated selling may break Marktplaats's terms, and your account could be restricted.",
-  "Disconnect any time in poof Settings or in the poof Connector.",
+  "Disconnect any time in Poof Settings or in the Poof Connector.",
 ];
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
