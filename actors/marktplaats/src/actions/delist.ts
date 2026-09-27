@@ -75,10 +75,12 @@ export async function delist(input: Input): Promise<DelistResult> {
         await page.waitForTimeout(3000);
         // Older flow: a separate confirm button after the reason.
         if (!/deleteAdSuccess/.test(page.url())) {
+            // The current dialog deletes on the reason answer and leaves a disabled confirm button behind: clicking
+            // that waited until the run failed although the ad was gone. The seller-page check below decides.
             const confirm = await firstByName(page, CONFIRM, { timeout: 2500, roles: ['button'] });
-            if (confirm) {
+            if (confirm && (await confirm.isEnabled().catch(() => false))) {
                 notes.push(`confirm: ${await confirm.innerText().catch(() => '?')}`);
-                await confirm.click();
+                await confirm.click({ timeout: 5000 }).catch((e: Error) => notes.push(`confirm click failed: ${e.message.split('\n')[0]}`));
                 await page.waitForTimeout(3000);
             }
         }
