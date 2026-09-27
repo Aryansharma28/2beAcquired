@@ -74,7 +74,7 @@ img{display:block;max-width:100%}
 /* sticker photos: landing sticker filter + slight tilt, shadow kept subtle and never clipped */
 .sticker{transform:rotate(var(--tilt,-2deg))}
 .sticker img{filter:drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff) drop-shadow(0 6px 8px rgba(15,42,24,.12))}
-.stickerwrap{position:relative;overflow:visible}
+.stickerwrap{display:block;position:relative;overflow:visible} /* block: Safari anchors absolute children of an inline span to its first (empty) fragment */
 
 /* price tags: paper tag with a notch and punched hole, no string */
 .pricetag{position:absolute;top:2px;right:0;z-index:2;padding:4px 9px 4px 16px;color:var(--ink);
@@ -671,6 +671,8 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
   function milaCounter() { return Math.max(S.min + IT().step, S.goal - IT().step); }
   function milaDeal() { return Math.max(S.min, Math.min(milaCounter() - 1, S.min + IT().dealD)); }
   function needsYouCount() { return (S.adLive && !S.sold && S.tomOfferArrived && !S.tomResolved) ? 1 : 0; }
+  // Whether any buyer activity has happened yet: gates chats/offers that shouldn't exist on a freshly-live ad.
+  function hasActivity() { return S.tomOfferArrived || S.milaStage > 0 || S.sold; }
   function demoPhotos() { return IT().photos; }
   function nextDemoPhoto() { const d = demoPhotos(); return d[Math.min((S.photos || []).length, d.length - 1)]; }
   function photoAt(i) { return (S.photos && S.photos[i]) || IT().cover; }
@@ -1632,13 +1634,15 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
     entries.push({
       id: 'mila', go: 'chat-mila', letter: 'M', plat: 'marktplaats', name: 'Mila',
       last: milaLast, poofSpoke: milaSpoke,
-      offer: S.sold ? S.soldPrice : milaDeal(), state: milaNegotiating ? 'negotiating' : 'handled', typing: S.milaTyping
+      offer: S.sold ? S.soldPrice : (S.milaStage > 0 ? milaDeal() : null), state: milaNegotiating ? 'negotiating' : 'handled', typing: S.milaTyping
     });
-    entries.push({
-      id: 'noor', go: 'chat-noor', letter: 'N', plat: 'vinted', name: 'Noor',
-      last: S.sold ? 'Sorry Noor, it just sold. Thanks for asking!' : IT().noorA, poofSpoke: true,
-      offer: null, state: 'handled'
-    });
+    if (hasActivity()) {
+      entries.push({
+        id: 'noor', go: 'chat-noor', letter: 'N', plat: 'vinted', name: 'Noor',
+        last: S.sold ? 'Sorry Noor, it just sold. Thanks for asking!' : IT().noorA, poofSpoke: true,
+        offer: null, state: 'handled'
+      });
+    }
     entries.sort((a, b) => (a.state === 'needs' ? -1 : 0) - (b.state === 'needs' ? -1 : 0));
     return entries;
   }
@@ -1719,7 +1723,7 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
     const chatSection = S.adLive ? `
       <div class="sec" style="margin-top:20px"><span>${S.sold ? 'All chats for this ad' : 'Chats'}</span><button type="button" data-go="chats" data-mode="tab">All chats</button></div>
       ${entries.map((e, i) => renderChatEntryRow(e, i)).join('')}
-      ${foldedLowOffers()}` : '';
+      ${hasActivity() ? foldedLowOffers() : ''}` : '';
     return `
       <div class="body2 has-nav" style="padding:0">
         <div class="hero">
@@ -1753,7 +1757,7 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
         <div class="group">
           <button class="group-head" type="button" data-go="product">${sticker(IT().cutout, -2)}<div class="grow"><b>${IT().short}</b><span>${chatSummary()}</span></div>${ic('right')}</button>
           ${entries.map((e, i) => renderChatEntryRow(e, i)).join('')}
-          ${foldedLowOffers()}
+          ${hasActivity() ? foldedLowOffers() : ''}
         </div>`;
     }
     return `
@@ -1774,6 +1778,7 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
   }
   function chatSummary() {
     if (S.sold) return 'Sold for €' + S.soldPrice;
+    if (!hasActivity()) return 'No chats yet';
     const n = 2 + (S.tomOfferArrived ? 1 : 0);
     return n + ' chats · best offer €' + (S.tomOfferArrived ? Math.max(tomOffer(), milaDeal()) : milaDeal());
   }
@@ -1781,7 +1786,8 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
   /* ---------- Mila thread ---------- */
   function milaScript() {
     const o = milaOpen(), c = milaCounter(), d = milaDeal();
-    const itemLower = IT().short.replace(/^[A-Z](?=[a-z])/, ch => ch.toLowerCase());
+    // Lower-case only plain words ("Donut lamp" → "donut lamp"), never brand names like AirPods or DJ.
+    const itemLower = IT().short.replace(/^[A-Z](?=[a-z]+(\s|$))/, ch => ch.toLowerCase());
     const mid = Math.max(o + IT().step, Math.min(d - IT().step, Math.round((o + c) / 2 / 5) * 5));
     return [
       { from: 'buyer', text: 'Hi! ' + (IT().plural ? 'Are the ' : 'Is the ') + itemLower + ' still available?' },
