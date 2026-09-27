@@ -117,7 +117,7 @@ export function AdReview({ item, onApproved }: { item: Item; onApproved: (patch:
               </div>
               {floor != null && (
                 <div className="row" style={{ gap: 20, marginTop: 6 }}>
-                  <div className="goalrow" style={{ flex: 1, justifyContent: "flex-start", gap: 10, margin: 0 }}>
+                  <div className="goalrow" style={{ flex: 1, justifyContent: "flex-start", gap: 10, margin: 0, minHeight: 44 }}>
                     <b className="lbl">Min</b>
                     <output className="price-big" style={{ fontSize: 20 }}>€{floor}</output>
                   </div>

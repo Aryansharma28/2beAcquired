@@ -469,3 +469,6 @@ body {
 .sf .gplat .ring circle.fg.posting{stroke-dashoffset:60;transition:stroke-dashoffset 2.4s var(--out)}
 .sf .ptog input:disabled{cursor:default}
 .sf .shutter{touch-action:manipulation}
+.sf .histo .marker{padding:0;border-radius:0;display:block}
+.sf .viewlink{font-size:12.5px;font-weight:700;color:var(--ink);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;white-space:nowrap;flex:none}
+.sf .gplat .ring{box-shadow:none}

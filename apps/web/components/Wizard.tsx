@@ -415,6 +415,42 @@ function Histo({ market, min, goal }: { market: Market; min: number; goal: numbe
   );
 }
 
+/** Poof at work (prototype renderWorking), driven by the item's real progress. Render it for status "writing". */
+export function PoofAtWork({ item }: { item: Item }) {
+  const name = item.recognition?.name ?? item.title ?? "your item";
+  const n = item.compsCount ?? item.comps?.length ?? 0;
+  const done = [!!item.recognition?.name, n > 0, item.askPrice != null, item.status === "ad_ready" || !!item.description];
+  const firstOpen = done.findIndex((d) => !d);
+  const state = (i: number) => (done[i] ? "done" : i === firstOpen ? "running" : "next");
+  const steps = [
+    `Recognised your ${name}`,
+    n ? `Found ${n} similar listings` : "Finding similar listings",
+    item.askPrice != null ? `Priced at €${item.askPrice}` : "Pricing it",
+    done[3] ? "Wrote your ad" : "Writing your ad",
+  ];
+  return (
+    <SfScreen>
+      <div className="layer">
+        <div className="top2"><div className="grow" /></div>
+        <div className="body2" style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1 }}>
+          <div className="row" style={{ marginBottom: 22 }}>
+            <Sticker src={item.photos[item.coverIndex ?? 0] ?? item.photos[0]} tilt={-3} size={56} />
+            <div className="grow"><p className="eyebrow">{name}</p><h1 className="q" style={{ margin: 0, fontSize: 24 }}>Poof is on it</h1></div>
+          </div>
+          <ol className="steps card divided" style={{ boxShadow: "var(--shadow-soft)" }}>
+            {steps.map((t, i) => (
+              <li key={i} className="step" data-state={state(i)}>
+                <span className="st-ico"><Ic n="check" /></span>
+                <div className="grow"><b>{t}</b></div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </SfScreen>
+  );
+}
+
 /* ------------------------------------------------------------------ shared with other screens */
 
 export function Pencil({ className }: { className?: string }) {
