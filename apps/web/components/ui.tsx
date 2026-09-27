@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { PLATFORM, STATUS, eur } from "@/lib/format";
 import type { Platform, Status } from "@/lib/types";
 
@@ -315,7 +315,15 @@ export const SOON_PLATFORMS = [
   { key: "facebook", name: "Facebook" },
 ] as const;
 export type SoonPlatform = (typeof SOON_PLATFORMS)[number]["key"];
-export const SOON_NOTE = "eBay, Vinted and Facebook are coming soon. We've applied for access.";
+/** A quiet one-liner: tiny greyed-out logos + "Soon on eBay, Vinted and Facebook". */
+export function SoonStrip({ style }: { style?: CSSProperties }) {
+  return (
+    <p className="soon-strip" style={style}>
+      <span className="soon-logos" aria-hidden>{SOON_PLATFORMS.map((p) => <SoonPlatIcon key={p.key} platform={p.key} size={14} />)}</span>
+      Soon on eBay, Vinted and Facebook
+    </p>
+  );
+}
 
 /** Prototype `platIcon`: eBay as its wordmark on a white tile, Vinted and Facebook on their brand colour. */
 export function SoonPlatIcon({ platform, size = 34 }: { platform: SoonPlatform; size?: number }) {

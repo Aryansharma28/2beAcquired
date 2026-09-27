@@ -17,7 +17,7 @@ import { NeedsConnection } from "@/components/NeedsConnection";
 import { Looking } from "@/components/Setup";
 import { HANDOVER_DONE_LABEL, Sold, soldRevealed } from "@/components/Sold";
 import { PoofAtWork, Wizard } from "@/components/Wizard";
-import { BackButton, Button, Eyebrow, PriceTag, SOON_NOTE, SOON_PLATFORMS, Soon, SoonPlatIcon } from "@/components/ui";
+import { BackButton, Button, Eyebrow, PriceTag, SoonStrip } from "@/components/ui";
 
 type Screen = "looking" | "wizard" | "writing" | "ad" | "connect" | "going" | "product" | "sold" | "error";
 
@@ -221,18 +221,8 @@ function Product({ item, going, onSkipGoing, onMarkDone }: { item: Item; going: 
                   ) : null}
                 </li>
               ))}
-              {!allRemoved && SOON_PLATFORMS.map((p, i) => (
-                <li key={p.key} className="soon" style={{ animation: "fadeUp .28s var(--out) backwards", animationDelay: `${(item.listings.length + i) * 35}ms` }}>
-                  <SoonPlatIcon platform={p.key} size={40} />
-                  <span className="grow">
-                    <b>{p.name}</b>
-                    <span className="xs muted">Coming soon</span>
-                  </span>
-                  <Soon />
-                </li>
-              ))}
             </ul>
-            {!allRemoved && <p className="xs muted" style={{ margin: "8px 0 0" }}>{SOON_NOTE}</p>}
+            {!allRemoved && <SoonStrip style={{ marginTop: 10 }} />}
           </div>
         )}
       </div>

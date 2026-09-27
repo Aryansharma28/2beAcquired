@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { coverFirst } from "@/lib/useItem";
 import type { Item } from "@/lib/types";
 import { Ic, MpIcon, SfScreen } from "./Wizard";
-import { SOON_PLATFORMS, SoonPlatIcon, cx } from "./ui";
+import { SoonStrip, cx } from "./ui";
 
 const SPRING = "linear(0,.009,.035 2.1%,.141,.281 6.7%,.723 12.9%,.938 16.7%,1.017,1.077,1.121,1.149 24.3%,1.159,1.163,1.161,1.154 29.9%,1.129 32.8%,1.051 39.6%,1.017 43.1%,.991,.977 51%,.974 53.8%,.975 57.1%,.997 69.8%,1.003 76.9%,1.004 83.8%,1)";
 
@@ -113,17 +113,8 @@ export function GoingLive({ item, onDone, inline }: { item: Item; onDone?: () =>
           <span className={cx("lbl xs", liveReady && "live", state === "error" && "err")}>Marktplaats</span>
           <span className={cx("st", (liveReady || state === "error") && "show", state === "error" && "err")} aria-hidden>{state === "error" ? "Failed" : "Live"}</span>
         </div>
-        {SOON_PLATFORMS.map((p) => (
-          <div key={p.key} className="gplat soon" data-plat={p.key}>
-            <span className="wrap">
-              <svg className="ring" width="56" height="56" viewBox="0 0 56 56" aria-hidden><circle cx="28" cy="28" r="24" /></svg>
-              <SoonPlatIcon platform={p.key} size={40} />
-            </span>
-            <span className="lbl xs">{p.name}</span>
-            <span className="st show soon" aria-hidden>Soon</span>
-          </div>
-        ))}
       </div>
+      <SoonStrip style={{ marginTop: 14, justifyContent: "center" }} />
       <p className="hint">{liveReady || onDone ? "Tap to skip" : "You can close the app. Poof keeps going."}</p>
     </div>
   );
