@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { coverFirst } from "@/lib/useItem";
 import type { Item } from "@/lib/types";
 import { Ic, MpIcon, SfScreen } from "./Wizard";
-import { SoonStrip, cx } from "./ui";
+import { DEMO_PLATFORMS, SOON_PLATFORMS, SoonPlatIcon, SoonStrip, cx } from "./ui";
 
 const SPRING = "linear(0,.009,.035 2.1%,.141,.281 6.7%,.723 12.9%,.938 16.7%,1.017,1.077,1.121,1.149 24.3%,1.159,1.163,1.161,1.154 29.9%,1.129 32.8%,1.051 39.6%,1.017 43.1%,.991,.977 51%,.974 53.8%,.975 57.1%,.997 69.8%,1.003 76.9%,1.004 83.8%,1)";
 
@@ -98,7 +98,7 @@ export function GoingLive({ item, onDone, inline }: { item: Item; onDone?: () =>
         {photo && <img className="sticker-img" src={photo} alt="" style={{ opacity: stickered ? 1 : 0, transition: "opacity .55s var(--out)" }} />}
       </div>
       <h1 className="golive-head" aria-live="polite" style={{ transition: "opacity .2s var(--out)", opacity: head === "fade" ? 0 : 1 }}>
-        {state === "error" ? "Posting failed" : head === "live" ? <><span className="pb">Live</span> on Marktplaats</> : "Putting it online"}
+        {state === "error" ? "Posting failed" : head === "live" ? <><span className="pb">Live</span> on {DEMO_PLATFORMS ? "4 platforms" : "Marktplaats"}</> : "Putting it online"}
       </h1>
       <div className="golive-plats">
         <div className="gplat" data-plat="marktplaats">
@@ -113,6 +113,23 @@ export function GoingLive({ item, onDone, inline }: { item: Item; onDone?: () =>
           <span className={cx("lbl xs", liveReady && "live", state === "error" && "err")}>Marktplaats</span>
           <span className={cx("st", (liveReady || state === "error") && "show", state === "error" && "err")} aria-hidden>{state === "error" ? "Failed" : "Live"}</span>
         </div>
+        {DEMO_PLATFORMS && SOON_PLATFORMS.map((p, i) => {
+          const delay = { transitionDelay: `${(i + 1) * 0.3}s` };
+          return (
+            <div key={p.key} className="gplat" data-plat={p.key}>
+              <span className="wrap">
+                <svg className="ring" width="56" height="56" viewBox="0 0 56 56" aria-hidden>
+                  <circle cx="28" cy="28" r="24" />
+                  <circle className="fg" cx="28" cy="28" r="24" style={liveReady ? { strokeDashoffset: 0, ...delay } : undefined} />
+                </svg>
+                <SoonPlatIcon platform={p.key} size={40} />
+                <span className={cx("check", liveReady && "show")} style={delay}><Ic n="check" /></span>
+              </span>
+              <span className={cx("lbl xs", liveReady && "live")}>{p.name}</span>
+              <span className={cx("st", liveReady && "show")} style={delay} aria-hidden>Live</span>
+            </div>
+          );
+        })}
       </div>
       <SoonStrip style={{ marginTop: 14, justifyContent: "center" }} />
       <p className="hint">{liveReady || onDone ? "Tap to skip" : "You can close the app. Poof keeps going."}</p>
