@@ -14,9 +14,9 @@ import { AgentLog } from "@/components/AgentLog";
 import { BackIcon, ChatEntryRow, FoldedLowOffers, Ic, PlatIcon, TYPING, chatEntries } from "@/components/Chats";
 import { GoingLive } from "@/components/GoingLive";
 import { NeedsConnection } from "@/components/NeedsConnection";
-import { Looking, Writing } from "@/components/Setup";
+import { Looking } from "@/components/Setup";
 import { HANDOVER_DONE_LABEL, Sold, soldRevealed } from "@/components/Sold";
-import { Wizard } from "@/components/Wizard";
+import { PoofAtWork, Wizard } from "@/components/Wizard";
 import { BackButton, Button, Eyebrow, PriceTag } from "@/components/ui";
 
 type Screen = "looking" | "wizard" | "writing" | "ad" | "connect" | "going" | "product" | "sold" | "error";
@@ -127,7 +127,7 @@ export default function ItemPage() {
         <div key={screen} className="flex-1 animate-fade pt-2">
           {screen === "looking" && <Looking item={item} />}
           {screen === "wizard" && <Wizard item={item} onSubmitted={(data) => setPatch({ from: item.status, data })} />}
-          {screen === "writing" && <Writing item={item} />}
+          {screen === "writing" && <PoofAtWork item={item} />}
           {screen === "ad" && <AdReview item={item} onApproved={(data) => setPatch({ from: item.status, data })} />}
           {screen === "connect" && <NeedsConnection item={item} onApproved={(data) => setPatch({ from: item.status, data })} />}
           {screen === "error" && <ErrorCard item={item} onRetry={() => setPatch({ from: item.status, data: { status: "publishing" } })} />}
