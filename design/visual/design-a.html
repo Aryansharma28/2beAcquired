@@ -130,14 +130,12 @@ body.play .screen.current{display:block}
 .stickerwrap{position:relative}
 
 /* real price tags: paper tag, notch, punched hole, string loop */
-.pricetag{position:absolute;top:-6px;right:-6px;z-index:2;padding:5px 10px 5px 19px;color:var(--ink);
-  font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap;
-  transform:rotate(var(--tilt,8deg));filter:drop-shadow(0 2px 3px rgba(15,42,24,.2))}
-.pricetag::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:3px;
-  background:radial-gradient(circle at 9px 50%,var(--surface) 0 2.4px,var(--ink) 2.5px 3.6px,transparent 3.7px),var(--lime);
-  clip-path:polygon(0 50%,10px 0,100% 0,100% 100%,10px 100%)}
-.pricetag::after{content:"";position:absolute;left:-13px;top:-7px;width:22px;height:16px;border:1.5px solid var(--ink);
-  border-color:var(--ink) transparent transparent var(--ink);border-radius:50%;transform:rotate(-20deg)}
+.pricetag{position:absolute;top:2px;right:0;z-index:2;padding:4px 9px 4px 16px;color:var(--ink);
+  font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap;
+  transform:rotate(var(--tilt,4deg));filter:drop-shadow(0 1px 2px rgba(15,42,24,.16))}
+.pricetag::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:4px;
+  background:radial-gradient(circle at 8px 50%,var(--page) 0 2.2px,transparent 2.6px),var(--lime);
+  clip-path:polygon(0 50%,9px 0,100% 0,100% 100%,9px 100%)}
 
 /* shared bits */
 .btn{min-height:52px;width:100%;border-radius:999px;border:0;background:var(--ink);color:var(--lime);font-weight:700;font-size:16px;cursor:pointer;padding:0 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .35s var(--spring)}
@@ -185,12 +183,12 @@ body.play .screen.current{display:block}
 
 /* navbar */
 .tabbar{position:absolute;left:16px;right:16px;bottom:20px;height:64px;padding:0 8px;border-radius:32px;background:var(--ink);display:flex;align-items:center;gap:6px;box-shadow:var(--shadow-float);z-index:6}
-.tabbar .tab{flex:none;width:48px;height:48px;border:0;border-radius:24px;background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;position:relative}
+.tabbar .tab{flex:none;width:48px;height:48px;border:0;border-radius:24px;background:none;color:rgba(255,255,255,.72);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;position:relative}
 .tabbar .tab[aria-current="page"]{width:auto;flex:1;padding:0 18px 0 14px;background:var(--lime);color:var(--ink);gap:8px;font-size:14px;font-weight:700}
 .tabbar .ico{position:relative;display:inline-flex}
-.tbadge{position:absolute;top:-7px;right:-9px;min-width:17px;height:17px;border-radius:9px;background:var(--surface);color:var(--ink);font-size:10px;font-weight:800;display:grid;place-items:center;padding:0 3px}
+.tbadge{position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;border-radius:8px;background:#fff;color:var(--ink);font-size:10px;font-weight:800;display:grid;place-items:center;padding:0 3px}
 .tabbar .tab[aria-current="page"] .tbadge{background:var(--ink);color:var(--lime)}
-.tabbar .sell{width:48px;height:48px;border-radius:24px;border:0;background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.tabbar .sell{width:48px;height:48px;border-radius:24px;border:0;background:none;color:rgba(255,255,255,.72);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .body.has-nav{padding-bottom:96px}
 
 /* 01 camera */
