@@ -122,6 +122,12 @@ h1 .w{display:block}
 .foot{max-width:1180px;margin:0 auto;padding:26px 16px 36px;border-top:1px solid rgba(255,255,255,.12);font-size:13px;color:#9FB2A5;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between;align-items:center}
 .foot b{color:var(--surface);font-family:'Baloo 2',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.01em}
 .footwrap{padding:0 16px}
+/* Buy me a coffee: lime pill in the footer, a quiet link under "You're on the list!" */
+.coffee{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 15px;border-radius:18px;background:var(--lime);color:var(--ink);font-size:14px;font-weight:800;text-decoration:none;transition:transform .35s var(--spring)}
+.coffee:hover{transform:translateY(-2px) rotate(-2deg)}
+.coffee:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
+.done .coffee-line{margin:10px 0 0;font-size:14px;color:var(--moss)}
+.done .coffee-line a{color:var(--ink);font-weight:800;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--lime);text-decoration-thickness:3px}
 
 @media (max-width:380px){ .hero{padding-top:300px} }
 @media (min-width:560px){
@@ -213,6 +219,7 @@ h1 .w{display:block}
       <div>
         <h2 tabindex="-1" id="doneTitle">You're on the list!</h2>
         <p>We'll email you the moment Poof can sell your stuff.</p>
+        <p class="coffee-line">Like what we're building? <a href="https://buymeacoffee.com/aryansharma28" target="_blank" rel="noopener">Buy us a coffee ☕</a></p>
       </div>
     </div>
   </div>
@@ -237,7 +244,7 @@ h1 .w{display:block}
       <div class="txt"><span class="num">3</span><h3>Poof, sold</h3><p>Once it's sold, the ad disappears and the money goes to you.</p></div>
     </li>
   </ol>
-  <div class="footwrap"><footer class="foot"><b>Poof</b><span>Built at Build Weekend · Young Creators x Prosus · Amsterdam 2026</span></footer></div>
+  <div class="footwrap"><footer class="foot"><b>Poof</b><span>Built at Build Weekend · Young Creators x Prosus · Amsterdam 2026</span><a class="coffee" href="https://buymeacoffee.com/aryansharma28" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2"/><path d="M10 2v2"/><path d="M14 2v2"/></svg>Buy me a coffee</a></footer></div>
 </section>
 </main>
 
