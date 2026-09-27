@@ -55,7 +55,13 @@ export type Item = {
   conversations: Conversation[];
   events: ItemEvent[];
   pickup?: Pickup;
-  sale?: { price: number; platform: Platform; buyer?: string; ts: string };
+  sale?: { price: number; platform: Platform; buyer?: string; ts: string; paid?: boolean };
+  /** Stripe link sent ("open"/"pending") or settled ("paid"): online, or cash at pickup ("Mark as picked up & paid"). */
+  payment?: {
+    status: "paid" | "pending" | "open"; method?: string; paidAt?: string; url?: string;
+    amount?: number; paidAmount?: number; provider?: string; test?: boolean;
+  };
+  soldAt?: string;
   recap?: { days?: number; messages?: number; counters?: number };
   now?: string;
   stats?: { views?: number; saves?: number; chats?: number };

@@ -44,6 +44,7 @@ function load(): Store {
     if (raw) s = { liveAt: {}, ...JSON.parse(raw) };
   } catch { /* private mode */ }
   if (!s.seeded) seed(s);
+  else if (!s.items["demo-chair"]) seedPending(s, Date.now()); // stores seeded before the pending demo existed
   memStore = s;
   return s;
 }
@@ -333,7 +334,41 @@ function seed(s: Store) {
     ],
     now: "Waiting for Fleur to reply",
   };
+  seedPending(s, now);
   s.seeded = true;
+}
+
+/** A deal waiting for the pickup: stays "Deal done" until the owner marks it picked up & paid. */
+function seedPending(s: Store, now: number) {
+  const start = nextSaturday(now, 11, 0);
+  s.items["demo-chair"] = {
+    id: "demo-chair", status: "pickup_scheduled", createdAt: iso(now - 2 * DAY), goal: "week", floorPrice: 60,
+    photos: ["/demo/chair.svg"], title: "Vintage rattan armchair", askPrice: 95,
+    category: "Chairs", condition: "Gebruikt", pickupCity: "Amsterdam",
+    listings: [{ platform: "marktplaats", status: "removed", price: 95 }],
+    conversations: [{
+      id: "c-chair", platform: "marktplaats", buyer: "Daan", state: "pickup_scheduled", lastOffer: 85,
+      messages: [
+        { from: "buyer", text: "Hoi! Is de stoel nog beschikbaar? 75?", ts: iso(now - 1.2 * DAY), offer: 75 },
+        { from: "agent", text: "Hoi Daan, ja hoor. 75 is te laag, voor €88 is hij van jou.", ts: iso(now - 1.19 * DAY), offer: 88 },
+        { from: "buyer", text: "85 en ik haal hem zaterdag op?", ts: iso(now - 1.1 * DAY), offer: 85 },
+        { from: "agent", text: "Deal voor €85! Zaterdag 11:00 of 15:00, wat past?", ts: iso(now - 1.09 * DAY), offer: 85 },
+        { from: "buyer", text: "11:00 is prima", ts: iso(now - 1 * DAY) },
+        { from: "agent", text: "Top, zaterdag 11:00 staat genoteerd. Adres: Linnaeusstraat 12, Amsterdam. Tot dan!", ts: iso(now - 0.99 * DAY) },
+      ],
+    }],
+    events: [
+      { ts: iso(now - 2 * DAY), type: "notify", text: "Live on Marktplaats" },
+      { ts: iso(now - 1.2 * DAY), type: "step", text: "New message from Daan: offers €75" },
+      { ts: iso(now - 1.09 * DAY), type: "decision", text: "€85 is above your €60 minimum → deal", meta: { price: 85 } },
+      { ts: iso(now - 0.99 * DAY), type: "decision", text: "Sold for €85 to Daan. Pickup Sat 11:00, added to your calendar" },
+      { ts: iso(now - 0.98 * DAY), type: "notify", text: "Removed from every platform" },
+    ],
+    pickup: { start: iso(start), end: iso(start + 30 * 60000), buyer: "Daan", platform: "marktplaats", label: "Sat 11:00", addressShared: true },
+    sale: { price: 85, platform: "marktplaats", buyer: "Daan", ts: iso(now - 1.09 * DAY) },
+    recap: { days: 1, messages: 6, counters: 1 },
+    now: "Pickup Sat 11:00 with Daan",
+  };
 }
 
 // ---------------------------------------------------------------- API
@@ -396,8 +431,38 @@ export async function approve(body: ApproveRequest): Promise<void> {
     [15500, "tomScam"], [18000, "agentDeclineTom"],
     [22000, "milaMeet"], [25000, "agentDeal"],
     [30000, "milaPickup"], [32500, "pickupScheduled"],
-    [37000, "remove"], [40000, "sold"],
+    [37000, "remove"],
+    // No automatic "sold": it stays "Deal done" until the owner taps "Mark as picked up & paid" (done()).
   ])];
+  save(s);
+}
+
+/** "Mark as picked up & paid" (cash at pickup), like POST /tba/done: a deal becomes sold. Idempotent. */
+export async function done(itemId: string): Promise<void> {
+  await delay(400);
+  const s = load();
+  tick(s, itemId);
+  const item = s.items[itemId];
+  if (!item) throw new Error("Unknown item");
+  if (item.status === "sold") return;
+  if (!["deal", "pickup_scheduled", "negotiating"].includes(item.status)) throw new Error(`Can't mark this item as sold yet (${item.status})`);
+  const now = Date.now();
+  // The agent's remaining steps (delist, …) are done now; drop any still queued.
+  s.queues[itemId] = [];
+  const conv = item.conversations.find((c) => c.state === "pickup_scheduled" || c.state === "deal");
+  item.sale ??= {
+    price: conv?.lastOffer ?? item.askPrice ?? 0, platform: "marktplaats",
+    buyer: item.pickup?.buyer ?? conv?.buyer, ts: iso(now),
+  };
+  item.sale.paid = true;
+  if (item.payment?.status !== "paid") item.payment = { ...item.payment, status: "paid", method: "cash", paidAt: iso(now) };
+  item.soldAt ??= iso(now);
+  item.status = "sold";
+  const wasLive = item.listings.some((l) => l.status === "live");
+  for (const l of item.listings) l.status = "removed";
+  ev(item, now, "notify", "Marked as picked up & paid");
+  if (wasLive) ev(item, now + 1, "notify", "Removed from every platform");
+  item.now = `Sold to ${item.sale.buyer ?? "the buyer"} for €${item.sale.price}`;
   save(s);
 }
 
