@@ -47,19 +47,17 @@ export default function ItemPage() {
   const [patch, setPatch] = useState<{ from: Status; data: Partial<Item> } | null>(null);
   const item = server && patch && server.status === patch.from ? { ...server, ...patch.data } : server;
 
-  // Keep going-live on screen briefly after the ad went live.
+  // Keep going-live on screen briefly after the ad went live. Derived during render (not in an effect) so
+  // the moment never unmounts between "publishing" and "live" and plays exactly once.
   const [holdGoing, setHoldGoing] = useState(false);
-  const prev = useRef<Status | null>(null);
+  const liveNow = server ? screenFor(server.status) === "product" : false;
+  const publishingNow = server?.status === "publishing" || (patch?.data.status === "publishing" && server?.status === patch.from);
+  if (publishingNow && !holdGoing) setHoldGoing(true);
   useEffect(() => {
-    const s = server?.status ?? null;
-    if (prev.current === "publishing" && s && s !== "publishing" && screenFor(s) === "product") {
-      setHoldGoing(true);
-      const t = setTimeout(() => setHoldGoing(false), 3500);
-      prev.current = s;
-      return () => clearTimeout(t);
-    }
-    prev.current = s;
-  }, [server?.status]);
+    if (!holdGoing || !liveNow) return;
+    const t = setTimeout(() => setHoldGoing(false), 3500);
+    return () => clearTimeout(t);
+  }, [holdGoing, liveNow]);
 
   // Closed ads: a pending deal opens on the sold moment (like the prototype's home tile); a finished sale
   // opens on the product page once its poof moment has played. "See the ad and all chats" / back switch views.
@@ -86,8 +84,8 @@ export default function ItemPage() {
 
   if (item && (screen === "product" || screen === "going")) {
     return (
-      <main key={screen} className="pv2 flex flex-1 flex-col animate-fade">
-        <Product item={item} going={screen === "going" || holdGoing} onMarkDone={done} />
+      <main key="product" className="pv2 flex flex-1 flex-col animate-fade">
+        <Product item={item} going={screen === "going" || (holdGoing && screen === "product")} onSkipGoing={() => setHoldGoing(false)} onMarkDone={done} />
       </main>
     );
   }
@@ -139,7 +137,7 @@ export default function ItemPage() {
 
 // ---------------------------------------------------------------- product page (prototype: renderProduct)
 
-function Product({ item, going, onMarkDone }: { item: Item; going: boolean; onMarkDone: () => Promise<void> }) {
+function Product({ item, going, onSkipGoing, onMarkDone }: { item: Item; going: boolean; onSkipGoing: () => void; onMarkDone: () => Promise<void> }) {
   const stage = dealStage(item);
   const closed = stage != null;
   const sold = stage === "sold";
@@ -179,7 +177,7 @@ function Product({ item, going, onMarkDone }: { item: Item; going: boolean; onMa
         </div>
 
         {going ? (
-          <div style={{ marginTop: 18 }}><GoingLive item={item} /></div>
+          <div style={{ marginTop: 18 }}><GoingLive item={item} onDone={item.status === "publishing" ? undefined : onSkipGoing} /></div>
         ) : closed ? (
           <SoldCard item={item} sold={sold} onMarkDone={onMarkDone} />
         ) : (

@@ -185,6 +185,7 @@ body {
    Foundations, copied verbatim from design/visual/prototype.html (the UI source of truth).
    Tokens, base, and the shared classes every screen uses. Screen-specific CSS goes in
    each screen's own marked block at the end of this file.
+   ===================================================================================== */
 :root{
   --lime:#D7F57A; --ink:#0F2A18; --moss:#4A5F50; --limetint:#EEFBC8;
   --page:#F4F6F4; --surface:#FFFFFF; --line:#E1E8E3; --alert:#D93A3F;
