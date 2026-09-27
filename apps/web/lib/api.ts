@@ -5,6 +5,8 @@ import * as mock from "./mock";
 export const MOCK = process.env.NEXT_PUBLIC_MOCK === "1";
 /** Item page poll interval. The mock polls faster so the agent steps animate smoothly on video. */
 export const POLL_MS = MOCK ? 800 : 2500;
+/** While intake is recognising or pricing, the answer lands within seconds: poll faster so it shows right away. */
+export const POLL_FAST_MS = 700;
 
 // Same-origin proxy (app/api/tba/[...path]) forwards to ${N8N_WEBHOOK_BASE}/tba/*.
 const BASE = "/api/tba";

@@ -216,6 +216,35 @@ export const llm = (env, { system, content, tool, maxTokens = 1500, vision = fal
   { ...cred("llmHttp", "httpHeaderAuth"), retryOnFail: true, maxTries: 5, waitBetweenTries: 5000 }, // rides out Groq free-tier per-minute limits
 ];
 
+// The same LLM request sent to several OpenRouter providers at once; the first valid answer wins (a Code node, because
+// n8n runs branches one after another). Same output shape as llm(), or { error } when all fail. Vision latency on one
+// provider swung 3-6 s for the same photo; racing takes the fast one. Costs one call per provider (~€0.002 each).
+// Code nodes can't use n8n credentials, so the key is put in at deploy time (like the Stripe key; n8n/workflows is gitignored).
+// Without OpenRouter this is plain llm().
+export const RACE_PROVIDERS = ["alibaba", "deepinfra", "parasail"];
+export const llmRace = (env, opts, providers = RACE_PROVIDERS) => {
+  if (!/openrouter.ai/.test(env.LLM_BASE_URL)) return llm(env, opts);
+  const { system, content, tool, maxTokens = 1500, vision = false } = opts;
+  const model = vision ? env.LLM_VISION_MODEL || env.LLM_MODEL : env.LLM_MODEL;
+  return code(`
+const body = { model: ${JSON.stringify(model)}, max_tokens: ${maxTokens}, temperature: 0.3,
+  messages: [{ role: 'system', content: ${system} + ${JSON.stringify(" Respond with JSON only: " + tool.description + ".")} }, { role: 'user', content: ${content} }],
+  response_format: { type: 'json_schema', json_schema: ${JSON.stringify({ name: tool.name, schema: tool.input_schema })} } };
+const t0 = Date.now();
+const ask = (p) => this.helpers.httpRequest({ method: 'POST', url: ${JSON.stringify(env.LLM_BASE_URL + "/chat/completions")}, json: true, timeout: 45000,
+  headers: { Authorization: 'Bearer ' + ${JSON.stringify(env.LLM_API_KEY)} },
+  body: { ...body, provider: { order: [p], allow_fallbacks: false } } }).then((r) => {
+    const c = String(r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content || '');
+    JSON.parse(c.slice(c.indexOf('{'), c.lastIndexOf('}') + 1)); // only a usable answer wins the race
+    return { ...r, raceMs: Date.now() - t0, raceWinner: p };
+  });
+try {
+  return [{ json: await Promise.any(${JSON.stringify(providers)}.map(ask)) }];
+} catch (e) {
+  return [{ json: { error: 'all providers failed', raceMs: Date.now() - t0, details: (e.errors || [e]).map((x) => String((x && x.message) || x).slice(0, 200)) } }];
+}`);
+};
+
 // Our Marktplaats Apify actor, run synchronously; returns one n8n item per dataset item.
 // { local: true } (actions on the user's Marktplaats session): with LOCAL_RUNNER_URL set, run on the owner's
 // laptop instead (actors/marktplaats/local-runner.mjs); Marktplaats hides ads posted from the cloud server.
