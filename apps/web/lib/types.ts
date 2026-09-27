@@ -49,6 +49,8 @@ export type Item = {
   delivery?: "pickup"; pickupCity?: string;
   title?: string; description?: string; category?: string; condition?: string;
   askPrice?: number; priceRange?: { low: number; mid: number; high: number };
+  /** Intake saved the recognition first; the market picture (priceRange, comps) is still being fetched. */
+  pricing?: boolean;
   pricePlan?: { price: number; from: string }[];
   comps?: Comp[];
   listings: Listing[];

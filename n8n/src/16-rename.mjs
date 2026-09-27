@@ -1,4 +1,4 @@
-import { Workflow, webhook, respond, code, tableGet, tableUpdate, actor, llm, ARGS } from "../lib.mjs";
+import { Workflow, webhook, respond, code, tableGet, tableUpdate, llm, ARGS, mpSearch, MP_COMPS, FAKES } from "../lib.mjs";
 
 // W1a · Rename (screen 02 "Fix it"): recognition got the item wrong, the owner typed what it really is.
 // Re-run the market check for the corrected name so the price range, comparables and later the ad match the
@@ -20,19 +20,21 @@ if (name.length < 2) throw new Error('Name too short');
 return [{ json: { itemId: row.itemId, name, item: it } }];`));
   w.chain("Corrected name", "Get item", "Check");
 
-  w.add("Comparables (Apify)", actor(env, `={{ JSON.stringify({ action: 'comps', query: $json.name, fallbackQuery: $json.item.searchQueryBroad || $json.item.category || '', limit: 40 }) }}`, { timeout: 120, soft: true }), { alwaysOutputData: true });
+  w.add("Search Marktplaats", mpSearch("={{ $json.name }}"), { executeOnce: true });
+  w.add("Comparables", code(MP_COMPS));
   w.add("Same product? (LLM)", llm(env, {
-    system: JSON.stringify("You are pricing a second-hand item. The owner typed exactly what they are selling: match THAT, literally. Select only listings for the same product in the same form: if they sell a part or accessory (e.g. only a charging case), exclude complete sets; if they sell a complete product, exclude parts and accessories. Also exclude bundles, children's versions and different/luxury models."),
+    system: JSON.stringify("You are pricing a second-hand item. The owner typed exactly what they are selling: match THAT, literally. Select only listings for the same product in the same form: if they sell a part or accessory (e.g. only a charging case), exclude complete sets; if they sell a complete product, exclude parts and accessories. Also exclude bundles, children's versions and different/luxury models. " + FAKES),
     content: "JSON.stringify({ item: { name: $('Check').first().json.name }, candidates: $input.all().map((c, i) => ({ i, title: c.json.title, price: c.json.price })).filter(c => typeof c.price === 'number').slice(0, 40) })",
     tool: { name: "select_matches", description: "Indexes of candidates that are the same product",
       input_schema: { type: "object", properties: { matches: { type: "array", items: { type: "integer" } }, note: { type: "string" } }, required: ["matches"] } },
-    maxTokens: 400,
+    maxTokens: 2000,
+    reasoning: "low",
   }), { executeOnce: true, onError: "continueRegularOutput" });
 
   // Same market math as intake (10-intake "Market"), on the corrected product.
   w.add("Market", code(`
 const c = $('Check').first().json;
-const all = $('Comparables (Apify)').all().map(i => i.json).filter(x => x && x.title);
+const all = $('Comparables').all().map(i => i.json).filter(x => x && x.title);
 let picked = null;
 try { picked = ${ARGS.replaceAll("$json", "$input.first().json")}.matches; } catch (e) { picked = null; }
 const matched = Array.isArray(picked) && picked.length >= 3 ? picked.map(i => all[i]).filter(Boolean) : all;
@@ -45,13 +47,13 @@ const priceRange = clean.length >= 3 ? { low: q(clean, 0.25), mid: q(clean, 0.5)
 const it = c.item;
 const wrongName = it.recognition?.name || it.name;
 Object.assign(it, {
-  name: c.name, searchQuery: c.name, renamedFrom: wrongName,
+  name: c.name, searchQuery: c.name, renamedFrom: wrongName, pricing: false,
   recognition: { ...(it.recognition || {}), name: c.name, brand: '', category: it.category },
   brand: '', priceRange, compsCount: clean.length, compPrices: clean,
   comps: comps.filter(x => clean.includes(x.price)).slice(0, 12).map(x => ({ title: x.title, price: x.price, url: x.url, image: x.image, platform: 'marktplaats' })),
 });
 return [{ json: { itemId: c.itemId, data: JSON.stringify(it), name: c.name, wrongName, priceRange, compsCount: clean.length, comps: it.comps } }];`));
-  w.chain("Check", "Comparables (Apify)", "Same product? (LLM)", "Market");
+  w.chain("Check", "Search Marktplaats", "Comparables", "Same product? (LLM)", "Market");
   w.add("Save market", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { data: "={{ $json.data }}" }));
   w.add("Respond", respond("={{ { ok: true, name: $('Market').first().json.name, priceRange: $('Market').first().json.priceRange, compsCount: $('Market').first().json.compsCount, comps: $('Market').first().json.comps } }}"));
   w.chain("Market", "Save market", "Respond");
