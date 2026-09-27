@@ -877,3 +877,8 @@ body {
 .sf .histo .marker{padding:0;border-radius:0;display:block}
 .sf .viewlink{font-size:12.5px;font-weight:700;color:var(--ink);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;white-space:nowrap;flex:none}
 .sf .gplat .ring{box-shadow:none}
+
+/* === platforms coming soon (eBay, Vinted, Facebook: applied for developer access); kept quiet on purpose === */
+.soon-strip{display:flex;align-items:center;gap:7px;margin:0;font-size:12px;line-height:1.3;color:var(--moss);opacity:.8}
+.soon-logos{display:inline-flex;gap:3px}
+.soon-logos > span{filter:grayscale(1);opacity:.55}

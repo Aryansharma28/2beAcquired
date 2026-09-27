@@ -17,7 +17,7 @@ import { NeedsConnection } from "@/components/NeedsConnection";
 import { Looking } from "@/components/Setup";
 import { HANDOVER_DONE_LABEL, Sold, soldRevealed } from "@/components/Sold";
 import { PoofAtWork, Wizard } from "@/components/Wizard";
-import { BackButton, Button, Eyebrow, PriceTag } from "@/components/ui";
+import { BackButton, Button, Eyebrow, PriceTag, SoonStrip } from "@/components/ui";
 
 type Screen = "looking" | "wizard" | "writing" | "ad" | "connect" | "going" | "product" | "sold" | "error";
 
@@ -222,6 +222,7 @@ function Product({ item, going, onSkipGoing, onMarkDone }: { item: Item; going: 
                 </li>
               ))}
             </ul>
+            {!allRemoved && <SoonStrip style={{ marginTop: 10 }} />}
           </div>
         )}
       </div>
