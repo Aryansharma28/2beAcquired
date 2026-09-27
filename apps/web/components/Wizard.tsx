@@ -1,27 +1,132 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { getAccount } from "@/lib/account";
 import { details, rename } from "@/lib/api";
-import { CONDITIONS, CONDITION_NL, GOALS, attrText, chipFor, eur, type ConditionChip } from "@/lib/format";
+import { CONDITIONS, CONDITION_NL, attrText, chipFor, eur, type ConditionChip } from "@/lib/format";
 import type { Goal, Item } from "@/lib/types";
-import { BottomAction, Button, Eyebrow, ICON_BTN, Segmented, Soon, cx } from "./ui";
+import { cx } from "./ui";
+
+/* ------------------------------------------------------------------ sell-flow primitives
+ * Markup and class names follow design/visual/prototype.html (styles: the ".sf" block at the
+ * end of globals.css). Shared by the sell-flow screens: /new, Wizard, AdReview, NeedsConnection, GoingLive. */
 
 const round5 = (n: number) => Math.max(5, Math.round(n / 5) * 5);
+const STEP = 5;
 
-/** 02–05: a local wizard over the same item. Only the last button calls the API. */
+type IconName = "close" | "back" | "check" | "edit" | "plus" | "minus" | "gallery" | "flash" | "pin" | "box" | "swap";
+
+/** Prototype icon sprite (the <symbol id="i-…"> set), inline. */
+export function Ic({ n, className }: { n: IconName; className?: string }) {
+  const body: Record<IconName, ReactNode> = {
+    close: <path d="M6 6l12 12M18 6L6 18" />,
+    back: <path d="M15 5l-7 7 7 7" />,
+    check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
+    edit: <path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" />,
+    plus: <path d="M12 5v14M5 12h14" />,
+    minus: <path d="M5 12h14" />,
+    gallery: <><rect x="3.5" y="4.5" width="17" height="15" rx="2" /><circle cx="9" cy="10" r="1.8" /><path d="M4 18l5-5 4 4 3-3 4 4" /></>,
+    flash: <path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z" />,
+    pin: <><path d="M12 21s-6-5.5-6-11a6 6 0 1 1 12 0c0 5.5-6 11-6 11z" /><circle cx="12" cy="10" r="2.2" /></>,
+    box: <><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5v-9z" /><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9" /></>,
+    swap: <path d="M7 7h11l-3-3M17 17H6l3 3" />,
+  };
+  return <svg className={cx("icon", className)} viewBox="0 0 24 24" aria-hidden>{body[n]}</svg>;
+}
+
+export function CtaArrow() {
+  return <svg className="icon cta-ic" viewBox="0 0 24 24" aria-hidden><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>;
+}
+
+/** Sticker photo (prototype `sticker()` / `stickerSized()`), from the owner's own photo. */
+export function Sticker({ src, tilt, size }: { src?: string; tilt: number; size?: number }) {
+  const style = { "--tilt": `${tilt}deg`, ...(size ? { width: size, height: size } : {}) } as CSSProperties;
+  return (
+    <span className="ph cutout sticker photo" style={style}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {src && <img src={src} alt="" />}
+    </span>
+  );
+}
+
+/** Marktplaats app icon on a white tile (prototype `platIcon('marktplaats', size)`). */
+export function MpIcon({ size = 34 }: { size?: number }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: size, height: size, borderRadius: Math.round(size * 0.22), background: "#fff", border: "1px solid var(--line)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none", boxSizing: "border-box",
+        padding: Math.round(size * 0.15), overflow: "hidden",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/logos/marktplaats.png" alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+    </span>
+  );
+}
+
+/** Full-screen phone layer the sell flow lives in (prototype #phone / .sell-sheet). */
+export function SfScreen({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cx("sf sf-screen", className)}>{children}</div>;
+}
+
+/** Step bar: grows from 0 to its width on every new screen, like the prototype. */
+function WizBar({ w }: { w: number }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const r = requestAnimationFrame(() => setWidth(w));
+    return () => cancelAnimationFrame(r);
+  }, [w]);
+  return <div className="wizbar" aria-hidden><i style={{ width: `${width}%` }} /></div>;
+}
+
+/** The owner's goal price from the wizard, applied as the ask price when they approve the ad. */
+export const goalPriceKey = (itemId: string) => `poof:goalPrice:${itemId}`;
+
+/* ------------------------------------------------------------------ wizard */
+
+type Speed = "fast" | "best";
+const SPEED_INFO: Record<Speed, { label: string; line: string; goal: Goal }> = {
+  fast: { label: "Sell fast", line: "Gone in about 3 days, for a slightly lower price", goal: "week" },
+  best: { label: "Best price", line: "Gone in 2 weeks or more, holding out for the best price", goal: "no_rush" },
+};
+const COND_HELP: Record<ConditionChip, string> = {
+  New: "Never used, still in the box or with tags.",
+  "Like new": "Used a few times, no visible marks.",
+  Good: "Normal signs of use, everything works.",
+  Used: "Clear marks or wear, still works.",
+};
+
+type Market = Pick<Item, "priceRange" | "compsCount" | "comps">;
+
+function goalFor(speed: Speed, m: Market, floor: number) {
+  const r = m.priceRange;
+  const g = speed === "fast" ? round5(r?.mid ?? floor + 10) : round5(r?.high ?? floor + 20);
+  return Math.max(floor + STEP, g);
+}
+
+/** Is this it? → minimum + goal → handover. Only "Create my ad" calls the API (plus rename on "Fix it"). */
 export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch: Partial<Item>) => void }) {
   const rec = item.recognition ?? {};
   const [step, setStep] = useState(0);
+  const [dir, setDir] = useState<"fwd" | "back" | null>(null);
   const [cover, setCover] = useState(item.coverIndex ?? 0);
+  const [coverTouched, setCoverTouched] = useState(false);
   const [name, setName] = useState(rec.name ?? item.title ?? "");
-  const [fixing, setFixing] = useState(!rec.name && !item.title);
+  const [fixOpen, setFixOpen] = useState(!rec.name && !item.title);
   const [condition, setCondition] = useState<ConditionChip>(chipFor(rec.condition ?? item.condition));
   const [attrs, setAttrs] = useState<string[]>((rec.attributes ?? []).map(attrText).filter(Boolean));
-  const [goal, setGoal] = useState<Goal>("week");
+  const [editingAttr, setEditingAttr] = useState<number | null>(null);
+  // Market picture: from intake, or re-checked after the owner corrected the name.
+  const [market, setMarket] = useState<Market>({ priceRange: item.priceRange, compsCount: item.compsCount, comps: item.comps });
+  const [speed, setSpeed] = useState<Speed>("best");
   const [floor, setFloor] = useState(() => round5(item.priceRange?.low ?? 70));
+  const [goalPrice, setGoalPrice] = useState(() => goalFor("best", item, round5(item.priceRange?.low ?? 70)));
   const [city, setCity] = useState(item.pickupCity || "");
+  const [cityEdit, setCityEdit] = useState(false);
+  const [pulse, setPulse] = useState(0);
   // Default the pickup city to the owner's profile (the ad's location), not a fixed city.
   useEffect(() => {
     if (city) return;
@@ -30,27 +135,44 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
   }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Market picture: from intake, or re-checked after the owner corrected the name.
-  const [market, setMarket] = useState<Pick<Item, "priceRange" | "compsCount" | "comps">>({});
   const [pricedName, setPricedName] = useState((rec.name ?? item.title ?? "").trim());
   const [repricing, setRepricing] = useState(false);
-  const view: Item = { ...item, ...market };
 
-  const next = () => { setStep((s) => s + 1); window.scrollTo({ top: 0 }); };
+  const photos = item.photos;
+  const coverSrc = photos[cover] ?? photos[0];
+  const shortName = name.trim() || "Your item";
 
-  /** Step 02 → 03. If the name was corrected, price the corrected product first. */
+  const go = (d: 1 | -1) => { setDir(d > 0 ? "fwd" : "back"); setError(null); setStep((s) => s + d); };
+  const bump = () => setPulse((p) => p + 1);
+
+  function setMin(v: number) {
+    const m = Math.min(995, Math.max(5, v));
+    setFloor(m);
+    if (goalPrice <= m) setGoalPrice(m + STEP);
+    bump();
+  }
+  function setGoal(v: number) { setGoalPrice(Math.min(1999, Math.max(floor + STEP, v))); bump(); }
+  function pickSpeed(s: Speed) { setSpeed(s); setGoalPrice(goalFor(s, market, floor)); bump(); }
+
+  /** Is this it? → next. If the name was corrected, price the corrected product first. */
   async function confirmName() {
     const n = name.trim();
     if (!n) return;
-    if (n.toLowerCase() === pricedName.toLowerCase()) return next();
+    if (n.toLowerCase() === pricedName.toLowerCase()) return go(1);
     setRepricing(true);
     setError(null);
     try {
       const r = await rename(item.id, n);
-      setMarket({ priceRange: r.priceRange ?? undefined, compsCount: r.compsCount, comps: r.comps });
-      if (r.priceRange?.low) setFloor(round5(r.priceRange.low));
+      const m: Market = { priceRange: r.priceRange ?? undefined, compsCount: r.compsCount, comps: r.comps };
+      setMarket(m);
+      if (r.priceRange?.low) {
+        const f = round5(r.priceRange.low);
+        setFloor(f);
+        setGoalPrice(goalFor(speed, m, f));
+      }
       setPricedName(n);
-      next();
+      setFixOpen(false);
+      go(1);
     } catch (e) {
       setError(`Couldn't check prices for "${n}": ${(e as Error).message}. Try again, or set the minimum yourself.`);
       setPricedName(n); // don't block: a second tap continues with the old market data
@@ -62,6 +184,7 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
   async function submit() {
     setBusy(true);
     setError(null);
+    const goal = SPEED_INFO[speed].goal;
     const body = {
       itemId: item.id, name: name.trim() || "Item", condition: CONDITION_NL[condition], goal, floorPrice: floor,
       delivery: "pickup" as const, pickupCity: city.trim() || "Amsterdam",
@@ -69,6 +192,7 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
     };
     try {
       await details(body);
+      try { sessionStorage.setItem(goalPriceKey(item.id), String(goalPrice)); } catch { /* private mode */ }
       onSubmitted({ status: "writing", goal, floorPrice: floor, coverIndex: cover, pickupCity: body.pickupCity, recognition: { ...rec, name: body.name } });
     } catch (e) {
       setError(`Couldn't create the ad: ${(e as Error).message}`);
@@ -76,291 +200,228 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
     }
   }
 
+  const nameChanged = name.trim().toLowerCase() !== pricedName.toLowerCase();
+
   return (
-    <div className="pb-36">
-      {/* Progress */}
-      <div className="flex items-center gap-2.5 pb-3">
-        {step > 0 ? (
-          <button onClick={() => setStep((s) => s - 1)} aria-label="Back" className={ICON_BTN}>
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-          </button>
-        ) : (
-          <Link href="/" aria-label="Close" className={ICON_BTN}>
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-          </Link>
-        )}
-        <span className="h-1 flex-1 overflow-hidden rounded-full bg-line">
-          <span className="block h-full rounded-full bg-ink transition-[width] duration-500" style={{ width: `${((step + 1) / 4) * 100}%` }} />
-        </span>
-        <span className="whitespace-nowrap text-[13px] text-moss tabular">{step + 1} of 4</span>
-      </div>
-
-      {step > 0 && (
-        <div className="mb-4 mt-1 flex items-center gap-2 rounded-[14px] bg-card px-2.5 py-1.5 shadow-soft">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {item.photos[cover] && <img src={item.photos[cover]} alt="" className="size-7 shrink-0 rounded-[8px] object-cover" />}
-          <span className="flex min-w-0 items-baseline gap-1.5 text-[13px]">
-            <b className="truncate font-bold">{name.trim() || "Your item"}</b>
-            {step > 1 && <span className="whitespace-nowrap text-moss">· {GOALS.find((g) => g.value === goal)?.label}</span>}
-          </span>
+    <SfScreen>
+      <div key={step} className={cx("layer", dir === "fwd" && "in-fwd", dir === "back" && "in-back")}>
+        <div className="top2">
+          {step === 0 ? (
+            <Link href="/" className="icon-btn" aria-label="Back"><Ic n="back" /></Link>
+          ) : (
+            <button className="icon-btn" type="button" aria-label="Back" onClick={() => go(-1)}><Ic n="back" /></button>
+          )}
+          <WizBar w={[33, 66, 100][step]} />
+          <span className="step-count">{step + 1} of 3</span>
         </div>
-      )}
 
-      <div key={step} className="animate-rise">
         {step === 0 && (
-          <IsThisIt
-            item={item} cover={cover} setCover={setCover} name={name} setName={setName}
-            fixing={fixing} setFixing={setFixing} condition={condition} setCondition={setCondition}
-            attrs={attrs} setAttrs={setAttrs}
-          />
-        )}
-        {step === 1 && <WhenGone goal={goal} setGoal={setGoal} />}
-        {step === 2 && <Minimum item={view} floor={floor} setFloor={setFloor} />}
-        {step === 3 && <Delivery city={city} setCity={setCity} />}
-      </div>
-
-      {error && <p className="mt-4 rounded-[20px] bg-alert-soft p-4 text-[14px] text-alert">{error}</p>}
-
-      <BottomAction>
-        {step === 0 && (
-          <div className="flex flex-col items-stretch gap-1">
-            <Button onClick={confirmName} disabled={!name.trim() || repricing} className="w-full">
-              {repricing ? <><span className="size-5 animate-spin rounded-full border-[3px] border-lime/30 border-t-lime" /> Checking prices…</>
-                : name.trim().toLowerCase() !== pricedName.toLowerCase() ? <>Use this name <Arrow /></> : <>Yes, that&apos;s it <Arrow /></>}
-            </Button>
-            {/* Fixed-height slot so the main button never moves when this link appears (a moving button loses the tap). */}
-            <div className="flex h-11 items-center justify-center">
-              {!fixing && !repricing && <button onClick={() => setFixing(true)} className="min-h-11 px-3 text-[15px] font-semibold text-ink underline underline-offset-4">Not right? Fix it</button>}
+          <>
+            <div className="body2">
+              <h1 className="q">Is this it?</h1>
+              <p className="sub">Poof recognised it from your photos.</p>
+              <button className="cover" type="button" aria-label="Cover photo">
+                <span className="ph">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {coverSrc && <img src={coverSrc} alt={`${shortName}, cover photo`} />}
+                  <span className="ph-note">{coverTouched ? "Cover" : "Picked by Poof"}</span>
+                </span>
+              </button>
+              {photos.length > 1 && (
+                <div className="thumbs">
+                  {photos.map((p, i) => (
+                    <button key={i} type="button" aria-pressed={cover === i} aria-label={`Photo ${i + 1}`} onClick={() => { setCover(i); setCoverTouched(true); }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <span className="ph"><img src={p} alt="" /></span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="recog">
+                <p className="eyebrow">What it is</p>
+                <h2>{name.trim() || "Not sure yet"}</h2>
+                <p className="muted">{[rec.category ?? item.category?.split(" › ").at(-1), condition].filter(Boolean).join(" · ")}</p>
+              </div>
+              {fixOpen && (
+                <div className="fixsheet" id="fixList">
+                  <p className="sec" style={{ margin: "0 0 8px" }}>What is it?</p>
+                  <div className="field">
+                    <label htmlFor="fixName">Name</label>
+                    <input
+                      id="fixName" type="text" autoFocus value={name} placeholder="e.g. IKEA POÄNG"
+                      onChange={(e) => setName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && name.trim() && confirmName()}
+                    />
+                  </div>
+                </div>
+              )}
+              <p className="sec">Condition</p>
+              <div className="chips" role="radiogroup" aria-label="Condition">
+                {CONDITIONS.map((c) => (
+                  <label key={c} className="rchip">
+                    <input type="radio" name="cond" checked={condition === c} onChange={() => setCondition(c)} />
+                    <span>{c}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="helper">{COND_HELP[condition]}</p>
+              {attrs.length > 0 && (
+                <>
+                  <p className="sec">Details</p>
+                  <dl className="dl card divided" style={{ boxShadow: "var(--shadow-soft)" }}>
+                    {attrs.map((a, i) => {
+                      const k = a.indexOf(":");
+                      const label = k < 0 ? "Detail" : a.slice(0, k).trim();
+                      const value = k < 0 ? a : a.slice(k + 1).trim();
+                      const set = (v: string) => setAttrs(attrs.map((x, j) => (j === i ? (k < 0 ? v : `${label}: ${v}`) : x)));
+                      return (
+                        <div key={i}>
+                          <dt>{label}</dt>
+                          <dd>
+                            {editingAttr === i ? (
+                              <input autoFocus value={value} aria-label={label} onChange={(e) => set(e.target.value)}
+                                onBlur={() => setEditingAttr(null)} onKeyDown={(e) => e.key === "Enter" && setEditingAttr(null)} />
+                            ) : value}
+                          </dd>
+                          <button className="icon-btn plain" type="button" aria-label={`Edit ${label.toLowerCase()}`} onClick={() => setEditingAttr(i)}><Ic n="edit" /></button>
+                        </div>
+                      );
+                    })}
+                  </dl>
+                </>
+              )}
+              {error && <p className="sf-error">{error}</p>}
             </div>
-          </div>
+            <div className="foot2">
+              <button className="btn" type="button" onClick={confirmName} disabled={!name.trim() || repricing}>
+                {repricing ? <><span className="sf-spin" /> Checking prices…</> : nameChanged ? <>Use this name<CtaArrow /></> : <>Yes, that&apos;s it<CtaArrow /></>}
+              </button>
+              <button className="btn ghost" type="button" onClick={() => setFixOpen((f) => !f)}>{fixOpen ? "Close" : "Fix it"}</button>
+            </div>
+          </>
         )}
-        {(step === 1 || step === 2) && <Button onClick={next} className="w-full">Next</Button>}
-        {step === 3 && (
-          <Button onClick={submit} disabled={busy} className="w-full">
-            {busy ? <><span className="size-5 animate-spin rounded-full border-[3px] border-lime/30 border-t-lime" /> Creating…</> : <>Create my ad <Arrow /></>}
-          </Button>
+
+        {step === 1 && (
+          <>
+            <div className="body2">
+              <div className="context"><Sticker src={coverSrc} tilt={2} /><div className="info"><b>{shortName}</b><span>· {SPEED_INFO[speed].label}</span></div></div>
+              <h1 className="q">What&apos;s your minimum?</h1>
+              <p className="sub">The lowest price you&apos;d still be happy with.</p>
+              <div className="stepper card">
+                <button className="icon-btn" type="button" onClick={() => setMin(floor - STEP)} aria-label={`Lower by ${STEP} euro`}><Ic n="minus" /></button>
+                <output key={`m${pulse}`} className={cx("price-big", pulse > 0 && "pulse")}>€{floor}</output>
+                <button className="icon-btn" type="button" onClick={() => setMin(floor + STEP)} aria-label={`Raise by ${STEP} euro`}><Ic n="plus" /></button>
+              </div>
+              <Histo market={market} min={floor} goal={goalPrice} />
+              <p className="sec">Optimise for</p>
+              <div className="goalrow card pad" style={{ boxShadow: "var(--shadow-soft)", display: "block" }}>
+                <div className="tabs" role="tablist" aria-label="Optimise for" style={{ marginBottom: 10 }}>
+                  {(["fast", "best"] as Speed[]).map((s) => (
+                    <button key={s} type="button" role="tab" aria-selected={speed === s} onClick={() => pickSpeed(s)}>{SPEED_INFO[s].label}</button>
+                  ))}
+                </div>
+                <p className="muted small" style={{ margin: "0 0 14px" }}>{SPEED_INFO[speed].line}</p>
+                <div className="row" style={{ justifyContent: "space-between" }}>
+                  <b className="lbl">Goal</b>
+                  <div className="stepper">
+                    <button className="icon-btn" type="button" onClick={() => setGoal(goalPrice - STEP)} aria-label={`Lower goal by ${STEP} euro`}><Ic n="minus" /></button>
+                    <output key={`g${pulse}`} className={cx("price-big", pulse > 0 && "pulse")}>€{goalPrice}</output>
+                    <button className="icon-btn" type="button" onClick={() => setGoal(goalPrice + STEP)} aria-label={`Raise goal by ${STEP} euro`}><Ic n="plus" /></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="foot2"><button className="btn" type="button" onClick={() => go(1)}>Next</button></div>
+          </>
         )}
-      </BottomAction>
-    </div>
-  );
-}
 
-function Title({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
-  return (
-    <div className="mb-5">
-      <h2 className="text-[26px] font-extrabold leading-[1.2] tracking-[-0.02em]">{children}</h2>
-      {sub && <p className="mt-1.5 text-[15px] text-moss">{sub}</p>}
-    </div>
-  );
-}
-
-function Arrow() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-    </svg>
-  );
-}
-
-// ---------------------------------------------------------------- 02
-
-function IsThisIt(p: {
-  item: Item; cover: number; setCover: (n: number) => void;
-  name: string; setName: (s: string) => void; fixing: boolean; setFixing: (b: boolean) => void;
-  condition: ConditionChip; setCondition: (c: ConditionChip) => void;
-  attrs: string[]; setAttrs: (a: string[]) => void;
-}) {
-  const { item } = p;
-  const [editing, setEditing] = useState<number | null>(null);
-  const category = item.recognition?.category ?? item.category?.split(" › ").at(-1);
-  return (
-    <div>
-      <Title sub="Poof recognised it from your photos.">Is this it?</Title>
-
-      <div className="relative h-[230px] overflow-hidden rounded-[20px] bg-limetint">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {item.photos[p.cover] && <img key={p.cover} src={item.photos[p.cover]} alt="" className="size-full animate-fade object-cover" />}
-        <span className="absolute bottom-2 right-2 rounded-full bg-card px-2 py-0.5 text-[12px] font-semibold shadow-soft">Cover</span>
-      </div>
-      {item.photos.length > 1 && (
-        <div className="mt-2 flex gap-2">
-          {item.photos.map((ph, i) => (
-            <button
-              key={i}
-              onClick={() => p.setCover(i)}
-              aria-label={`Use photo ${i + 1} as cover`}
-              aria-pressed={i === p.cover}
-              className={cx("h-[58px] flex-1 overflow-hidden rounded-[10px] transition", i === p.cover ? "ring-2 ring-ink" : "opacity-85")}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ph} alt="" className="size-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-      {item.photos.length > 1 && <p className="mt-2 text-[13px] text-moss">Tap a photo to make it the cover.</p>}
-
-      <section className="mt-[18px]">
-        <p className="text-[13px] font-semibold text-moss">What it is</p>
-        {p.fixing ? (
-          <input
-            autoFocus
-            value={p.name}
-            onChange={(e) => p.setName(e.target.value)}
-            onBlur={() => p.name.trim() && p.setFixing(false)}
-            onKeyDown={(e) => e.key === "Enter" && p.name.trim() && p.setFixing(false)}
-            placeholder="What is it? e.g. IKEA POÄNG"
-            className="mt-1 min-h-12 w-full rounded-[12px] border-2 border-ink bg-card px-3.5 py-2 text-[20px] font-extrabold tracking-[-0.02em] outline-none"
-          />
-        ) : (
-          <button onClick={() => p.setFixing(true)} className="mt-0.5 text-left">
-            <span className="text-[24px] font-extrabold leading-tight tracking-[-0.02em]">{p.name}</span>
-            {category && <span className="mt-0.5 block text-[15px] text-moss">{category}</span>}
-          </button>
-        )}
-      </section>
-
-      <section className="mt-5">
-        <Eyebrow className="mb-2.5">Condition</Eyebrow>
-        <div className="flex flex-wrap gap-2">
-          {CONDITIONS.map((c) => (
-            <button
-              key={c}
-              onClick={() => p.setCondition(c)}
-              aria-pressed={c === p.condition}
-              className={cx("min-h-11 rounded-full px-[18px] text-[15px] font-semibold transition active:scale-95",
-                c === p.condition ? "bg-ink text-white" : "bg-card text-ink shadow-soft")}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {p.attrs.length > 0 && (
-        <section className="mt-5">
-          <Eyebrow className="mb-2.5">Details</Eyebrow>
-          <ul className="overflow-hidden rounded-[20px] bg-card shadow-soft">
-            {p.attrs.map((a, i) => (
-              <li key={i} className="border-b border-line last:border-0">
-                {editing === i ? (
-                  <input
-                    autoFocus
-                    value={a}
-                    onChange={(e) => p.setAttrs(p.attrs.map((x, j) => (j === i ? e.target.value : x)))}
-                    onBlur={() => setEditing(null)}
-                    onKeyDown={(e) => e.key === "Enter" && setEditing(null)}
-                    className="min-h-[52px] w-full bg-limetint px-4 py-3 text-[15px] outline-none"
-                  />
+        {step === 2 && (
+          <>
+            <div className="body2">
+              <div className="context"><Sticker src={coverSrc} tilt={-3} /><div className="info"><b>{shortName}</b><span>· Never below €{floor}</span></div></div>
+              <h1 className="q">How does it get to the buyer?</h1>
+              <p className="sub">Poof plans the handover with the buyer.</p>
+              <HandOpt checked icon="pin" title="Pickup" tag="Poof pick" desc="The buyer comes to you. Usual for big items.">
+                {cityEdit ? (
+                  <div className="field">
+                    <label htmlFor="pickupCity">Postcode or city</label>
+                    <input id="pickupCity" type="text" autoFocus value={city} onChange={(e) => setCity(e.target.value)}
+                      onBlur={() => city.trim() && setCityEdit(false)} onKeyDown={(e) => e.key === "Enter" && city.trim() && setCityEdit(false)} />
+                  </div>
                 ) : (
-                  <button onClick={() => setEditing(i)} className="flex min-h-[52px] w-full items-center gap-2 px-4 py-3 text-left text-[15px]">
-                    <AttrText text={a} />
-                    <Pencil />
-                  </button>
+                  <div className="row pickup-sum"><span>Pickup · {city || "…"}</span><button type="button" className="viewlink" onClick={() => setCityEdit(true)}>Change</button></div>
                 )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+              </HandOpt>
+              <HandOpt off icon="box" title="Shipping" tag="Soon" desc="You send it. Poof makes the label." />
+              <HandOpt off icon="swap" title="Both" tag="Soon" desc="The buyer chooses. More buyers, a bit more to arrange." />
+              {error && <p className="sf-error">{error}</p>}
+            </div>
+            <div className="foot2">
+              <button className="btn" type="button" onClick={submit} disabled={busy}>
+                {busy ? <><span className="sf-spin" /> Creating…</> : "Create my ad"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </SfScreen>
+  );
+}
+
+function HandOpt({ checked, off, icon, title, tag, desc, children }: {
+  checked?: boolean; off?: boolean; icon: IconName; title: string; tag?: string; desc: string; children?: ReactNode;
+}) {
+  return (
+    <div className={cx("option", checked && "checked", off && "off")}>
+      <label>
+        <input type="radio" name="hand" checked={!!checked} disabled={off} readOnly />
+        <span className="grow">
+          <b>{title}{tag && <> <span className="tag">{tag}</span></>}</b>
+          <span className="small muted">{desc}</span>
+        </span>
+        <Ic n={icon} />
+      </label>
+      {children && <div className="more">{children}</div>}
     </div>
   );
 }
 
-function AttrText({ text }: { text: string }) {
-  const i = text.indexOf(":");
-  if (i < 0) return <span className="flex-1">{text}</span>;
+/** Market histogram of the similar listings (prototype `.histo`), with the Min and Goal markers. */
+function Histo({ market, min, goal }: { market: Market; min: number; goal: number }) {
+  const prices = (market.comps ?? []).map((c) => c.price).filter((p) => p > 0);
+  const lo = prices.length > 1 ? Math.min(...prices) : market.priceRange?.low;
+  const hi = prices.length > 1 ? Math.max(...prices) : market.priceRange?.high;
+  if (lo == null || hi == null || hi <= lo) return null;
+  const n = market.compsCount ?? prices.length;
+  const range = hi - lo;
+  const BINS = 9;
+  const counts = Array.from({ length: BINS }, () => 0);
+  prices.forEach((p) => { counts[Math.min(BINS - 1, Math.max(0, Math.floor(((p - lo) / range) * BINS)))]++; });
+  const peak = Math.max(1, ...counts);
+  const pct = (v: number) => Math.max(0, Math.min(100, ((v - lo) / range) * 100));
+  const typical = market.priceRange?.mid;
   return (
-    <span className="flex flex-1 justify-between gap-3">
-      <span className="text-moss">{text.slice(0, i)}</span>
-      <span className="text-right font-semibold">{text.slice(i + 1).trim()}</span>
-    </span>
+    <>
+      <p className="sec">{n ? `${n} similar listings sold for ${eur(lo)} to ${eur(hi)}` : `Similar listings sold for ${eur(lo)} to ${eur(hi)}`}</p>
+      <div className="histo">
+        <div className="marker" style={{ left: `${pct(min)}%` }}><span>Min</span></div>
+        <div className="marker goal" style={{ left: `${pct(goal)}%` }}><span>Goal</span></div>
+        {prices.length > 1 && counts.map((c, i) => (
+          <i key={i} style={{ height: `${(c / peak) * 100}%` }} className={lo + ((i + 1) * range) / BINS <= min ? "below" : ""} />
+        ))}
+      </div>
+      <div className="axis"><span>{eur(lo)}</span>{typical != null && <span>typical {eur(typical)}</span>}<span>{eur(hi)}</span></div>
+    </>
   );
 }
+
+/* ------------------------------------------------------------------ shared with other screens */
 
 export function Pencil({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={cx("size-4 shrink-0 text-mute", className)} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" />
     </svg>
-  );
-}
-
-// ---------------------------------------------------------------- 03
-
-const SPEED: Record<Goal, [number, number]> = { week: [5, 3], two_weeks: [4, 4], no_rush: [2, 5] };
-
-function WhenGone({ goal, setGoal }: { goal: Goal; setGoal: (g: Goal) => void }) {
-  const g = GOALS.find((x) => x.value === goal)!;
-  const [speed, price] = SPEED[goal];
-  return (
-    <div>
-      <Title sub="Faster means a slightly lower price.">When should it be gone?</Title>
-      <Segmented<Goal> value={goal} onChange={setGoal} options={GOALS.map((x) => ({ value: x.value, label: x.label }))} />
-      <p key={goal} className="mb-2 mt-[18px] animate-fade text-[18px] font-bold leading-snug">{g.hint}</p>
-      <div className="space-y-3 rounded-[20px] bg-card p-4 shadow-soft">
-        <Meter label="Speed" value={speed} tone="bg-ink" />
-        <Meter label="Price" value={price} tone="bg-lime" />
-      </div>
-      <p className="mt-3 text-[13px] text-moss">Poof sets the price and lowers it step by step to hit this. You see the plan before anything goes online.</p>
-    </div>
-  );
-}
-
-function Meter({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-14 text-[13px] font-bold text-moss">{label}</span>
-      <div className="flex flex-1 gap-1">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <span key={i} className={cx("h-2.5 flex-1 rounded-full transition-colors duration-300", i <= value ? tone : "bg-line")} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------- 04
-
-function Minimum({ item, floor, setFloor }: { item: Item; floor: number; setFloor: (n: number) => void }) {
-  const r = item.priceRange;
-  return (
-    <div>
-      <Title sub="The lowest price you'd still be happy with.">What&apos;s your minimum?</Title>
-      <div className="flex items-center justify-between gap-3 rounded-[20px] bg-card p-3.5 shadow-soft">
-        <Step label="Lower" onClick={() => setFloor(Math.max(5, floor - 5))} disabled={floor <= 5}>
-          <path d="M5 12h14" />
-        </Step>
-        <span key={floor} className="tabular animate-pop text-[44px] font-extrabold leading-none tracking-[-0.02em]">€{floor}</span>
-        <Step label="Higher" onClick={() => setFloor(floor + 5)}>
-          <path d="M5 12h14" /><path d="M12 5v14" />
-        </Step>
-      </div>
-
-      {r && (
-        <div className="mt-5">
-          <p className="text-[12px] font-bold text-moss">
-            Similar ones sell for {eur(r.low)} to {eur(r.high)}
-          </p>
-          <RangeBar low={r.low} high={r.high} mark={floor} />
-        </div>
-      )}
-
-      <div className="mt-[18px] flex items-center gap-3 rounded-[16px] bg-limetint px-4 py-3.5">
-        <svg viewBox="0 0 24 24" className="size-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" />
-        </svg>
-        <p className="font-bold">Poof never accepts less.</p>
-      </div>
-    </div>
-  );
-}
-
-function Step({ children, label, onClick, disabled }: { children: ReactNode; label: string; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button onClick={onClick} disabled={disabled} aria-label={label} className="grid size-[52px] shrink-0 place-items-center rounded-full bg-card shadow-soft transition active:scale-90 disabled:opacity-30">
-      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">{children}</svg>
-    </button>
   );
 }
 
@@ -380,40 +441,6 @@ export function RangeBar({ low, high, mark, markLabel = "your minimum" }: { low:
           {markLabel}
         </span>
         <span className={cx("absolute top-5 h-[28px] w-[2px] -translate-x-1/2", under ? "bg-alert" : "bg-ink")} />
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------- 05
-
-function Delivery({ city, setCity }: { city: string; setCity: (s: string) => void }) {
-  return (
-    <div>
-      <Title>How does it get to the buyer?</Title>
-      <div className="space-y-2.5">
-        <div className="rounded-[20px] bg-card p-4 shadow-[0_0_0_2px_var(--color-ink)]">
-          <div className="flex items-center gap-3">
-            <span className="grid size-[22px] place-items-center rounded-full bg-ink"><span className="size-2 rounded-full bg-white" /></span>
-            <span className="font-bold">Pickup</span>
-          </div>
-          <label className="mt-3 block pl-[34px]">
-            <span className="mb-1 block text-[13px] font-semibold text-moss">Postcode or city</span>
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="min-h-11 w-full rounded-[12px] border border-line bg-card px-3.5 text-[15px] font-semibold outline-none focus:border-ink"
-            />
-          </label>
-          <p className="mt-2 pl-[34px] text-[13px] text-moss">The exact address is only shared with the buyer once there&apos;s a deal.</p>
-        </div>
-        {["Shipping", "Both"].map((o) => (
-          <div key={o} aria-disabled className="flex items-center gap-3 rounded-[20px] bg-card/60 p-4 text-moss shadow-soft">
-            <span className="size-[22px] rounded-full border-2 border-line" />
-            <span className="font-bold">{o}</span>
-            <Soon className="ml-auto" />
-          </div>
-        ))}
       </div>
     </div>
   );
