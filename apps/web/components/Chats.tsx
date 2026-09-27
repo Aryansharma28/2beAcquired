@@ -171,6 +171,10 @@ export function Thread({ c }: { c: Conversation }) {
   const end = useRef<HTMLDivElement>(null);
   const count = c.messages.length;
   const seen = useRef(count);
+  // Open at the newest message; afterwards follow new ones smoothly.
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end" });
+  }, []);
   useEffect(() => {
     if (count > seen.current) end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     seen.current = count;

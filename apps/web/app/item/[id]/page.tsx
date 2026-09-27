@@ -82,7 +82,7 @@ export default function ItemPage() {
           ) : (
             <BackButton />
           )}
-          <p className="truncate text-[17px] font-bold">{screen ? TITLE[screen] ?? "" : ""}</p>
+          <p className="truncate text-[17px] font-bold">{screen === "overview" && item && ["sold", "delisted"].includes(item.status) ? "How this ad went" : screen ? TITLE[screen] ?? "" : ""}</p>
         </header>
       )}
 
