@@ -6,6 +6,7 @@ import { getAccount } from "@/lib/account";
 import { details, rename } from "@/lib/api";
 import { CONDITIONS, CONDITION_NL, attrText, chipFor, eur, type ConditionChip } from "@/lib/format";
 import type { Goal, Item } from "@/lib/types";
+import { stickerSrc } from "@/lib/useItem";
 import { cx } from "./ui";
 
 /* ------------------------------------------------------------------ sell-flow primitives
@@ -43,7 +44,8 @@ export function CtaArrow() {
 export function Sticker({ src, tilt, size }: { src?: string; tilt: number; size?: number }) {
   const style = { "--tilt": `${tilt}deg`, ...(size ? { width: size, height: size } : {}) } as CSSProperties;
   return (
-    <span className="ph cutout sticker photo" style={style}>
+    // A real cutout (transparent PNG) shows whole; a photo is cropped square.
+    <span className={"ph cutout sticker" + (src && (src.endsWith("-cutout.png") || src.startsWith("data:image/png")) ? "" : " photo")} style={style}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {src && <img src={src} alt="" />}
     </span>
@@ -303,7 +305,7 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
         {step === 1 && (
           <>
             <div className="body2">
-              <div className="context"><Sticker src={coverSrc} tilt={2} /><div className="info"><b>{shortName}</b><span>· {SPEED_INFO[speed].label}</span></div></div>
+              <div className="context"><Sticker src={stickerSrc(item, cover)} tilt={2} /><div className="info"><b>{shortName}</b><span>· {SPEED_INFO[speed].label}</span></div></div>
               <h1 className="q">What&apos;s your minimum?</h1>
               <p className="sub">The lowest price you&apos;d still be happy with.</p>
               <div className="stepper card">
@@ -339,7 +341,7 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
         {step === 2 && (
           <>
             <div className="body2">
-              <div className="context"><Sticker src={coverSrc} tilt={-3} /><div className="info"><b>{shortName}</b><span>· Never below €{floor}</span></div></div>
+              <div className="context"><Sticker src={stickerSrc(item, cover)} tilt={-3} /><div className="info"><b>{shortName}</b><span>· Never below €{floor}</span></div></div>
               <h1 className="q">How does it get to the buyer?</h1>
               <p className="sub">Poof plans the handover with the buyer.</p>
               <HandOpt checked icon="pin" title="Pickup" tag="Poof pick" desc="The buyer comes to you. Usual for big items.">
@@ -435,7 +437,7 @@ export function PoofAtWork({ item }: { item: Item }) {
         <div className="top2"><div className="grow" /></div>
         <div className="body2" style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1 }}>
           <div className="row" style={{ marginBottom: 22 }}>
-            <Sticker src={item.photos[item.coverIndex ?? 0] ?? item.photos[0]} tilt={-3} size={56} />
+            <Sticker src={stickerSrc(item)} tilt={-3} size={56} />
             <div className="grow"><p className="eyebrow">{name}</p><h1 className="q" style={{ margin: 0, fontSize: 24 }}>Poof is on it</h1></div>
           </div>
           <ol className="steps card divided" style={{ boxShadow: "var(--shadow-soft)" }}>

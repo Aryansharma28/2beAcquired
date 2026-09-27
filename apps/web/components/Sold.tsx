@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   PLATFORM, dealBuyer, dealConversation, dealPrice, dealStage, eur, handoverLabel, paidOnline, pickupWhen, recapOf,
 } from "@/lib/format";
-import { coverFirst } from "@/lib/useItem";
+import { stickerSrc } from "@/lib/useItem";
 import type { Item, Pickup, Platform } from "@/lib/types";
 import { ChatAvatar, Ic, PlatIcon, PoofLine, Sticker, TYPING } from "./Chats";
 import { cx } from "./ui";
@@ -50,7 +50,7 @@ export function Sold({ item, onProduct, onMarkDone }: { item: Item; onProduct: (
   const price = dealPrice(item);
   const conv = dealConversation(item);
   const recap = recapOf(item);
-  const photo = coverFirst(item)[0];
+  const photo = stickerSrc(item);
   const lastMsg = conv?.messages.at(-1);
   const paidLine = paidOnline(item) ? `${buyer} already paid` : `${buyer} pays at pickup`;
 

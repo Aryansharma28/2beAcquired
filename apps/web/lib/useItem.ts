@@ -36,6 +36,11 @@ export function useItem(id: string) {
   return { item, error, refresh };
 }
 
+/** What to show as the item's sticker: the cutout (made from the first photo) while that photo is the cover, else the cover photo. */
+export function stickerSrc(item: Pick<Item, "photos" | "coverIndex" | "cutout">, cover = item.coverIndex ?? 0) {
+  return (cover === 0 && item.cutout) || item.photos[cover] || item.photos[0];
+}
+
 /** Photos with the chosen cover first. */
 export function coverFirst(item: Pick<Item, "photos" | "coverIndex">) {
   const i = item.coverIndex ?? 0;

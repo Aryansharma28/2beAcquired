@@ -131,7 +131,7 @@ function AdTile({ tile, idx }: { tile: Tile; idx: number }) {
   const tilt = tiltOf(item.id);
   const delay = idx * 35;
   const pending = status.kind === "pending";
-  const photo = item.photo ?? item.photos?.[item.coverIndex ?? 0] ?? item.photos?.[0];
+  const photo = item.cutout ?? item.photo ?? item.photos?.[item.coverIndex ?? 0] ?? item.photos?.[0];
   const price = sold || pending ? item.sale?.price ?? item.askPrice : item.askPrice;
   const title = item.recognition?.name ?? item.title ?? "Looking at your photos…";
   return (
