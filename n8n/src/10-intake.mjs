@@ -1,4 +1,4 @@
-import { Workflow, webhook, respond, code, tableInsert, tableUpdate, tableGet, llm, ARGS, apify, ifTrue, mpSearch, MP_COMPS, FAKES } from "../lib.mjs";
+import { Workflow, webhook, respond, code, tableInsert, tableUpdate, tableGet, llm, llmRace, ARGS, apify, ifTrue, mpSearch, MP_COMPS, FAKES } from "../lib.mjs";
 
 // W1 · Intake (screens 01→02): photos → vision LLM (Google Lens only as fallback) → real comparables → "Is this it?" + market range.
 export default (env, ids) => {
@@ -34,7 +34,7 @@ return n.photosB64.map((b64, i) => ({ json: { key: n.itemId + '-' + i + '.jpg' }
 
   // Recognise from the photos with the vision LLM first (~1-5 s). Google Lens (Apify scraper: 50-120 s and ~$0.20 per
   // run) is only the fallback for when the vision model fails; "Not right? Fix it" (16-rename) covers wrong guesses.
-  w.add("Recognise item (vision LLM)", llm(env, {
+  w.add("Recognise item (vision LLM)", llmRace(env, {
     vision: true,
     system: JSON.stringify("You identify second-hand items from photos for a Dutch reseller. Most items are mass-market products: first ask yourself which well-known product this is (IKEA, HEMA, Philips, Gazelle, Apple, Lego, Nijntje/Miffy, ...) and name the exact model if you recognise it (e.g. 'IKEA POÄNG armchair'). Read any visible logos, labels, model numbers and text in the photo: they are the strongest evidence for brand/model. Name a generation or version only if the photo shows it (a model number, a distinctive feature); otherwise use the product line without a generation (e.g. 'Apple AirPods Pro'). The name always includes the brand and model you recognised (e.g. 'IKEA POÄNG rocking chair', never just 'Armchair'). Earbuds: a closed earbuds case means the complete set (e.g. 'Apple AirPods Pro', not 'AirPods Pro charging case') unless the photo shows it open and empty or the owner says it is only the case. Only call something vintage/designer if it clearly is. If the owner gives a hint, trust it. Use the photo itself for condition, colour and defects. searchQuery = what a Dutch buyer types on Marktplaats for THIS product (brand + model, 2-4 words, e.g. 'ikea poang'); searchQueryBroad = the generic category in Dutch (e.g. 'fauteuil')."),
     content: "[{ type: 'text', text: 'Identify this item. Owner hint: ' + ($('New item').first().json.item.notes || 'none') }].concat($('New item').first().json.photosB64.slice(0, 2).map(d => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + d } })))",

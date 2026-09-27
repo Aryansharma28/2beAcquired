@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { POLL_MS, getItem } from "./api";
+import { POLL_FAST_MS, POLL_MS, getItem } from "./api";
 import type { Item } from "./types";
 
 /** Polls /tba/item while the page is open. */
@@ -14,8 +14,10 @@ export function useItem(id: string) {
     try {
       const it = await getItem(id);
       if (alive.current) { setItem(it); setError(null); }
+      return it;
     } catch (e) {
       if (alive.current) setError((e as Error).message);
+      return null;
     }
   }, [id]);
 
@@ -23,8 +25,9 @@ export function useItem(id: string) {
     alive.current = true;
     let t: ReturnType<typeof setTimeout>;
     const loop = async () => {
-      await refresh();
-      if (alive.current) t = setTimeout(loop, POLL_MS);
+      const it = await refresh();
+      const busy = it?.status === "recognizing" || (it?.status === "needs_details" && it.pricing);
+      if (alive.current) t = setTimeout(loop, busy ? POLL_FAST_MS : POLL_MS);
     };
     loop();
     return () => { alive.current = false; clearTimeout(t); };
