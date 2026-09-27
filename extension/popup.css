@@ -1,18 +1,20 @@
+/* Brand tokens: the same values as apps/web/app/globals.css (Teije's style guide: ink green, lime, page grey).
+   The old cobalt/yellow names are kept as aliases so the rules below stay as they are. */
 :root {
-  --paper: #eceef2;
+  --paper: #f4f6f4;
   --card: #ffffff;
-  --ink: #0b0d12;
-  --ink-2: #3a3f4b;
-  --mute: #6a707c;
-  --line: #dadde4;
-  --cobalt: #2b3bff;
-  --cobalt-deep: #1a24b8;
-  --cobalt-soft: #e4e7ff;
-  --tag: #ffd84d;
-  --go: #0e9f63;
-  --go-soft: #dcf5ea;
-  --alert: #ff4f5e;
-  --alert-soft: #ffe3e6;
+  --ink: #0f2a18;
+  --ink-2: #4a5f50;
+  --mute: #4a5f50;
+  --line: #e1e8e3;
+  --cobalt: #0f2a18;
+  --cobalt-deep: #061a0d;
+  --cobalt-soft: #eefbc8;
+  --tag: #d7f57a;
+  --go: #0f2a18;
+  --go-soft: #eefbc8;
+  --alert: #d93a3f;
+  --alert-soft: #fbe5e5;
   /* No remote fonts (MV3 CSP): use them if installed locally, else system stacks. */
   --display: "Bricolage Grotesque", ui-sans-serif, "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --body: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -39,9 +41,8 @@ body {
   background: var(--cobalt);
   color: #fff;
 }
-.mark { width: 58px; height: 34px; transform: rotate(-12deg); flex: none; }
-.mark text { font-family: var(--display); }
-.brand { font: 700 18px/1.1 var(--display); letter-spacing: -0.02em; }
+.mark { width: 36px; height: 36px; border-radius: 10px; flex: none; }
+.brand { font: 700 18px/1.1 var(--display); letter-spacing: -0.02em; color: var(--tag); }
 .tagline { font-size: 12px; opacity: 0.8; }
 
 main { padding: 14px 16px; }
@@ -112,7 +113,7 @@ p { margin: 0; }
   transition: transform 0.08s, background 0.15s, opacity 0.15s;
 }
 .btn:active:not(:disabled) { transform: scale(0.98); }
-.btn.primary { background: var(--cobalt); color: #fff; box-shadow: 0 3px 0 var(--cobalt-deep); }
+.btn.primary { background: var(--cobalt); color: var(--tag); box-shadow: 0 3px 0 var(--cobalt-deep); }
 .btn.primary:hover:not(:disabled) { background: #1f2ff0; }
 .btn.primary:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
 .btn.ghost { background: transparent; color: var(--ink-2); border: 1.5px solid var(--line); }

@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { CONSENT, PICKUP_HOURS, getAccount, newPairCode, phoneLoginStatus, startPhoneLogin, stopPhoneLogin, type Account, type PairCode, type PhoneLogin, type Profile } from "@/lib/account";
 import { Button, Eyebrow, PlatformLogo, Tick, cx } from "./ui";
 
-/** Connect Marktplaats: log in right here (secure browser streamed into the app), or the poof Connector on a laptop. */
+/** Connect Marktplaats: log in right here (secure browser streamed into the app), or the Poof Connector on a laptop. */
 export function ConnectMarktplaats({
   onConnected, onSkip, skipLabel = "Skip for now", compact,
 }: { onConnected: (a: Account) => void; onSkip?: () => void; skipLabel?: string; compact?: boolean }) {
@@ -41,9 +41,9 @@ export function ConnectMarktplaats({
   if (connected) {
     return (
       <div className="animate-rise space-y-5">
-        <div className="flex flex-col items-center rounded-[28px] bg-limetint px-6 py-8 text-center text-ink">
+        <div className="flex flex-col items-center rounded-[20px] bg-limetint px-6 py-8 text-center text-ink">
           <span className="grid size-16 animate-pop place-items-center rounded-full bg-ink text-lime"><Tick className="size-9" /></span>
-          <p className="mt-4 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">Connected as <span className="marker">{connected.mpName ?? "you"}</span></p>
+          <p className="mt-4 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">Connected as <span className="pb">{connected.mpName ?? "you"}</span></p>
           <p className="mt-2 text-[15px] text-moss">Poof can now post, answer and take ads down on Marktplaats.</p>
         </div>
         <Button onClick={() => onConnected(connected)} className="w-full">Continue</Button>
@@ -58,8 +58,8 @@ export function ConnectMarktplaats({
     <div className="space-y-4">
       <PhoneLoginCard />
 
-      <Eyebrow className="px-1 pt-2">Or on a laptop, with the poof Connector</Eyebrow>
-      <div className="rounded-[28px] bg-ink px-5 pb-5 pt-4 text-white shadow-float">
+      <Eyebrow className="px-1 pt-2">Or on a laptop, with the Poof Connector</Eyebrow>
+      <div className="rounded-[20px] bg-ink px-5 pb-5 pt-4 text-white shadow-float">
         <div className="flex items-center justify-between">
           <p className="flex items-center gap-2 text-[13px] font-bold text-lime">
             <PlatformLogo platform="marktplaats" className="!size-5" /> Your code
@@ -82,7 +82,7 @@ export function ConnectMarktplaats({
             <span className="absolute size-3 animate-ping rounded-full bg-lime/50" />
             <span className="size-1.5 rounded-full bg-lime" />
           </span>
-          Waiting for the poof Connector…
+          Waiting for the Poof Connector…
         </p>
       </div>
 
@@ -91,9 +91,9 @@ export function ConnectMarktplaats({
       <section>
         <ol className="overflow-hidden rounded-[20px] bg-card shadow-soft">
           {[
-            <>Install <Link href="/connector" className="font-bold text-ink underline underline-offset-2">poof Connector</Link> in Chrome</>,
+            <>Install <Link href="/connector" className="font-bold text-ink underline underline-offset-2">Poof Connector</Link> in Chrome</>,
             <>Log in to <b>marktplaats.nl</b> as usual</>,
-            <>Open poof Connector, enter this code and tap <b>Allow</b></>,
+            <>Open Poof Connector, enter this code and tap <b>Allow</b></>,
           ].map((t, i) => (
             <li key={i} className="flex items-center gap-3 border-b border-line px-4 py-3.5 last:border-0">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-lime text-[13px] font-extrabold text-ink">{i + 1}</span>
@@ -106,7 +106,7 @@ export function ConnectMarktplaats({
       {!compact && <Consent />}
 
       {onSkip && (
-        <button onClick={onSkip} className="min-h-11 w-full text-center text-[15px] font-semibold text-ink underline underline-offset-4">
+        <button type="button" onClick={onSkip} className="btn ghost">
           {skipLabel}
         </button>
       )}
@@ -146,7 +146,7 @@ function PhoneLoginCard() {
   };
 
   return (
-    <section className="rounded-[28px] bg-card p-5 shadow-soft">
+    <section className="card pad" style={{ boxShadow: "var(--shadow-soft)" }}>
       <p className="flex items-center gap-2 text-[17px] font-bold">
         <PlatformLogo platform="marktplaats" className="!size-8" /> On this phone
       </p>
@@ -161,7 +161,7 @@ function PhoneLoginCard() {
         <div className="fixed inset-0 z-[100] flex flex-col bg-page">
           <div className="flex items-center justify-between px-4 py-2">
             <span className="text-[13px] font-semibold text-moss">Secure Marktplaats login</span>
-            <button onClick={() => { if (login) stopPhoneLogin(login); setUrl(null); setLogin(null); }} className="h-[34px] rounded-full border border-ink px-3.5 text-[13px] font-bold text-ink">Close</button>
+            <button onClick={() => { if (login) stopPhoneLogin(login); setUrl(null); setLogin(null); }} type="button" className="btn small">Close</button>
           </div>
           <iframe src={url} title="Marktplaats login" className="w-full flex-1 border-0" allow="clipboard-read; clipboard-write" />
         </div>,

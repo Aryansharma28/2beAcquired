@@ -17,7 +17,7 @@ import { NeedsConnection } from "@/components/NeedsConnection";
 import { Looking } from "@/components/Setup";
 import { HANDOVER_DONE_LABEL, Sold, soldRevealed } from "@/components/Sold";
 import { PoofAtWork, Wizard } from "@/components/Wizard";
-import { BackButton, Button, Eyebrow, PriceTag, DEMO_PLATFORMS, SOON_PLATFORMS, SoonPlatIcon, SoonStrip } from "@/components/ui";
+import { BackButton, Button, Eyebrow, DEMO_PLATFORMS, SOON_PLATFORMS, SoonPlatIcon, SoonStrip } from "@/components/ui";
 
 type Screen = "looking" | "wizard" | "writing" | "ad" | "connect" | "going" | "product" | "sold" | "error";
 
@@ -121,10 +121,10 @@ export default function ItemPage() {
       )}
 
       {error && !item && (
-        <div className="mt-8 rounded-[20px] bg-alert-soft p-5 text-alert">
-          <p className="font-semibold">Can&apos;t load this ad.</p>
-          <p className="mt-1 text-[14px]">{error}</p>
-          <Button href="/" variant="ghost" className="mt-4">Back to your ads</Button>
+        <div className="card pad" style={{ boxShadow: "var(--shadow-soft)", marginTop: 24 }}>
+          <p className="bar-title" style={{ color: "var(--alert)" }}>Can&apos;t load this ad</p>
+          <p className="small muted" style={{ marginTop: 4 }}>{error}</p>
+          <Link href="/" className="btn" style={{ marginTop: 16 }}>Back to your ads</Link>
         </div>
       )}
 
@@ -326,13 +326,13 @@ function ErrorCard({ item, onRetry }: { item: Item; onRetry: () => void }) {
   };
   return (
     <div className="space-y-4">
-      <div className="rounded-[20px] bg-card p-5 shadow-soft">
+      <div className="card pad" style={{ boxShadow: "var(--shadow-soft)" }}>
         <p className="flex items-center gap-2 text-[13px] font-bold text-alert">
           <span className="grid size-5 place-items-center rounded-full bg-alert text-[12px] font-extrabold text-white">!</span> Problem
         </p>
-        <p className="mt-2 text-[24px] font-extrabold leading-tight tracking-[-0.02em]">Poof hit a problem</p>
+        <p className="q" style={{ marginTop: 8 }}>Poof hit a problem</p>
         <p className="mt-1.5 text-[15px] font-medium text-alert">{last?.text ?? "No details were logged. Check the activity log below."}</p>
-        {loginIssue && <p className="mt-2 text-[14px] text-moss">Open the poof Connector on your laptop while logged in to Marktplaats, then try again.</p>}
+        {loginIssue && <p className="mt-2 text-[14px] text-moss">Open the Poof Connector on your laptop while logged in to Marktplaats, then try again.</p>}
         {canRetry ? (
           <Button onClick={retry} disabled={busy} variant="ink" className="mt-4 w-full">{busy ? "Trying again…" : "Try again"}</Button>
         ) : (
@@ -342,13 +342,15 @@ function ErrorCard({ item, onRetry }: { item: Item; onRetry: () => void }) {
       </div>
       <section>
         <Eyebrow className="mb-2">The ad so far</Eyebrow>
-        <div className="overflow-hidden rounded-[20px] bg-card shadow-soft">
+        <div className="card overflow-hidden" style={{ boxShadow: "var(--shadow-soft)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {photo && <img src={photo} alt="" className="aspect-[16/10] w-full object-cover" />}
           <div className="space-y-2 p-4">
             <div className="flex items-start justify-between gap-3">
               <p className="text-[18px] font-extrabold leading-tight">{item.title ?? item.recognition?.name ?? "Not recognised yet"}</p>
-              {item.askPrice != null && <PriceTag amount={item.askPrice} size="sm" />}
+              {item.askPrice != null && (
+                <span className="pricetag" style={{ position: "relative", top: 0, flex: "none", ["--tilt" as string]: "4deg" }}>{eur(item.askPrice)}</span>
+              )}
             </div>
             {item.floorPrice != null && <p className="text-[13.5px] text-mute">Minimum {eur(item.floorPrice)}</p>}
             {item.description && <p className="line-clamp-4 whitespace-pre-line text-[14.5px] text-ink-2">{item.description}</p>}
