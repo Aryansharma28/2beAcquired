@@ -139,9 +139,10 @@ server.listen(PORT, () => console.log(`poof local runner on http://localhost:${P
 // (tba/inbox-now) as soon as it rises. Local, so a 1 s check costs no n8n executions (n8n's own chat check is off).
 // One inbox run at a time: a message that lands within 20 s of the last run is not dropped, it gets its own run as soon
 // as that window has passed. If Marktplaats pushes back, wait longer (up to 60 s) and speed up again once it answers.
+// Off when n8n does the checking (CHAT_CHECK_N8N=1, n8n/src/31-chat-check.mjs): two pollers would answer a message twice.
 const N8N = process.env.N8N_BASE_URL;
 const APP_KEY = process.env.POOF_APP_KEY;
-if (WATCH_STORE && N8N && APP_KEY) {
+if (WATCH_STORE && N8N && APP_KEY && process.env.CHAT_CHECK_N8N !== "1") {
   const EVERY = Math.max(1, Number(process.env.WATCH_SECONDS) || 1) * 1000;
   let lastCount = null, lastPoke = 0, pending = false, wait = EVERY, warned = 0;
   const tick = async () => {
