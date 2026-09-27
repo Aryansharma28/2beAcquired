@@ -91,6 +91,9 @@ Statuses: `recognizing` → `needs_details` → `writing` → `ad_ready` → `pu
 - `POST /tba/details {itemId, name, condition, goal: "week"|"two_weeks"|"no_rush", floorPrice, delivery: "pickup", pickupCity}` → `{ok}`.
   Runs pricing + ad writing. Ends in `ad_ready` with `title, description, askPrice, floorPrice, goal, pricePlan[] ({price, from})`.
 - `POST /tba/approve {itemId, title?, description?, askPrice?}` → `{ok}`. Applies edits, publishes. `publishing` → `live`.
+- `POST /tba/done {itemId}` → `{ok, status: "sold", alreadySold}` ("Mark as picked up & paid", cash at pickup). Owner only, from
+  `negotiating`/`deal`/`pickup_scheduled` (else 409; unknown/not yours 404). Sets `sold`, fills `sale` if missing,
+  `payment {status: "paid", method: "cash", paidAt}` unless already paid, delists a still-live ad. Already sold → ok, no-op.
 - `GET /tba/item?id=` adds `recap {days, messages, counters}`, `now` (latest agent step), `stats {views, saves, chats}` when known.
 - Condition values: "Nieuw" | "Zo goed als nieuw" | "Gebruikt" | "Niet werkend" (UI chips: New · Like new · Good · Used map to these; Good = "Gebruikt" with good note).
 
