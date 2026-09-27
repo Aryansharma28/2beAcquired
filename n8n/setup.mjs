@@ -1,4 +1,4 @@
-// One-time setup from .env: n8n credentials (Anthropic, Apify) + Apify photo store + actor id.
+// One-time setup from .env: n8n credentials (LLM, Apify, LangWatch) + Apify photo store + actor id.
 // Writes n8n/credentials.json and fills APIFY_PHOTO_STORE / APIFY_ACTOR in .env. Safe to re-run.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -44,6 +44,9 @@ await ensureCred("n8nApi", "poof n8n API", "httpHeaderAuth", { name: "X-N8N-API-
 
 // Shared secret between the poof app (Vercel) and every n8n webhook.
 if (env.POOF_APP_KEY) await ensureCred("appKey", "poof app key", "httpHeaderAuth", { name: "X-Poof-Key", value: env.POOF_APP_KEY });
+
+// LangWatch: traces + guardrails (n8n/langwatch.mjs).
+if (env.LANGWATCH_API_KEY) await ensureCred("langwatch", "LangWatch", "httpHeaderAuth", { name: "X-Auth-Token", value: env.LANGWATCH_API_KEY });
 
 if (env.APIFY_TOKEN) {
   await ensureCred("apify", "TBA Apify", "httpHeaderAuth", { name: "Authorization", value: `Bearer ${env.APIFY_TOKEN}` });
