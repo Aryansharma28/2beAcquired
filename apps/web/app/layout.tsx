@@ -49,6 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></symbol>
         <symbol id="i-more" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></symbol>
         <symbol id="i-cta-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+        <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2h-15l1.5-2z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></symbol>
         <symbol id="i-cloudmark" viewBox="34 24 138 116"><g fill="currentColor"><circle cx="66" cy="88" r="32"/><circle cx="100" cy="62" r="38"/><circle cx="134" cy="84" r="32"/><circle cx="150" cy="106" r="22"/><circle cx="100" cy="110" r="30"/><circle cx="60" cy="112" r="20"/></g></symbol>
         </svg>
         <div id="app-shell">

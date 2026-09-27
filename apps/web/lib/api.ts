@@ -69,6 +69,15 @@ export async function markDone(itemId: string): Promise<void> {
   await post("/done", { itemId });
 }
 
+/**
+ * Phone notifications: hand this device's Web Push subscription to n8n (it stores it for the logged-in user),
+ * or drop it again with `remove`. n8n answers { ok: true }. Mock mode: nothing to store, always succeeds.
+ */
+export async function pushSubscribe(subscription: PushSubscriptionJSON, remove = false): Promise<void> {
+  if (MOCK) return;
+  await post("/push-subscribe", remove ? { subscription, remove: true } : { subscription });
+}
+
 export async function getItem(id: string): Promise<Item> {
   if (MOCK) return mock.getItem(id);
   const item = await req<Item>(`/item?id=${encodeURIComponent(id)}`);

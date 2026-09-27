@@ -235,7 +235,7 @@ export function Spinner({ className }: { className?: string }) {
 
 export type IconName =
   | "close" | "back" | "right" | "down" | "check" | "edit" | "plus" | "minus" | "grid" | "gallery" | "flash"
-  | "shield" | "send" | "pin" | "box" | "swap" | "chat" | "user" | "more" | "cta-arrow";
+  | "shield" | "send" | "pin" | "box" | "swap" | "chat" | "user" | "more" | "cta-arrow" | "bell";
 
 /** Prototype icon (`ic(name)`): a stroke icon from the sprite in app/layout.tsx. */
 export function Icon({ name, className }: { name: IconName; className?: string }) {
