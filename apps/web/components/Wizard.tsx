@@ -227,7 +227,7 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
                   <span className="ph-note">{coverTouched ? "Cover" : "Picked by Poof"}</span>
                 </span>
               </button>
-              {photos.length > 1 && (
+              {photos.length > 0 && (
                 <div className="thumbs">
                   {photos.map((p, i) => (
                     <button key={i} type="button" aria-pressed={cover === i} aria-label={`Photo ${i + 1}`} onClick={() => { setCover(i); setCoverTouched(true); }}>
