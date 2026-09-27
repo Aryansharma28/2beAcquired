@@ -209,7 +209,7 @@ export function BottomAction({ children }: { children: ReactNode }) {
   );
 }
 
-/** Bottom sheet. */
+/** Bottom sheet (the prototype's `.psheet`). */
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode }) {
   useEffect(() => {
     if (!open) return;
@@ -219,15 +219,12 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal>
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 animate-fade bg-ink/50" />
-      <div className="no-scrollbar relative max-h-[80dvh] w-full max-w-[440px] animate-rise overflow-y-auto rounded-t-[28px] bg-page px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-3 shadow-float">
-        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line" />
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-[22px] font-extrabold tracking-[-0.02em]">{title}</h3>
-          <button onClick={onClose} className="grid size-10 place-items-center rounded-full bg-card shadow-soft" aria-label="Close">
-            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-          </button>
+    <div className="sheet-root" role="dialog" aria-modal>
+      <button aria-label="Close" onClick={onClose} className="psheet-backdrop" />
+      <div className="psheet no-scrollbar">
+        <div className="row" style={{ marginBottom: 14 }}>
+          <h2 className="grow" style={{ margin: 0 }}>{title}</h2>
+          <button onClick={onClose} className="icon-btn plain" type="button" aria-label="Close"><Icon name="close" /></button>
         </div>
         {children}
       </div>

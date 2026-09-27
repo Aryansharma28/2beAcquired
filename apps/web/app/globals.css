@@ -399,4 +399,30 @@ body {
 /* The app scrolls the page, so the navbar is fixed (the prototype's phone is one fixed-size screen). */
 #tabbar{position:fixed;margin:0 auto;max-width:408px}
 #tabbar .tab[aria-disabled="true"]{cursor:default}
+/* Bottom sheet (prototype presenter sheet: .psheet-backdrop, .psheet), used by <Sheet>. */
+.sheet-root{position:fixed;inset:0;z-index:70;display:flex;align-items:flex-end;justify-content:center}
+.psheet-backdrop{position:absolute;inset:0;background:rgba(15,42,24,.4);z-index:70;border:0;padding:0;animation:fade .32s var(--out) both}
+.psheet{position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:440px;max-height:85dvh;overflow-y:auto;background:var(--surface);border-radius:28px 28px 0 0;padding:20px 20px calc(env(safe-area-inset-bottom,0px) + 22px);box-shadow:var(--shadow-float);z-index:71;animation:sheetUp .38s var(--spring) both}
+.psheet h2{margin:0 0 14px;font-size:16px;font-weight:800}
+.psheet .btn{margin-bottom:10px}
+.psheet .btn:last-child{margin-bottom:0}
+.psheet .hint{margin:-4px 0 10px;font-size:12px;color:var(--moss)}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+/* Setup screens (components/Setup.tsx): prototype step list from "Poof is on it". */
+.steps{list-style:none;margin:0;padding:0}
+.step{display:flex;gap:12px;padding:14px 16px}
+.st-ico{width:26px;height:26px;flex:none;border-radius:50%;background:var(--line);display:grid;place-items:center;margin-top:1px;color:transparent}
+.st-ico .icon{width:14px;height:14px;stroke-width:2.6;display:none}
+.step[data-state="done"] .st-ico{background:var(--ink);color:#fff}
+.step[data-state="done"] .st-ico .icon{display:block}
+.step[data-state="running"] .st-ico{background:var(--lime);color:var(--ink)}
+.step[data-state="running"]{background:var(--limetint);border-radius:16px}
+.step[data-state="next"]{color:var(--moss)}
+.step .grow{flex:1;min-width:0}
+.step b{display:block;font-weight:700}
+.step .viewlink{font-size:12.5px;font-weight:700;color:var(--ink);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;white-space:nowrap;flex:none;align-self:center}
+.recog{margin-top:18px}
+.setup-cover{width:100%;height:230px;border-radius:20px}
+.setup-looks{position:absolute;left:12px;right:12px;bottom:12px;z-index:2;animation:fadeUp .28s var(--out) backwards}
+.setup-thumb{width:56px;height:56px}
 /* === end home + navbar === */
