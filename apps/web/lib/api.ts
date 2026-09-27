@@ -61,6 +61,12 @@ export async function approve(body: ApproveRequest): Promise<void> {
   await post("/approve", body);
 }
 
+/** "Mark as picked up & paid" (cash at pickup): a deal/pickup becomes sold. Idempotent. */
+export async function markDone(itemId: string): Promise<void> {
+  if (MOCK) return mock.done(itemId);
+  await post("/done", { itemId });
+}
+
 export async function getItem(id: string): Promise<Item> {
   if (MOCK) return mock.getItem(id);
   const item = await req<Item>(`/item?id=${encodeURIComponent(id)}`);
