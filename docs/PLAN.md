@@ -86,7 +86,7 @@ Setup (owner, before launch) → then fully autonomous. No "Your call" screen, n
 
 Statuses: `recognizing` → `needs_details` → `writing` → `ad_ready` → `publishing` → `live` → `negotiating` → `deal` → `pickup_scheduled` → `sold` (+ `error`). (`analyzing` = legacy alias of `recognizing`.)
 
-- `POST /tba/intake {photos: string[]}` → `{itemId}`. Runs Google Lens + vision + comparables. Ends in `needs_details` with
+- `POST /tba/intake {photos: string[]}` → `{itemId}`. Runs vision (Google Lens only as fallback) + comparables from the Marktplaats search API. Ends in `needs_details` with
   `recognition: {name, brand, category, condition, attributes[]}`, `priceRange {low, mid, high}`, `compsCount`, `comps[]`, `coverIndex`.
 - `POST /tba/details {itemId, name, condition, goal: "week"|"two_weeks"|"no_rush", floorPrice, delivery: "pickup", pickupCity}` → `{ok}`.
   Runs pricing + ad writing. Ends in `ad_ready` with `title, description, askPrice, floorPrice, goal, pricePlan[] ({price, from})`.

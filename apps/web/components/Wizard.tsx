@@ -119,11 +119,15 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
   const [condition, setCondition] = useState<ConditionChip>(chipFor(rec.condition ?? item.condition));
   const [attrs, setAttrs] = useState<string[]>((rec.attributes ?? []).map(attrText).filter(Boolean));
   const [editingAttr, setEditingAttr] = useState<number | null>(null);
-  // Market picture: from intake, or re-checked after the owner corrected the name.
-  const [market, setMarket] = useState<Market>({ priceRange: item.priceRange, compsCount: item.compsCount, comps: item.comps });
+  // Market picture: from intake (it can arrive a few seconds after this screen, item.pricing), or re-checked after the
+  // owner corrected the name. Minimum and goal follow it until the owner sets them.
+  const [renamed, setRenamed] = useState<Market | null>(null);
+  const market: Market = renamed ?? { priceRange: item.priceRange, compsCount: item.compsCount, comps: item.comps };
   const [speed, setSpeed] = useState<Speed>("best");
-  const [floor, setFloor] = useState(() => round5(item.priceRange?.low ?? 70));
-  const [goalPrice, setGoalPrice] = useState(() => goalFor("best", item, round5(item.priceRange?.low ?? 70)));
+  const [floorSet, setFloorSet] = useState<number | null>(null);
+  const floor = floorSet ?? round5(market.priceRange?.low ?? 70);
+  const [goalSet, setGoalSet] = useState<number | null>(null);
+  const goalPrice = goalSet ?? goalFor(speed, market, floor);
   const [city, setCity] = useState(item.pickupCity || "");
   const [cityEdit, setCityEdit] = useState(false);
   const [pulse, setPulse] = useState(0);
@@ -147,12 +151,12 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
 
   function setMin(v: number) {
     const m = Math.min(995, Math.max(5, v));
-    setFloor(m);
-    if (goalPrice <= m) setGoalPrice(m + STEP);
+    setFloorSet(m);
+    if (goalPrice <= m) setGoalSet(m + STEP);
     bump();
   }
-  function setGoal(v: number) { setGoalPrice(Math.min(1999, Math.max(floor + STEP, v))); bump(); }
-  function pickSpeed(s: Speed) { setSpeed(s); setGoalPrice(goalFor(s, market, floor)); bump(); }
+  function setGoal(v: number) { setGoalSet(Math.min(1999, Math.max(floor + STEP, v))); bump(); }
+  function pickSpeed(s: Speed) { setSpeed(s); setGoalSet(null); bump(); }
 
   /** Is this it? → next. If the name was corrected, price the corrected product first. */
   async function confirmName() {
@@ -163,13 +167,8 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
     setError(null);
     try {
       const r = await rename(item.id, n);
-      const m: Market = { priceRange: r.priceRange ?? undefined, compsCount: r.compsCount, comps: r.comps };
-      setMarket(m);
-      if (r.priceRange?.low) {
-        const f = round5(r.priceRange.low);
-        setFloor(f);
-        setGoalPrice(goalFor(speed, m, f));
-      }
+      setRenamed({ priceRange: r.priceRange ?? undefined, compsCount: r.compsCount, comps: r.comps });
+      if (r.priceRange?.low) { setFloorSet(null); setGoalSet(null); }
       setPricedName(n);
       setFixOpen(false);
       go(1);
@@ -312,7 +311,9 @@ export function Wizard({ item, onSubmitted }: { item: Item; onSubmitted: (patch:
                 <output key={`m${pulse}`} className={cx("price-big", pulse > 0 && "pulse")}>€{floor}</output>
                 <button className="icon-btn" type="button" onClick={() => setMin(floor + STEP)} aria-label={`Raise by ${STEP} euro`}><Ic n="plus" /></button>
               </div>
-              <Histo market={market} min={floor} goal={goalPrice} />
+              {!market.priceRange && item.pricing
+                ? <p className="sec" style={{ display: "flex", alignItems: "center", gap: 8 }}><span className="sf-spin" /> Checking what similar ones sell for…</p>
+                : <Histo market={market} min={floor} goal={goalPrice} />}
               <p className="sec">Optimise for</p>
               <div className="goalrow card pad" style={{ boxShadow: "var(--shadow-soft)", display: "block" }}>
                 <div className="tabs" role="tablist" aria-label="Optimise for" style={{ marginBottom: 10 }}>

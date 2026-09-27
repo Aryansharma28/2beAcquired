@@ -199,13 +199,16 @@ export const ARGS = "(() => { const m = $json.choices[0].message; const a = m.to
 // n8n ends an expression at the first "}}", so nested object literals must never touch.
 const safe = (inner) => inner.replace(/\}\}/g, "} }").replace(/\}\}/g, "} }").replace(/\{\{/g, "{ {");
 
-export const llm = (env, { system, content, tool, maxTokens = 1500, vision = false }) => [
+// reasoning: 'low' | 'medium' | 'high' for reasoning models (gpt-oss). Their thinking counts toward maxTokens, so a tight
+// budget leaves no room for the JSON answer (Groq: json_validate_failed) and burns retries.
+// On OpenRouter, route to the lowest-latency provider (gpt-oss-120b: ~0.5 s on Groq/Cerebras instead of 2-3 s by default).
+export const llm = (env, { system, content, tool, maxTokens = 1500, vision = false, reasoning = null }) => [
   "n8n-nodes-base.httpRequest", 4.2,
   {
     method: "POST", url: `${env.LLM_BASE_URL}/chat/completions`,
     authentication: "genericCredentialType", genericAuthType: "httpHeaderAuth",
     sendBody: true, specifyBody: "json",
-    jsonBody: "={{ " + safe(`JSON.stringify({ model: "${vision ? env.LLM_VISION_MODEL || env.LLM_MODEL : env.LLM_MODEL}", max_tokens: ${maxTokens}, temperature: 0.3,
+    jsonBody: "={{ " + safe(`JSON.stringify({ model: "${vision ? env.LLM_VISION_MODEL || env.LLM_MODEL : env.LLM_MODEL}", max_tokens: ${maxTokens}, temperature: 0.3,${reasoning ? ` reasoning_effort: "${reasoning}",` : ""}${/openrouter.ai/.test(env.LLM_BASE_URL) ? ` provider: { sort: "latency" },` : ""}
       messages: [{ role: "system", content: ${system} + ${JSON.stringify(" Respond with JSON only: " + tool.description + ".")} }, { role: "user", content: ${content} }],
       response_format: { type: "json_schema", json_schema: ${JSON.stringify({ name: tool.name, schema: tool.input_schema })} } })`) + " }}",
     options: { timeout: 120000 },
@@ -276,6 +279,50 @@ export const stripe = (env, method, urlExpr, fields) => [
     options: { timeout: 30000 },
   },
 ];
+
+// Marktplaats public search JSON (no login), straight from n8n: ~0.5 s instead of ~10-25 s for an Apify actor run.
+// Pair with MP_COMPS (Code node) to turn the response into comparable listings. Same request as the actor's 'comps'.
+export const mpSearch = (queryExpr) => [
+  "n8n-nodes-base.httpRequest", 4.2,
+  {
+    method: "GET", url: "https://www.marktplaats.nl/lrp/api/search",
+    sendQuery: true, queryParameters: { parameters: [
+      { name: "query", value: queryExpr }, { name: "limit", value: "100" }, { name: "offset", value: "0" },
+      { name: "searchInTitleAndDescription", value: "true" }, { name: "viewOptions", value: "list-view" },
+    ] },
+    sendHeaders: true, headerParameters: { parameters: [
+      { name: "User-Agent", value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" },
+      { name: "Accept", value: "application/json" },
+    ] },
+    options: { timeout: 20000 },
+  },
+  { retryOnFail: true, maxTries: 3, waitBetweenTries: 1000, onError: "continueRegularOutput", alwaysOutputData: true },
+];
+
+// Code for the node after mpSearch: one item per priced private listing (first 40), like the actor's mapListing.
+// Always returns at least one (empty) item so the flow continues when nothing is found.
+export const MP_COMPS = `
+const listings = $input.all().flatMap(i => Array.isArray(i.json.listings) ? i.json.listings : []);
+const seen = new Set();
+const out = [];
+for (const l of listings) {
+  const id = String(l.itemId || '');
+  if (!id || seen.has(id) || id.startsWith('a')) continue; // 'a...' = Admarkt business ads, not second-hand comps
+  seen.add(id);
+  const cents = l.priceInfo && l.priceInfo.priceCents;
+  if (typeof cents !== 'number' || cents <= 0) continue;
+  const pic = Array.isArray(l.pictures) && l.pictures[0];
+  const abs = (u) => !u ? null : u.startsWith('//') ? 'https:' + u : u.startsWith('/') ? 'https://www.marktplaats.nl' + u : u;
+  out.push({ json: { itemId: id, title: String(l.title || ''), price: Math.round(cents) / 100, priceType: String((l.priceInfo && l.priceInfo.priceType) || ''),
+    url: abs(l.vipUrl) || 'https://www.marktplaats.nl/' + id, image: (pic && (pic.largeUrl || pic.mediumUrl)) || abs((l.imageUrls || [])[0]) || null,
+    city: (l.location && l.location.cityName) || null, platform: 'marktplaats' } });
+  if (out.length >= 40) break;
+}
+return out.length ? out : [{ json: {} }];`;
+
+// Comparable matching rules shared by intake and rename: generations (a name without one matched only 1st-gen listings in
+// one run and 2nd/3rd-gen in the next) and knock-offs ("AirPods Pro 2 nieuw" for €20 drags the market price down).
+export const FAKES = "If the item's name has no generation or version (e.g. 'Apple AirPods Pro'), every generation of that product line counts as the same product; if it names one, keep only that one. Also exclude likely replicas/fakes: listings of branded electronics priced far below the typical price for that exact product.";
 
 // Apify REST call (generic)
 export const apify = (method, url, extra = {}) => [
