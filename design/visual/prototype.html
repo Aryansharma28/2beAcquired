@@ -588,8 +588,8 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
       cutout: 'airpods-cutout.png?v=2', photos: ['assets/demo-1.jpg', 'assets/demo-2.jpg', 'assets/demo-3.jpg', 'assets/demo-4.jpg'], cover: 'assets/demo-4.jpg',
       min: 60, goal: 80, step: 5, cond: 1, tomD: -5, openD: -10, dealD: 10, fast: 75, best: 90,
       histo: [45, 95, 70], counts: [2, 3, 2, 4, 5, 3, 2, 1, 1], listings: 23,
-      counterLine: 'Hardly used, with the wireless case and the box.',
-      noorQ: 'Do they come with the box?', noorA: 'Yes, the original box and the charging cable are included.'
+      counterLine: 'Nauwelijks gebruikt, met de draadloze case en de doos.',
+      noorQ: 'Zit de doos erbij?', noorA: 'Ja, de originele doos en het oplaadkabeltje zitten erbij.'
     },
     dj: {
       short: 'DJ controller', title: 'Pioneer DDJ-400', sub: 'DJ controller for rekordbox', plural: false,
@@ -598,8 +598,8 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
       cutout: 'dj-cutout.png', photos: ['assets/demo/dj-1.jpg', 'assets/demo/dj-2.jpg', 'assets/demo/dj-3.jpg', 'assets/demo/dj-4.jpg'], cover: 'assets/demo/dj-1.jpg',
       min: 150, goal: 190, step: 10, cond: 2, tomD: -10, openD: -30, dealD: 20, fast: 170, best: 210,
       histo: [110, 240, 170], counts: [1, 2, 4, 5, 6, 4, 3, 2, 1], listings: 31,
-      counterLine: 'Everything works perfectly and the USB cable is included.',
-      noorQ: 'Is the USB cable included?', noorA: 'Yes, the USB cable is included. It works straight away with rekordbox.'
+      counterLine: 'Alles werkt perfect en de USB-kabel zit erbij.',
+      noorQ: 'Zit de USB-kabel erbij?', noorA: 'Ja, de USB-kabel zit erbij. Werkt direct met rekordbox.'
     },
     lamp: {
       short: 'Donut lamp', title: 'Orange donut lamp', sub: 'Glossy table lamp', plural: false,
@@ -608,8 +608,8 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
       cutout: 'donutlamp-cutout.png', photos: ['assets/demo/lamp-2.jpg', 'assets/demo/lamp-1.jpg', 'assets/demo/lamp-3.jpg'], cover: 'assets/demo/lamp-2.jpg',
       min: 40, goal: 55, step: 5, cond: 1, tomD: -5, openD: -10, dealD: 5, fast: 50, best: 65,
       histo: [25, 75, 45], counts: [2, 3, 4, 5, 3, 2, 2, 1, 1], listings: 17,
-      counterLine: 'No chips or scratches, and it gives a lovely warm light.',
-      noorQ: 'Does it come with a bulb?', noorA: 'Yes, the bulb is included and works.'
+      counterLine: 'Geen schilfers of krassen, en hij geeft een heerlijk warm licht.',
+      noorQ: 'Zit er een lamp bij?', noorA: 'Ja, de lamp zit erbij en doet het gewoon.'
     },
     massager: {
       short: 'Massage pillow', title: 'Shiatsu massage pillow', sub: 'With heat function and adapter', plural: false,
@@ -618,8 +618,8 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
       cutout: 'massager-cutout.png', photos: ['assets/demo/massager-1.jpg', 'assets/demo/massager-2.jpg', 'assets/demo/massager-3.jpg'], cover: 'assets/demo/massager-1.jpg',
       min: 25, goal: 40, step: 5, cond: 1, tomD: -5, openD: -10, dealD: 5, fast: 35, best: 45,
       histo: [15, 55, 30], counts: [2, 4, 5, 4, 3, 2, 1, 1, 1], listings: 19,
-      counterLine: 'Works perfectly, the heat function too, and the adapter is included.',
-      noorQ: 'Does the heat function still work?', noorA: 'Yes, the heat and all massage modes work.'
+      counterLine: 'Werkt perfect, de warmtefunctie ook, en de adapter zit erbij.',
+      noorQ: 'Doet de warmtefunctie het nog?', noorA: 'Ja, de warmte en alle massagestanden werken.'
     },
     racket: {
       short: 'Padel racket', title: 'Padel racket, round shape', sub: 'Glass fibre face, full EVA core', plural: false,
@@ -628,8 +628,8 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
       cutout: 'racket-cutout.png', photos: ['assets/demo/racket-1.jpg', 'assets/demo/racket-2.jpg', 'assets/demo/racket-3.jpg'], cover: 'assets/demo/racket-1.jpg',
       min: 30, goal: 45, step: 5, cond: 2, tomD: -5, openD: -10, dealD: 5, fast: 40, best: 50,
       histo: [15, 65, 35], counts: [1, 3, 4, 6, 5, 3, 2, 2, 1], listings: 27,
-      counterLine: 'Only light signs of use, the face is in great shape.',
-      noorQ: 'Is there a cover with it?', noorA: 'No cover, just the racket. It is in good shape.'
+      counterLine: 'Alleen lichte gebruikssporen, het racket zelf is in topstaat.',
+      noorQ: 'Zit er een hoes bij?', noorA: 'Geen hoes, alleen het racket. Wel in goede staat.'
     }
   };
   const ITEM_ORDER = ['airpods', 'dj', 'lamp', 'massager', 'racket'];
@@ -1583,9 +1583,8 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
     finishGoLive(false);
   }
   function onAdLive() {
-    showBanner('Your ' + IT().short + ' ' + isAre() + ' live on 4 platforms', () => { if (currentId !== 'product') go('product', {}, { mode: 'push' }); });
-    // Freshly live: no offers, no chats yet. Nothing happens on its own from here;
-    // use the presenter controls ("Tom's offer now" / "Deal now" / "Skip ahead") to move the story forward.
+    // Freshly live: no offers, no chats yet, no banner needed (the product page already shows "Live").
+    // Nothing happens on its own from here; use the presenter controls to move the story forward.
   }
   function resolveTom(kind) {
     S.tomTyping = true;
@@ -1606,7 +1605,6 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
     S.tomOfferArrived = true;
     refreshInPlace('chats'); refreshInPlace('product'); refreshInPlace('home');
     updateTabbar(currentId);
-    showBanner('Tom offered €' + tomOffer() + ', below your €' + S.min, () => go('chat-tom', {}, { mode: 'push' }));
   }
 
   /* ---------- shared: this ad's chat entries (used on both the chats tab and the product page) ---------- */
@@ -1626,16 +1624,17 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
       });
     }
     const milaNegotiating = !S.sold && (S.milaTyping || (S.milaStage > 0 && !S.milaDealDone));
-    let milaLast, milaSpoke = true;
-    if (S.sold) milaLast = milaScript().slice(-1)[0].text;
-    else if (milaNegotiating) { milaLast = 'Poof is negotiating'; milaSpoke = false; }
-    else if (S.milaStage > 0) milaLast = IT().counterLine;
-    else { milaLast = 'No messages yet'; milaSpoke = false; }
-    entries.push({
-      id: 'mila', go: 'chat-mila', letter: 'M', plat: 'marktplaats', name: 'Mila',
-      last: milaLast, poofSpoke: milaSpoke,
-      offer: S.sold ? S.soldPrice : (S.milaStage > 0 ? milaDeal() : null), state: milaNegotiating ? 'negotiating' : 'handled', typing: S.milaTyping
-    });
+    if (S.milaStage > 0 || S.sold) {
+      let milaLast, milaSpoke = true;
+      if (S.sold) milaLast = milaScript().slice(-1)[0].text;
+      else if (milaNegotiating) { milaLast = 'Poof is negotiating'; milaSpoke = false; }
+      else milaLast = IT().counterLine;
+      entries.push({
+        id: 'mila', go: 'chat-mila', letter: 'M', plat: 'marktplaats', name: 'Mila',
+        last: milaLast, poofSpoke: milaSpoke,
+        offer: S.sold ? S.soldPrice : milaDeal(), state: milaNegotiating ? 'negotiating' : 'handled', typing: S.milaTyping
+      });
+    }
     if (hasActivity()) {
       entries.push({
         id: 'noor', go: 'chat-noor', letter: 'N', plat: 'vinted', name: 'Noor',
@@ -1661,16 +1660,16 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
   }
   function foldedLowOffers() {
     return `<details class="fold">
-      <summary>2 low offers, filtered out ${ic('down')}</summary>
+      <summary>2 lage biedingen, uitgefilterd ${ic('down')}</summary>
       <div class="inner">
         <div class="chat-row">
           ${chatAvatar('S', 'marktplaats')}
-          <span class="grow"><span class="top-line"><b class="normal">Sander</b></span><span class="last">Offered €25</span></span>
+          <span class="grow"><span class="top-line"><b class="normal">Sander</b></span><span class="last">Bood €25</span></span>
           <span class="side"><span class="offer-pill">€25</span></span>
         </div>
         <div class="chat-row">
           ${chatAvatar('?', 'ebay')}
-          <span class="grow"><span class="top-line"><b class="normal">Unknown buyer</b></span><span class="last">Likely a scam, ignored</span></span>
+          <span class="grow"><span class="top-line"><b class="normal">Onbekende koper</b></span><span class="last">Waarschijnlijk oplichting, genegeerd</span></span>
         </div>
       </div>
     </details>`;
@@ -1681,7 +1680,7 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
     const needsEntry = S.adLive && !S.sold ? entries.find(e => e.state === 'needs') : null;
     const compactRows = PLATFORM_ORDER.map((key, i) => '<li style="animation:fadeUp .28s var(--out) backwards;animation-delay:' + (i * 35) + 'ms">' + platIcon(key, 40) + '<span class="grow"><b>' + PLATFORMS[key].name + '</b><span class="xs muted">Live</span></span><button type="button" class="viewlink" data-act="plat-view" data-k="' + key + '">View on ' + PLATFORMS[key].name + ' ↗</button></li>').join('');
     const soldRows = PLATFORM_ORDER.map(key => '<li>' + platIcon(key, 40) + '<span class="grow"><b>' + PLATFORMS[key].name + '</b><span class="xs muted">Taken offline after the sale</span></span>' + ic('check') + '</li>').join('');
-    const stageIdx = S.sold ? 3 : (S.tomOfferArrived || S.milaStage > 0) ? 2 : S.adLive ? 1 : 0;
+    const stageIdx = S.sold ? 3 : (S.milaStage > 0) ? 2 : S.tomOfferArrived ? 1 : 0;
     const seg4 = ['Live', 'Offers', 'Negotiating', 'Sold'].map((l, i) => '<span class="' + (i === stageIdx ? 'cur' : '') + '">' + l + '</span>').join('');
     const seg4bars = [0, 1, 2, 3].map(i => '<i class="' + (i <= stageIdx ? 'on' : '') + '"></i>').join('');
     const chatCount = entries.filter(e => e.id !== 'noor' || true).length; // Tom (if arrived) + Mila + Noor
@@ -1720,7 +1719,7 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
         <p class="sec" style="margin:0 0 10px">Now</p>
         <p class="row" style="gap:8px;margin:0">${showTyping ? '<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}<span class="grow">${nowDoing}</span></p>
       </div>`;
-    const chatSection = S.adLive ? `
+    const chatSection = (S.adLive && entries.length > 0) ? `
       <div class="sec" style="margin-top:20px"><span>${S.sold ? 'All chats for this ad' : 'Chats'}</span><button type="button" data-go="chats" data-mode="tab">All chats</button></div>
       ${entries.map((e, i) => renderChatEntryRow(e, i)).join('')}
       ${hasActivity() ? foldedLowOffers() : ''}` : '';
@@ -1769,7 +1768,7 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
           <button class="group-head" type="button">${sticker('egg-chair-cutout.png', 3)}<div class="grow"><b>Egg chair</b><span>2 chats · best offer €175</span></div>${ic('right')}</button>
           <button class="chat-row calm" type="button">
             ${chatAvatar('S', 'marktplaats')}
-            <span class="grow"><span class="top-line"><b class="normal">Sanne</b></span><span class="last">${poofLine('Yes, still available, pickup only.')}</span></span>
+            <span class="grow"><span class="top-line"><b class="normal">Sanne</b></span><span class="last">${poofLine('Ja, nog beschikbaar, alleen ophalen.')}</span></span>
             <span class="side"><span class="offer-pill">€175</span></span>
           </button>
         </div>
@@ -1790,18 +1789,18 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
     const itemLower = IT().short.replace(/^[A-Z](?=[a-z]+(\s|$))/, ch => ch.toLowerCase());
     const mid = Math.max(o + IT().step, Math.min(d - IT().step, Math.round((o + c) / 2 / 5) * 5));
     return [
-      { from: 'buyer', text: 'Hi! ' + (IT().plural ? 'Are the ' : 'Is the ') + itemLower + ' still available?' },
-      { from: 'poof', text: 'Yes! Pickup in Amsterdam.' },
-      { from: 'buyer', text: 'Nice, any damage or does everything still work fine?' },
+      { from: 'buyer', text: 'Hoi! ' + (IT().plural ? 'Zijn de ' : 'Is de ') + itemLower + ' nog beschikbaar?' },
+      { from: 'poof', text: 'Ja! Ophalen in Amsterdam.' },
+      { from: 'buyer', text: 'Leuk, nog schade of doet alles het nog gewoon goed?' },
       { from: 'poof', text: IT().counterLine },
-      { from: 'buyer', text: 'Would you take ' + o + '?', offer: o, kind: 'Offer' },
-      { from: 'poof', text: "That's a bit low for me, I can do " + c + '.', offer: c, kind: 'Counter' },
-      { from: 'buyer', text: 'Could you do ' + mid + '?', offer: mid, kind: 'Offer' },
-      { from: 'poof', text: 'I can meet you at ' + d + '.', offer: d, kind: 'Counter' },
-      { from: 'buyer', text: d + ' works, I can pick ' + itThem() + ' up Saturday?', offer: d, kind: 'Offer' },
-      { from: 'poof', text: 'Deal! Saturday 14:00 works.', offer: d, kind: 'Accepted', accepted: true },
-      { from: 'buyer', text: 'Great, see you then!' },
-      { from: 'poof', text: "See you Saturday, I'll send the address closer to the time." }
+      { from: 'buyer', text: 'Zou je ' + o + ' doen?', offer: o, kind: 'Bod' },
+      { from: 'poof', text: 'Dat is wel wat laag voor mij, ik kan ' + c + ' doen.', offer: c, kind: 'Tegenbod' },
+      { from: 'buyer', text: 'Kun je ' + mid + ' doen?', offer: mid, kind: 'Bod' },
+      { from: 'poof', text: 'Ik kom je tegemoet op ' + d + '.', offer: d, kind: 'Tegenbod' },
+      { from: 'buyer', text: d + ' is goed, kan ik ' + (IT().plural ? 'ze' : 'het') + ' zaterdag ophalen?', offer: d, kind: 'Bod' },
+      { from: 'poof', text: 'Deal! Zaterdag 14:00 werkt.', offer: d, kind: 'Akkoord', accepted: true },
+      { from: 'buyer', text: 'Top, tot dan!' },
+      { from: 'poof', text: 'Tot zaterdag, ik stuur het adres nog door.' }
     ];
   }
   function renderChatMila() {
@@ -1813,16 +1812,16 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
       return '<div class="' + cls + '">' + who + offerHtml + m.text + '</div>';
     }).join('');
     const typing = S.milaTyping ? '<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span><span class="typing" aria-hidden="true"><i></i><i></i><i></i></span></div>' : '';
-    const deal = S.milaDealDone ? '<div class="deal"><span class="cal"><small>Sat</small><b>' + nextSaturday() + '</b></span><div><b>Deal at €' + (S.sold ? S.soldPrice : milaDeal()) + '</b><span class="small muted">Pickup Saturday 14:00 · address shared with Mila</span></div></div>' : '';
-    const youMsgs = (S.milaYouMsgs || []).map(t => '<div class="msg you"><span class="who">You</span>' + escapeHtml(t) + '</div>').join('');
+    const deal = S.milaDealDone ? '<div class="deal"><span class="cal"><small>Za</small><b>' + nextSaturday() + '</b></span><div><b>Deal voor €' + (S.sold ? S.soldPrice : milaDeal()) + '</b><span class="small muted">Ophalen zaterdag 14:00 · adres gedeeld met Mila</span></div></div>' : '';
+    const youMsgs = (S.milaYouMsgs || []).map(t => '<div class="msg you"><span class="who">Jij</span>' + escapeHtml(t) + '</div>').join('');
     return `
       <div class="top2"><button class="icon-btn" type="button" aria-label="Back" data-back>${ic('back')}</button>
         <div class="grow"><h1 class="bar-title" style="font-size:17px">Mila</h1><span class="xs muted">Marktplaats</span></div>
       </div>
       <div class="item-row">${sticker(IT().cutout, -2)}<div class="grow"><b class="small">${IT().title}</b><span>€${S.goal}, never below €${S.min}</span></div></div>
-      <div class="body2"><div class="thread"><span class="day">Today</span>${msgs}${typing}${deal}${youMsgs}</div></div>
+      <div class="body2"><div class="thread"><span class="day">Vandaag</span>${msgs}${typing}${deal}${youMsgs}</div></div>
       <div class="composer">
-        <div class="row"><label class="sr" for="milaInput">Your message</label><input id="milaInput" type="text" placeholder="Say something (optional)"><button class="icon-btn" type="button" data-act="mila-send" aria-label="Send">${ic('send')}</button></div>
+        <div class="row"><label class="sr" for="milaInput">Je bericht</label><input id="milaInput" type="text" placeholder="Typ iets (optioneel)"><button class="icon-btn" type="button" data-act="mila-send" aria-label="Verstuur">${ic('send')}</button></div>
       </div>`;
   }
   function playMila() {
@@ -1842,34 +1841,34 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
   function renderChatTom() {
     const t = tomOffer();
     const decisionMsgs = [];
-    decisionMsgs.push('<div class="msg buyer"><span class="who">Tom</span>Would you do ' + t + '? I can come tonight.</div>');
-    decisionMsgs.push('<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span>Tom offered €' + t + ', below your €' + S.min + '. Counter at €' + S.min + '?</div>');
+    decisionMsgs.push('<div class="msg buyer"><span class="who">Tom</span>Zou je ' + t + ' doen? Ik kan vanavond langskomen.</div>');
+    decisionMsgs.push('<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span>Tom bood €' + t + ', onder je €' + S.min + '. Tegenbod van €' + S.min + '?</div>');
     if (S.tomResolved === 'counter') {
-      decisionMsgs.push('<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span><div class="offer-card"><small>Counter</small><b>€' + S.min + '</b></div>I can do ' + S.min + '.</div>');
-      if (S.sold || S.daysLive > 0) decisionMsgs.push('<div class="msg buyer"><span class="who">Tom</span>Hmm, let me think about it.</div>');
-      if (S.sold) decisionMsgs.push('<span class="day">Later</span><div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span>Sorry Tom, it just sold. Thanks for your interest!</div>');
+      decisionMsgs.push('<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span><div class="offer-card"><small>Tegenbod</small><b>€' + S.min + '</b></div>Ik kan ' + S.min + ' doen.</div>');
+      if (S.sold || S.daysLive > 0) decisionMsgs.push('<div class="msg buyer"><span class="who">Tom</span>Hmm, laat me erover nadenken.</div>');
+      if (S.sold) decisionMsgs.push('<span class="day">Later</span><div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span>Sorry Tom, is net verkocht. Bedankt voor je interesse!</div>');
     } else if (S.tomResolved === 'accept') {
-      decisionMsgs.push('<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span><div class="offer-card accepted"><small>Accepted</small><b>€' + t + '</b></div>Deal, thanks!</div>');
+      decisionMsgs.push('<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span><div class="offer-card accepted"><small>Akkoord</small><b>€' + t + '</b></div>Deal, bedankt!</div>');
     } else if (S.tomResolved === 'decline') {
-      decisionMsgs.push('<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span>Sorry, can’t go that low. Thanks for the interest!</div>');
+      decisionMsgs.push('<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span>Sorry, kan niet zo laag gaan. Bedankt voor je interesse!</div>');
     }
-    const youMsgs = (S.tomYouMsgs || []).map(txt => '<div class="msg you"><span class="who">You</span>' + escapeHtml(txt) + '</div>').join('');
+    const youMsgs = (S.tomYouMsgs || []).map(txt => '<div class="msg you"><span class="who">Jij</span>' + escapeHtml(txt) + '</div>').join('');
     const typing = S.tomTyping ? '<div class="msg agent-m"><span class="who"><span class="agenttag">' + cloudmark() + 'POOF</span></span><span class="typing" aria-hidden="true"><i></i><i></i><i></i></span></div>' : '';
     const chips = (!S.tomResolved && !S.tomTyping) ? `
       <div class="qr" style="animation:qrUp .3s var(--out) backwards">
-        <button class="qrbtn primary" type="button" data-act="tom-counter">Counter €${S.min}</button>
-        <button class="qrbtn secondary" type="button" data-act="tom-accept">Accept €${t}</button>
-        <button class="qrbtn secondary" type="button" data-act="tom-decline">Decline</button>
+        <button class="qrbtn primary" type="button" data-act="tom-counter">Tegenbod €${S.min}</button>
+        <button class="qrbtn secondary" type="button" data-act="tom-accept">Akkoord €${t}</button>
+        <button class="qrbtn secondary" type="button" data-act="tom-decline">Afwijzen</button>
       </div>` : '';
     return `
       <div class="top2"><button class="icon-btn" type="button" aria-label="Back" data-back>${ic('back')}</button>
         <div class="grow"><h1 class="bar-title" style="font-size:17px">Tom</h1><span class="xs muted">Marktplaats</span></div>
       </div>
       <div class="item-row">${sticker(IT().cutout, 2)}<div class="grow"><b class="small">${IT().title}</b><span>€${S.goal}, never below €${S.min}</span></div></div>
-      <div class="body2"><div class="thread"><span class="day">Today</span>${decisionMsgs.join('')}${youMsgs}${typing}</div></div>
+      <div class="body2"><div class="thread"><span class="day">Vandaag</span>${decisionMsgs.join('')}${youMsgs}${typing}</div></div>
       ${chips}
       <div class="composer">
-        <div class="row"><label class="sr" for="tomInput">Your message</label><input id="tomInput" type="text" placeholder="Or type your own message"><button class="icon-btn" type="button" data-act="tom-send" aria-label="Send">${ic('send')}</button></div>
+        <div class="row"><label class="sr" for="tomInput">Je bericht</label><input id="tomInput" type="text" placeholder="Of typ zelf een bericht"><button class="icon-btn" type="button" data-act="tom-send" aria-label="Verstuur">${ic('send')}</button></div>
       </div>`;
   }
 
@@ -1881,14 +1880,14 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
         <div class="grow"><h1 class="bar-title" style="font-size:17px">Noor</h1><span class="xs muted">Vinted</span></div>
       </div>
       <div class="item-row">${sticker(IT().cutout, 3)}<div class="grow"><b class="small">${IT().title}</b><span>€${S.goal}, never below €${S.min}</span></div></div>
-      <div class="body2"><div class="thread"><span class="day">Today</span>
+      <div class="body2"><div class="thread"><span class="day">Vandaag</span>
         <div class="msg buyer"><span class="who">Noor</span>${IT().noorQ}</div>
         <div class="msg agent-m">${poof}${IT().noorA}</div>
-        <div class="msg buyer"><span class="who">Noor</span>Thanks, I'll think about it!</div>
-        ${S.sold ? '<span class="day">Later</span><div class="msg agent-m">' + poof + 'Sorry Noor, it just sold. Thanks for asking!</div>' : ''}
+        <div class="msg buyer"><span class="who">Noor</span>Bedankt, ik denk erover na!</div>
+        ${S.sold ? '<span class="day">Later</span><div class="msg agent-m">' + poof + 'Sorry Noor, is net verkocht. Bedankt voor het vragen!</div>' : ''}
       </div></div>
       <div class="composer">
-        <div class="row"><label class="sr" for="noorInput">Your message</label><input id="noorInput" type="text" placeholder="Say something (optional)"><button class="icon-btn" type="button" aria-label="Send">${ic('send')}</button></div>
+        <div class="row"><label class="sr" for="noorInput">Je bericht</label><input id="noorInput" type="text" placeholder="Typ iets (optioneel)"><button class="icon-btn" type="button" aria-label="Verstuur">${ic('send')}</button></div>
       </div>`;
   }
 
@@ -1921,7 +1920,7 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
     S.milaDealDone = true;
     refreshInPlace('chats'); refreshInPlace('chat-mila'); refreshInPlace('product'); refreshInPlace('home');
     updateTabbar(currentId);
-    showBanner('Sold for €' + S.soldPrice, () => go('sold', {}, { mode: 'push' }), true);
+    // No banner: tap the item on Home (it now routes straight to the sold reveal while pending) or "Deal now" again from Product.
   }
 
   /* ---------- demo helper: jump straight to "a few days later, sold" for filming ---------- */
@@ -1953,15 +1952,16 @@ details.fold .chat-row{cursor:default;background:var(--page);box-shadow:none}
     updateTabbar(currentId);
     S.homeTab = 'selling';
     if (currentId !== 'home') go('home', {}, { mode: 'tab' }); else refreshInPlace('home');
-    runChain([1400, () => showBanner('Sold for €' + S.soldPrice + ' · ' + IT().short + ' to Mila', () => go('sold', {}, { mode: 'push' }), true)]);
+    // No banner: the tile on Home already shows the pending status, tap it for the sold reveal.
   }
 
   /* ---------- sound ---------- */
   const sfxPool = (src, vol) => {
-    let pool = null;
-    const build = () => Array.from({ length: 2 }, () => { const a = new Audio(src); a.preload = 'auto'; a.volume = vol; return a; });
+    // Built and loaded right away (not on first use) so playback has no first-time load latency
+    // by the time the sold moment actually happens, well after the app has already loaded.
+    const pool = Array.from({ length: 2 }, () => { const a = new Audio(src); a.preload = 'auto'; a.volume = vol; try { a.load(); } catch (e) {} return a; });
     let n = 0;
-    return () => { try { if (!pool) pool = build(); const a = pool[n++ % pool.length]; a.currentTime = 0; a.play().catch(() => {}); } catch (e) {} };
+    return () => { try { const a = pool[n++ % pool.length]; a.currentTime = 0; a.play().catch(() => {}); } catch (e) {} };
   };
   const sndItem = sfxPool('assets/poof-item.mp3', .5);
   const sndDone = sfxPool('assets/poof-success.mp3', .6);
