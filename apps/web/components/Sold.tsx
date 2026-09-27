@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
-  PLATFORM, dealBuyer, dealConversation, dealPrice, dealStage, eur, handoverLabel, isPaid, pickupWhen, recapOf,
+  PLATFORM, dealBuyer, dealConversation, dealPrice, dealStage, eur, handoverLabel, paidOnline, pickupWhen, recapOf,
 } from "@/lib/format";
 import { coverFirst } from "@/lib/useItem";
 import type { Item, Pickup, Platform } from "@/lib/types";
@@ -52,7 +52,7 @@ export function Sold({ item, onProduct, onMarkDone }: { item: Item; onProduct: (
   const recap = recapOf(item);
   const photo = coverFirst(item)[0];
   const lastMsg = conv?.messages.at(-1);
-  const paidLine = isPaid(item) ? `${buyer} already paid` : `${buyer} pays at pickup`;
+  const paidLine = paidOnline(item) ? `${buyer} already paid` : `${buyer} pays at pickup`;
 
   const stage = useRef<HTMLDivElement>(null);
   const sticker = useRef<HTMLSpanElement>(null);

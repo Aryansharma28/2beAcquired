@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useItem, coverFirst } from "@/lib/useItem";
 import { approve, markDone } from "@/lib/api";
 import {
-  PLATFORM, daysSince, dealBuyer, dealConversation, dealPrice, dealStage, eur, handoverLabel, isPaid, recapOf,
+  PLATFORM, daysSince, dealBuyer, dealConversation, dealPrice, dealStage, eur, handoverLabel, isPaid, paidOnline, recapOf,
 } from "@/lib/format";
 import type { Item, Status } from "@/lib/types";
 import { AdReview } from "@/components/AdReview";
@@ -253,7 +253,7 @@ function SoldCard({ item, sold, onMarkDone }: { item: Item; sold: boolean; onMar
       <p className="small muted" style={{ margin: "2px 0 14px" }}>Poof closed the deal on {PLATFORM[platform]}</p>
       <ol className="timeline">
         <li className={sold ? "done" : ""}><div><b>{handoverLabel(item)}</b><span>{buyer} comes to you{item.pickupCity ? ` in ${item.pickupCity}` : ""}</span></div></li>
-        <li className={sold ? "done" : ""}><div><b>Get paid {eur(price)}</b><span>{isPaid(item) ? `${buyer} already paid` : `${buyer} pays at pickup`}</span></div></li>
+        <li className={sold ? "done" : ""}><div><b>Get paid {eur(price)}</b><span>{paidOnline(item) ? `${buyer} already paid` : `${buyer} pays at pickup`}</span></div></li>
       </ol>
       <div className="recap divided" style={{ marginTop: 6 }}>
         <div><span>Time to sell</span><b>{recap.duration}</b></div>

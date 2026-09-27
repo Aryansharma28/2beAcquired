@@ -156,9 +156,10 @@ export const lastTs = (c: Conversation) => c.messages.at(-1)?.ts ?? "";
 
 // ---------------------------------------------------------------- deal / sold (prototype v2)
 
-/** Payment as the backend may report it (Stripe payment link); not in the v2 contract yet. */
-type WithPayment = { payment?: { status?: string } | null };
-export const isPaid = (item: Item) => (item as Item & WithPayment).payment?.status === "paid";
+/** Settled payment (online via the Stripe link, or cash marked at pickup). */
+export const isPaid = (item: Item) => item.payment?.status === "paid" || item.sale?.paid === true;
+/** Paid online before the handover (prototype: "Mila already paid"). */
+export const paidOnline = (item: Item) => isPaid(item) && item.payment?.method !== "cash";
 
 /**
  * "pending": the deal is agreed but the item isn't handed over (prototype: "Deal done").
