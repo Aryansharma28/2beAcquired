@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useItem } from "@/lib/useItem";
 import { ChatList } from "@/components/Chats";
-import { NavBar } from "@/components/ui";
+import { Navbar } from "@/components/Navbar";
 
 /** Chats for this ad (prototype: renderChats). */
 export default function ChatsPage() {
@@ -18,7 +18,7 @@ export default function ChatsPage() {
           {error ? <p className="muted small">Can&apos;t load the chats: {error}</p> : <div className="skeleton h-40 rounded-[20px]" />}
         </div>
       )}
-      <NavBar />
+      <Navbar active="chats" chatsHref={`/item/${id}/chats`} chatBadge={item?.status === "needs_you" ? 1 : 0} />
     </main>
   );
 }

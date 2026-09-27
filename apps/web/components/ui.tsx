@@ -197,9 +197,6 @@ export function Soon({ className }: { className?: string }) {
   return <span className={cx("whitespace-nowrap rounded-[4px] bg-limetint px-1.5 py-px text-[12px] font-bold text-ink", className)}>Soon</span>;
 }
 
-/** Old name of the navbar; every screen now gets the prototype's navbar. */
-export { Navbar as NavBar } from "./Navbar";
-
 /** Sticky primary action at the bottom of a wizard-style screen. */
 export function BottomAction({ children }: { children: ReactNode }) {
   return (
