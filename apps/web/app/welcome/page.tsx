@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createAccount, getAccount, updateAccount, type Account, type Profile } from "@/lib/account";
 import { ConnectMarktplaats, ProfileFields } from "@/components/Connect";
-import { BottomAction, Button, CloudMark, Eyebrow, ICON_BTN, PriceTag, Wordmark, cx } from "@/components/ui";
+import { Icon, Wordmark } from "@/components/ui";
 
 type Step = "intro" | "profile" | "connect";
 
@@ -47,78 +47,71 @@ export default function Welcome() {
   }
 
   const idx = ["intro", "profile", "connect"].indexOf(step);
+  const back = () => setStep(step === "connect" ? "profile" : "intro");
 
   return (
-    <main className="flex flex-1 flex-col px-5 pb-32 pt-[max(18px,env(safe-area-inset-top))]">
-      <header className="flex items-center justify-between py-2">
-        {step === "intro" ? <Wordmark className="text-[22px]" /> : (
-          <button onClick={() => setStep(step === "connect" ? "profile" : "intro")} aria-label="Back" className={ICON_BTN}>
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-          </button>
-        )}
-        <div className="flex gap-1.5">
-          {[0, 1, 2].map((i) => <span key={i} className={cx("h-1.5 rounded-full transition-all duration-300", i === idx ? "w-6 bg-ink" : "w-1.5 bg-line")} />)}
-        </div>
-      </header>
+    <main className="welcome">
+      <div className="top2">
+        {step === "intro"
+          ? <Wordmark className="welcome-mark" />
+          : <button className="icon-btn" type="button" aria-label="Back" onClick={back}><Icon name="back" /></button>}
+        <div className="wizbar" aria-hidden="true"><i style={{ width: `${Math.round(((idx + 1) / 3) * 100)}%` }}></i></div>
+        <span className="step-count">{idx + 1} of 3</span>
+      </div>
 
-      <div key={step} className="animate-rise pt-4">
+      <div key={step} className="body2" style={{ animation: "fadeUp .28s var(--out) backwards" }}>
         {step === "intro" && (
           <>
-            <div className="relative mb-8 mt-4 flex h-[180px] items-center justify-center overflow-hidden rounded-[28px] bg-limetint">
-              <CloudMark className="absolute -left-8 top-6 h-24 w-auto text-lime" />
-              <CloudMark className="absolute -right-6 bottom-3 h-16 w-auto text-lime" />
-              <CloudMark className="absolute right-16 top-5 h-6 w-auto text-lime" />
-              <PriceTag amount={35} size="lg" tilt={-8} label="sold" dark className="animate-pop" />
+            <div className="welcome-hero">
+              <span className="pricetag sold" style={{ ["--tilt" as string]: "-6deg", position: "static", fontSize: 26, padding: "8px 16px 8px 26px", animation: "tagDrop .4s var(--out) backwards" }}>Sold €35</span>
             </div>
-            <h1 className="text-[34px] font-extrabold leading-[1.08] tracking-[-0.03em]">
-              Poof sells your stuff on Marktplaats <span className="marker">for you</span>
-            </h1>
-            <ul className="mt-6 space-y-3">
+            <h1 className="q">Poof sells your stuff on Marktplaats <span className="pb">for you</span></h1>
+            <p className="sub">Snap it. poof. Sold.</p>
+            <ol className="steps card divided" style={{ boxShadow: "var(--shadow-soft)" }}>
               {[
                 ["Snap it", "Poof works out what it is, writes the ad and sets the price."],
                 ["It haggles", "It answers every buyer and never goes below your minimum."],
                 ["Poof, sold", "It plans the pickup and takes the ad down once it's sold."],
               ].map(([t, d], i) => (
-                <li key={t} className="flex gap-3.5 rounded-[20px] bg-card p-4 shadow-soft animate-rise" style={{ animationDelay: `${120 + i * 80}ms` }}>
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-lime text-[14px] font-extrabold">{i + 1}</span>
-                  <div>
-                    <p className="text-[17px] font-bold leading-tight">{t}</p>
-                    <p className="mt-0.5 text-[14.5px] leading-snug text-moss">{d}</p>
-                  </div>
+                <li key={t} className="step" data-state="running" style={{ background: "none", animation: "fadeUp .28s var(--out) backwards", animationDelay: `${120 + i * 35}ms` }}>
+                  <span className="st-ico" style={{ color: "var(--ink)", fontWeight: 800, fontSize: 13 }}>{i + 1}</span>
+                  <div className="grow"><b>{t}</b><span className="small muted">{d}</span></div>
                 </li>
               ))}
-            </ul>
+            </ol>
           </>
         )}
 
         {step === "profile" && (
           <>
-            <Eyebrow>About you</Eyebrow>
-            <h1 className="mb-5 mt-1 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">Where do buyers pick up?</h1>
+            <h1 className="q">Where do buyers pick up?</h1>
+            <p className="sub">Poof shares this with the buyer once there is a deal.</p>
             <ProfileFields value={profile} onChange={setProfile} />
           </>
         )}
 
         {step === "connect" && (
           <>
-            <Eyebrow>Last step</Eyebrow>
-            <h1 className="mb-5 mt-1 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">Connect Marktplaats</h1>
+            <h1 className="q">Connect Marktplaats</h1>
+            <p className="sub">So Poof can put your ads online and answer buyers.</p>
             <ConnectMarktplaats onConnected={finish} onSkip={finish} />
           </>
         )}
 
-        {error && <p className="mt-4 rounded-[20px] bg-alert-soft p-4 text-[14px] text-alert">{error}</p>}
+        {error && <p className="xs" style={{ color: "var(--alert)", marginTop: 16 }}>{error}</p>}
       </div>
 
       {step !== "connect" && (
-        <BottomAction>
-          {step === "intro" && <Button onClick={() => setStep("profile")} className="w-full">Get started</Button>}
-          {step === "profile" && (
-            <Button onClick={saveProfile} disabled={busy || !profile.name?.trim() || !profile.pickupCity?.trim()} className="w-full">
-              {busy ? "Saving…" : "Next"}
-            </Button>
+        <div className="foot2 welcome-foot">
+          {step === "intro" && (
+            <button className="btn" type="button" onClick={() => setStep("profile")}>Get started<svg className="icon cta-ic" aria-hidden="true"><use href="#i-cta-arrow" /></svg></button>
           )}
-        </BottomAction>
+          {step === "profile" && (
+            <button className="btn" type="button" onClick={saveProfile} disabled={busy || !profile.name?.trim() || !profile.pickupCity?.trim()}>
+              {busy ? "Saving…" : "Next"}{!busy && <svg className="icon cta-ic" aria-hidden="true"><use href="#i-cta-arrow" /></svg>}
+            </button>
+          )}
+        </div>
       )}
     </main>
   );
