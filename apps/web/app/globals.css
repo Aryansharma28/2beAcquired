@@ -877,3 +877,11 @@ body {
 .sf .histo .marker{padding:0;border-radius:0;display:block}
 .sf .viewlink{font-size:12.5px;font-weight:700;color:var(--ink);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;white-space:nowrap;flex:none}
 .sf .gplat .ring{box-shadow:none}
+
+/* === platforms coming soon (eBay, Vinted, Facebook: applied for developer access) === */
+.sf .ptog.soon > span{background:var(--surface);box-shadow:var(--shadow-soft)}
+.sf .ptog.soon > span > span:not([class*="rounded"]){color:var(--moss)}
+.sf .ptog.soon > span > span:first-child,.gplat.soon .wrap > span,.plat-compact li.soon > span:first-child{filter:grayscale(.35);opacity:.75}
+.sf .ptog.soon .icon{display:none}
+.gplat.soon .lbl{color:var(--moss)}
+.gplat.soon .st.soon{color:var(--moss);font-weight:700}

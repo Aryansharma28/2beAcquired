@@ -307,3 +307,33 @@ export function StatusChip({ kind, label }: ItemStatus) {
   if (kind === "error") return <span className="tag" style={{ background: "var(--color-alert-soft)", color: "var(--alert)" }}>{label}</span>;
   return <span className="row" style={CHIP_ROW}><span className="dot" style={CHIP_DOT}></span><span className="xs muted">{label}</span></span>;
 }
+
+/** Platforms Poof will post to next (we applied for their developer access). Shown as "Soon", never as live. */
+export const SOON_PLATFORMS = [
+  { key: "ebay", name: "eBay" },
+  { key: "vinted", name: "Vinted" },
+  { key: "facebook", name: "Facebook" },
+] as const;
+export type SoonPlatform = (typeof SOON_PLATFORMS)[number]["key"];
+export const SOON_NOTE = "eBay, Vinted and Facebook are coming soon. We've applied for access.";
+
+/** Prototype `platIcon`: eBay as its wordmark on a white tile, Vinted and Facebook on their brand colour. */
+export function SoonPlatIcon({ platform, size = 34 }: { platform: SoonPlatform; size?: number }) {
+  const r = Math.round(size * 0.22);
+  if (platform === "ebay") {
+    const pad = Math.round(size * 0.15);
+    return (
+      <span aria-hidden style={{ width: size, height: size, borderRadius: r, background: "#fff", border: "1px solid var(--line)", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none", boxSizing: "border-box", padding: pad, overflow: "hidden" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/logos/ebay-wordmark.svg" alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+      </span>
+    );
+  }
+  const [bg, d] = LOGO_PATH[platform];
+  const g = Math.round(size * 0.56);
+  return (
+    <span aria-hidden style={{ width: size, height: size, borderRadius: r, background: bg, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+      <svg width={g} height={g} viewBox="0 0 24 24" fill="#fff"><path d={d} /></svg>
+    </span>
+  );
+}
