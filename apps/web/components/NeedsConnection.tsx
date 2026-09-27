@@ -60,7 +60,7 @@ export function NeedsConnection({ item, onApproved }: { item: Item; onApproved: 
               <div className="row" style={{ marginBottom: 14 }}><MpIcon size={40} /></div>
               <h2 className="q">{connected ? "Marktplaats is connected" : "Connect Marktplaats to put this online"}</h2>
               <p className="sub">
-                Your ad is approved and ready. {connected ? "Tap below and Poof posts it." : "Link your account once, on this phone or with the poof Connector on your laptop; Poof posts it right after."}
+                Your ad is approved and ready. {connected ? "Tap below and Poof posts it." : "Link your account once, on this phone or with the Poof Connector on your laptop; Poof posts it right after."}
               </p>
               {error && <p className="sf-error">{error}</p>}
             </>
