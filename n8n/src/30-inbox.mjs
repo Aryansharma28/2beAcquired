@@ -226,7 +226,7 @@ return { json: { lwTrace: {
 export default (env, ids) => {
   const w = new Workflow("poof · 3 Inbox + negotiate", { errorWorkflow: ids.error });
   w.add("Every 2 min", schedule(Number(env.INBOX_MINUTES || 2)));
-  // Near real time: the laptop runner watches Marktplaats' unread counter every 15 s and pokes this webhook
+  // Near real time: the laptop runner watches Marktplaats' unread counter every second and pokes this webhook
   // when it goes up; the schedule above is the safety net.
   w.add("New message (laptop watcher)", webhook("tba/inbox-now"), { position: [0, -200] });
   w.add("Poked", respond("={{ { ok: true } }}"), { position: [220, -200] });

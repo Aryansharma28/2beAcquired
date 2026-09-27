@@ -19,7 +19,7 @@ Hard requirements for running poof against real Marktplaats. Each one exists bec
 
   It builds the actor, starts the runner, opens the tunnel, writes `LOCAL_RUNNER_URL` to `.env` and redeploys n8n. The quick-tunnel URL changes on every start, so always start via this script (or redeploy n8n by hand after changing the URL).
 - Browser actions open a **visible** CloakBrowser window on the laptop, so you can watch the agent work.
-- **Chats are near real time through the laptop.** Marktplaats has no push for sellers, so the runner checks the unread-message counter every 15 s and triggers the n8n inbox workflow (`tba/inbox-now`) as soon as it rises. The n8n schedule (`INBOX_MINUTES`, 5) is only a safety net.
+- **Chats are near real time through the laptop.** Marktplaats has no push for sellers, so the runner checks the unread-message counter every second (`WATCH_SECONDS`, on the laptop, no n8n runs) and triggers the n8n inbox workflow (`tba/inbox-now`) as soon as it rises. The n8n schedule (`INBOX_MINUTES`, 5) is only a safety net.
 
 ## Marktplaats account and session
 
