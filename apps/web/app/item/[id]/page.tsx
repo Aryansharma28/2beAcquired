@@ -14,6 +14,7 @@ import { AgentLog } from "@/components/AgentLog";
 import { BackIcon, ChatEntryRow, FoldedLowOffers, Ic, PlatIcon, TYPING, chatEntries } from "@/components/Chats";
 import { GoingLive } from "@/components/GoingLive";
 import { NeedsConnection } from "@/components/NeedsConnection";
+import { PushPrompt } from "@/components/Push";
 import { Looking } from "@/components/Setup";
 import { HANDOVER_DONE_LABEL, Sold, soldRevealed } from "@/components/Sold";
 import { PoofAtWork, Wizard } from "@/components/Wizard";
@@ -210,6 +211,8 @@ function Product({ item, going, onLooksLive, onSkipGoing, onMarkDone }: {
             <p className="row" style={{ gap: 8, margin: 0 }}>{neg && TYPING}<span className="grow">{nowDoing}</span></p>
           </div>
         )}
+        {/* Right after the go-live moment: a one-time "get a ping for offers" nudge (never asks by itself). */}
+        {!going && !closed && adLive && <PushPrompt />}
 
         {adLive && (
           <>

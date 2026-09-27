@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { disconnectMarktplaats, updateAccount, type Account, type Profile } from "@/lib/account";
 import { ConnectMarktplaats, ProfileFields } from "./Connect";
+import { PushCard } from "./Push";
 import { PlatformLogo, Sheet } from "./ui";
 
-/** Profile sheet (navbar "Profile"): Marktplaats status + pickup details. */
+/** Profile sheet (navbar "Profile"): Marktplaats status, phone notifications + pickup details. */
 export function SettingsSheet({ open, onClose, account, onChange }: {
   open: boolean; onClose: () => void; account: Account; onChange: (a: Account) => void;
 }) {
@@ -70,6 +71,8 @@ export function SettingsSheet({ open, onClose, account, onChange }: {
           </div>
         )}
       </section>
+
+      {!connecting && <PushCard />}
 
       {!connecting && (
         <section>

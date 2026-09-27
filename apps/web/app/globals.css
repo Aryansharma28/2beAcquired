@@ -294,6 +294,13 @@ body {
 .row .grow{flex:1;min-width:0}
 .card{border-radius:20px;background:var(--surface)}
 .pad{padding:16px}
+/* Switch (phone notifications): an ink/lime pill, same tokens as the buttons. */
+.pswitch{appearance:none;-webkit-appearance:none;flex:none;margin:0;width:46px;height:28px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:background .25s ease}
+.pswitch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(15,42,24,.25);transition:transform .3s var(--spring)}
+.pswitch:checked{background:var(--ink)}
+.pswitch:checked::after{transform:translateX(18px);background:var(--lime)}
+.pswitch:disabled{opacity:.5;cursor:default}
+.pswitch:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .divided > *{border-top:1px solid var(--line)}
 .divided > *:first-child{border-top:0}
 .tag{display:inline-flex;align-items:center;font-size:12px;line-height:1.5;border-radius:4px;padding:1px 6px;font-weight:700;background:var(--limetint);color:var(--ink);white-space:nowrap}
