@@ -5,24 +5,42 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getAccount, type Account } from "@/lib/account";
 import { SettingsSheet } from "@/components/Settings";
+import { Navbar } from "@/components/Navbar";
 import { MOCK, listItems } from "@/lib/api";
-import { isClosed, isSetup, recentBuyerMessages } from "@/lib/format";
-import { reset } from "@/lib/mock";
+import { eur, lastTs } from "@/lib/format";
 import type { ItemSummary } from "@/lib/types";
-import { Button, NavBar, PlatformLogo, PriceTag, StatusPill } from "@/components/ui";
+import { StatusChip, itemStatus, type ItemStatus } from "@/components/ui";
 
-/** 09 · Your ads (home). */
+/** Tilts the prototype gives its home stickers; each ad keeps its own. */
+const TILTS = [-3, 3, -2, 4, -4, 2];
+function tiltOf(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return TILTS[Math.abs(h) % TILTS.length];
+}
+
+type Tile = { item: ItemSummary; status: ItemStatus; sold: boolean };
+
+/** Home: "Your ads" (prototype `renderHome`). */
 export default function Home() {
   const router = useRouter();
   const [account, setAccount] = useState<Account | null>(null);
   const [settings, setSettings] = useState(false);
   const [items, setItems] = useState<ItemSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"selling" | "sold">("selling");
 
-  // First run → onboarding.
+  // First run → onboarding. Profile from another screen's navbar lands here as /?profile=1.
   useEffect(() => {
     getAccount()
-      .then((a) => (a?.onboarded ? setAccount(a) : router.replace("/welcome")))
+      .then((a) => {
+        if (!a?.onboarded) return router.replace("/welcome");
+        setAccount(a);
+        if (new URLSearchParams(location.search).has("profile")) {
+          setSettings(true);
+          router.replace("/");
+        }
+      })
       .catch((e: Error) => setError(e.message));
   }, [router]);
 
@@ -38,121 +56,104 @@ export default function Home() {
     return () => { alive = false; clearInterval(t); };
   }, [account]);
 
-  const count = (f: (i: ItemSummary) => boolean) => items?.filter(f).length ?? 0;
-  const summary = [
-    [count((i) => i.status === "live" || i.status === "negotiating" || i.status === "needs_you"), "live"],
-    [count((i) => isSetup(i.status)), "setting up"],
-    [count((i) => isClosed(i.status)), "sold"],
-    [count((i) => i.status === "error"), "need a look"],
-  ].filter(([n]) => (n as number) > 0).map(([n, l]) => `${n} ${l}`).join(" · ");
+  const tiles: Tile[] = (items ?? []).map((item) => {
+    const status = itemStatus(item);
+    return { item, status, sold: status.kind === "sold" };
+  });
+  const selling = tiles
+    .filter((t) => !t.sold)
+    .sort((a, b) => (a.status.kind === "needs" ? -1 : 0) - (b.status.kind === "needs" ? -1 : 0));
+  const sold = tiles.filter((t) => t.sold);
+  const showSold = tab === "sold";
+  const list = showSold ? sold : selling;
 
   return (
-    <main className="flex flex-1 flex-col px-5 pb-32 pt-[max(18px,env(safe-area-inset-top))]">
-      <header className="flex items-center justify-between gap-3 py-2">
-        <h1 className="animate-rise text-[30px] font-extrabold leading-tight tracking-[-0.02em]">Your ads</h1>
-        <div className="flex items-center gap-2">
-          {MOCK && (
-            <button
-              onClick={() => { reset(); location.reload(); }}
-              className="h-[34px] whitespace-nowrap rounded-full border border-ink px-3.5 text-[13px] font-bold text-ink"
-            >
-              Demo reset
-            </button>
-          )}
-          {account && (
-            <button
-              onClick={() => setSettings(true)}
-              aria-label="Settings"
-              className="relative grid size-11 place-items-center rounded-full bg-limetint text-[16px] font-extrabold text-ink transition active:scale-95"
-            >
-              {(account.name ?? "?")[0]?.toUpperCase()}
-              <span className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full ring-2 ring-page ${account.mpConnected ? "bg-ink" : "bg-lime"}`} />
-            </button>
-          )}
-        </div>
-      </header>
-
-      {summary && <p className="-mt-1 text-[13px] font-semibold text-moss">{summary}</p>}
+    <main className="body2 has-nav home" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 28px)" }}>
+      <div className="home-head"><h1>Your ads</h1></div>
 
       {account && !account.mpConnected && (
-        <button onClick={() => setSettings(true)} className="mt-4 flex w-full animate-rise items-center gap-3 rounded-[20px] bg-lime px-4 py-3.5 text-left">
-          <PlatformLogo platform="marktplaats" className="!size-9" />
-          <span className="flex-1 text-[14.5px] font-semibold leading-snug">Connect Marktplaats so Poof can put your ads online.</span>
-          <span className="shrink-0 rounded-full bg-ink px-3.5 py-2 text-[13px] font-bold text-lime">Connect</span>
-        </button>
+        <div className="card pad" style={{ background: "var(--lime)", boxShadow: "none", margin: "0 0 22px" }}>
+          <p className="sec" style={{ margin: "0 0 8px" }}>Needs you</p>
+          <p style={{ margin: "0 0 14px", fontWeight: 700 }}>Connect Marktplaats so Poof can put your ads online.</p>
+          <button className="btn" type="button" onClick={() => setSettings(true)}>Connect Marktplaats</button>
+        </div>
       )}
+
+      <div className="homeseg" role="tablist" aria-label="Your ads">
+        <button type="button" role="tab" aria-selected={!showSold} onClick={() => setTab("selling")}>Selling <span>{selling.length}</span></button>
+        <button type="button" role="tab" aria-selected={showSold} onClick={() => setTab("sold")}>Sold <span>{sold.length}</span></button>
+      </div>
+
+      {error && <p className="muted" style={{ textAlign: "center", padding: "0 0 22px" }}>Can&apos;t load your ads: {error}</p>}
+
+      {items === null && !error ? (
+        <ul className="grid-ads" aria-hidden="true">
+          {[0, 1].map((i) => <li key={i}><span className="skeleton" style={{ display: "block", aspectRatio: "1", borderRadius: 12 }} /></li>)}
+        </ul>
+      ) : list.length ? (
+        <ul className="grid-ads">
+          {list.map((t, idx) => <AdTile key={t.item.id} tile={t} idx={idx} />)}
+        </ul>
+      ) : items !== null ? (
+        <p className="muted" style={{ textAlign: "center", padding: "48px 0" }}>
+          {showSold ? "Nothing sold yet." : "Nothing for sale. Tap + to sell something."}
+        </p>
+      ) : null}
 
       {account && (
         <SettingsSheet key={String(settings)} open={settings} onClose={() => setSettings(false)} account={account} onChange={setAccount} />
       )}
 
-      <div className="h-6" />
-
-      {error && (
-        <p className="mb-4 rounded-[20px] bg-alert-soft p-4 text-[14px] text-alert">
-          Can&apos;t load your ads: {error}
-        </p>
-      )}
-
-      {items === null && !error && (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8">
-          {[0, 1].map((i) => <div key={i} className="skeleton aspect-square rounded-[12px]" />)}
-        </div>
-      )}
-
-      {items && items.length === 0 && (
-        <div className="flex flex-col items-center rounded-[28px] bg-card px-6 py-10 text-center shadow-soft">
-          <PriceTag amount={0} size="md" tilt={-6} label="no ads yet" string />
-          <p className="mt-6 text-[24px] font-extrabold leading-tight tracking-[-0.02em]">Sell <span className="marker">anything</span></p>
-          <p className="mt-2 max-w-[28ch] text-[15px] text-moss">Snap the thing that&apos;s been in the hallway too long. Poof does the rest.</p>
-          <Button href="/new" className="mt-6 px-7">Sell something</Button>
-        </div>
-      )}
-
-      {items && items.length > 0 && (
-        <ul className="grid grid-cols-2 gap-x-4 gap-y-8">
-          {items.map((it, i) => (
-            <li key={it.id} className="animate-rise" style={{ animationDelay: `${i * 50}ms` }}>
-              <AdCard item={it} tilt={i % 2 ? 2 : -2} />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <NavBar />
+      <Navbar
+        active="ads"
+        chatsHref={chatsHref(items)}
+        chatBadge={items?.filter((i) => i.status === "needs_you").length ?? 0}
+        onProfile={account ? () => setSettings(true) : undefined}
+      />
     </main>
   );
 }
 
-function AdCard({ item, tilt }: { item: ItemSummary; tilt: number }) {
-  const photo = item.photo ?? item.photos?.[0];
-  const sold = item.sale?.price;
-  const unread = isClosed(item.status) ? 0 : recentBuyerMessages(item);
-  const title = item.title ?? item.recognition?.name;
+/** Chats go to the ad with the latest buyer chat, or else the newest ad that is online. */
+function chatsHref(items: ItemSummary[] | null) {
+  if (!items?.length) return undefined;
+  const withChats = items
+    .filter((i) => i.conversations?.length)
+    .sort((a, b) => latest(b).localeCompare(latest(a)));
+  const online = items.find((i) => ["live", "negotiating", "needs_you", "deal", "pickup_scheduled"].includes(i.status));
+  const pick = withChats[0] ?? online;
+  return pick ? `/item/${pick.id}/chats` : undefined;
+}
+const latest = (i: ItemSummary) => (i.conversations ?? []).map(lastTs).sort().at(-1) ?? "";
+
+function AdTile({ tile, idx }: { tile: Tile; idx: number }) {
+  const { item, status, sold } = tile;
+  const tilt = tiltOf(item.id);
+  const delay = idx * 35;
+  const pending = status.kind === "pending";
+  const photo = item.photo ?? item.photos?.[item.coverIndex ?? 0] ?? item.photos?.[0];
+  const price = sold || pending ? item.sale?.price ?? item.askPrice : item.askPrice;
+  const title = item.recognition?.name ?? item.title ?? "Looking at your photos…";
   return (
-    <Link href={`/item/${item.id}`} className="block transition active:scale-[0.97]">
-      <div className="relative pt-2">
-        <div className="sticker aspect-square overflow-hidden rounded-[12px] bg-limetint" style={{ ["--tilt" as string]: `${tilt}deg` }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {photo && <img src={photo} alt="" className="size-full object-cover" />}
-        </div>
-        {sold != null ? (
-          <PriceTag amount={sold} size="sm" tilt={8} string dark className="!absolute -right-1 top-0" />
-        ) : item.askPrice != null ? (
-          <PriceTag amount={item.askPrice} size="sm" tilt={8} string className="!absolute -right-1 top-0" />
-        ) : null}
-      </div>
-      <p className="mt-3 line-clamp-2 text-[14px] font-bold leading-[1.3]">
-        {title ?? "Looking at your photos…"}
-      </p>
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        <StatusPill status={item.status} />
-        {!!unread && (
-          <span className="inline-grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1.5 text-[11px] font-bold text-white" aria-label={`${unread} new messages`}>
-            {unread} new
+    <li style={{ animation: "fadeUp .28s var(--out) backwards", animationDelay: `${delay}ms` }}>
+      <Link className={"gtile" + (sold ? " is-sold" : pending ? " is-pending" : "")} href={`/item/${item.id}`}>
+        <span className="stickerwrap">
+          <span className="ph cutout sticker" style={{ ["--tilt" as string]: `${tilt}deg` }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {photo ? <img src={photo} alt="" /> : <span className="ph-empty" />}
           </span>
-        )}
-      </div>
-    </Link>
+          {price != null && (
+            <span
+              className={"pricetag" + (sold ? " sold" : "")}
+              style={{ ["--tilt" as string]: `${tilt > 0 ? -4 : 4}deg`, animation: "tagDrop .4s var(--out) backwards", animationDelay: `${delay + 150}ms` }}
+            >
+              {sold ? "Sold " : ""}{eur(price)}
+            </span>
+          )}
+        </span>
+        <span className="t">{title}</span>
+        <span className="tile-status"><StatusChip {...status} /></span>
+      </Link>
+    </li>
   );
 }

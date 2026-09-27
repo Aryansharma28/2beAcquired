@@ -95,7 +95,7 @@ export function PriceTag({
 }: { amount?: number; label?: string; size?: "sm" | "md" | "lg" | "xl"; className?: string; tilt?: number; string?: boolean; dark?: boolean }) {
   const sz = { sm: "text-[13px]", md: "text-[18px]", lg: "text-[30px]", xl: "text-[54px]" }[size];
   return (
-    <span className={cx("pricetag", string && "string", dark && "dark", sz, className)} style={{ ["--tilt" as string]: `${tilt}deg` }}>
+    <span className={cx("ptag", string && "string", dark && "dark", sz, className)} style={{ ["--tilt" as string]: `${tilt}deg` }}>
       {label && <span className="mb-[0.15em] text-[0.5em] font-bold opacity-70">{label}</span>}
       <span className="tabular">{eur(amount)}</span>
     </span>
@@ -197,34 +197,8 @@ export function Soon({ className }: { className?: string }) {
   return <span className={cx("whitespace-nowrap rounded-[4px] bg-limetint px-1.5 py-px text-[12px] font-bold text-ink", className)}>Soon</span>;
 }
 
-/** Floating navbar: ink pill, active tab in lime, white Sell button. */
-export function NavBar({ active = "ads" }: { active?: "ads" | "none" }) {
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[440px] px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-2">
-      <div className="flex h-16 items-center gap-1.5 rounded-full bg-ink px-2 shadow-float">
-        <Link
-          href="/"
-          className={cx(
-            "flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[15px] font-bold transition active:scale-95",
-            active === "ads" ? "bg-lime text-ink" : "bg-white/12 text-white",
-          )}
-        >
-          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
-          </svg>
-          Ads
-        </Link>
-        <Link
-          href="/new"
-          className="flex h-12 items-center justify-center gap-1.5 rounded-full bg-white pl-4 pr-5 text-[15px] font-bold text-ink transition active:scale-95"
-        >
-          <svg viewBox="0 0 24 24" className="size-[22px]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
-          Sell
-        </Link>
-      </div>
-    </nav>
-  );
-}
+/** Old name of the navbar; every screen now gets the prototype's navbar. */
+export { Navbar as NavBar } from "./Navbar";
 
 /** Sticky primary action at the bottom of a wizard-style screen. */
 export function BottomAction({ children }: { children: ReactNode }) {
@@ -263,4 +237,79 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 
 export function Spinner({ className }: { className?: string }) {
   return <span className={cx("inline-block size-4 animate-spin rounded-full border-2 border-current/25 border-t-current", className)} />;
+}
+
+export type IconName =
+  | "close" | "back" | "right" | "down" | "check" | "edit" | "plus" | "minus" | "grid" | "gallery" | "flash"
+  | "shield" | "send" | "pin" | "box" | "swap" | "chat" | "user" | "more" | "cta-arrow";
+
+/** Prototype icon (`ic(name)`): a stroke icon from the sprite in app/layout.tsx. */
+export function Icon({ name, className }: { name: IconName; className?: string }) {
+  return <svg className={cx("icon", className)} aria-hidden="true"><use href={`#i-${name}`} /></svg>;
+}
+
+/** Status of an ad as the prototype's home tiles show it (`statusChip` kinds). */
+export type ItemStatusKind = "needs" | "negotiating" | "uploading" | "progress" | "new" | "live" | "deal" | "pending" | "sold" | "error";
+export type ItemStatus = { kind: ItemStatusKind; label: string };
+
+/** "Saturday 14:30" for a pickup slot. */
+function pickupLabel(start?: string) {
+  if (!start) return null;
+  const d = new Date(start);
+  if (Number.isNaN(d.getTime())) return null;
+  const day = d.toLocaleDateString("en-GB", { weekday: "long" });
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return `${day} ${time}`;
+}
+
+/**
+ * Maps a real item status to the prototype's status chip (`airpodsHomeStatus`).
+ * A done deal waiting for pickup is `pending`: it stays under Selling until it is picked up.
+ */
+export function itemStatus(item: { status: Status; pickup?: { start: string } }): ItemStatus {
+  switch (item.status) {
+    case "sold":
+    case "delisted":
+      return { kind: "sold", label: "Sold" };
+    case "deal":
+    case "pickup_scheduled": {
+      const when = pickupLabel(item.pickup?.start);
+      return { kind: "pending", label: when ? `Deal done · Pickup ${when}` : item.status === "pickup_scheduled" ? "Deal done · Pickup planned" : "Deal done" };
+    }
+    case "negotiating":
+    case "needs_you":
+      return { kind: "negotiating", label: "Negotiating" };
+    case "live":
+      return { kind: "live", label: "Live" };
+    case "publishing":
+      return { kind: "uploading", label: "Uploading" };
+    case "needs_connection":
+      return { kind: "needs", label: "Connect Marktplaats" };
+    case "ad_ready":
+      return { kind: "needs", label: "Check your ad" };
+    case "needs_details":
+      return { kind: "needs", label: "Needs you" };
+    case "writing":
+      return { kind: "progress", label: "Writing your ad" };
+    case "recognizing":
+    case "analyzing":
+      return { kind: "progress", label: "Looking at your photos" };
+    default:
+      return { kind: "error", label: "Something went wrong" };
+  }
+}
+
+const CHIP_ROW = { gap: 6, display: "inline-flex", alignItems: "center" } as const;
+const CHIP_DOT = { width: 7, height: 7 } as const;
+
+/** The prototype's `statusChip(kind, label)`. */
+export function StatusChip({ kind, label }: ItemStatus) {
+  if (kind === "needs") return <span className="tag" style={{ background: "var(--lime)" }}>{label}</span>;
+  if (kind === "negotiating") return <span className="row" style={CHIP_ROW}><span className="typing" aria-hidden="true"><i></i><i></i><i></i></span><span className="xs muted">{label}</span></span>;
+  if (kind === "uploading" || kind === "progress") return <span className="row" style={CHIP_ROW}><span className="dot" style={{ ...CHIP_DOT, background: "var(--moss)", animation: "tdot 1.1s infinite ease-in-out" }}></span><span className="xs muted">{label}</span></span>;
+  if (kind === "new" || kind === "deal") return <span className="row" style={CHIP_ROW}><span className="dot" style={CHIP_DOT}></span><span className="xs" style={{ fontWeight: 700 }}>{label}</span></span>;
+  if (kind === "sold") return <span className="xs muted">{label}</span>;
+  if (kind === "pending") return <span className="tag" style={{ background: "var(--limetint)" }}>{label}</span>;
+  if (kind === "error") return <span className="tag" style={{ background: "var(--color-alert-soft)", color: "var(--alert)" }}>{label}</span>;
+  return <span className="row" style={CHIP_ROW}><span className="dot" style={CHIP_DOT}></span><span className="xs muted">{label}</span></span>;
 }
