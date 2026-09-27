@@ -47,17 +47,25 @@ export default function ItemPage() {
   const [patch, setPatch] = useState<{ from: Status; data: Partial<Item> } | null>(null);
   const item = server && patch && server.status === patch.from ? { ...server, ...patch.data } : server;
 
-  // Keep going-live on screen briefly after the ad went live. Derived during render (not in an effect) so
-  // the moment never unmounts between "publishing" and "live" and plays exactly once.
+  // The go-live moment is optimistic: it reaches "Live on Marktplaats" within ~2 s of Approve (`looksLive`)
+  // while the real post (~50 s) carries on; it stays on screen a beat after that, then hands over to the
+  // product page, which keeps looking live until the backend catches up (see Product › `optimistic`).
+  // `holdGoing` is derived during render (not in an effect) so the moment never unmounts between
+  // "publishing" and "live" and plays exactly once (`goingDone` stops it re-arming while the real post is
+  // still running). A failure drops all of this and shows the ErrorCard; a retry plays the moment again.
   const [holdGoing, setHoldGoing] = useState(false);
+  const [goingDone, setGoingDone] = useState(false);
+  const [looksLive, setLooksLive] = useState(false);
   const liveNow = server ? screenFor(server.status) === "product" : false;
   const publishingNow = server?.status === "publishing" || (patch?.data.status === "publishing" && server?.status === patch.from);
-  if (publishingNow && !holdGoing) setHoldGoing(true);
+  if (publishingNow && !holdGoing && !goingDone) setHoldGoing(true);
+  if (item?.status === "error" && (looksLive || goingDone || holdGoing)) { setLooksLive(false); setGoingDone(false); setHoldGoing(false); }
+  const endGoing = () => { setHoldGoing(false); setGoingDone(true); };
   useEffect(() => {
-    if (!holdGoing || !liveNow) return;
-    const t = setTimeout(() => setHoldGoing(false), 3500);
+    if (!holdGoing || !(liveNow || looksLive)) return;
+    const t = setTimeout(() => { setHoldGoing(false); setGoingDone(true); }, 3500);
     return () => clearTimeout(t);
-  }, [holdGoing, liveNow]);
+  }, [holdGoing, liveNow, looksLive]);
 
   // Closed ads: a pending deal opens on the sold moment (like the prototype's home tile); a finished sale
   // opens on the product page once its poof moment has played. "See the ad and all chats" / back switch views.
@@ -85,7 +93,13 @@ export default function ItemPage() {
   if (item && (screen === "product" || screen === "going")) {
     return (
       <main key="product" className="pv2 flex flex-1 flex-col animate-fade">
-        <Product item={item} going={screen === "going" || (holdGoing && screen === "product")} onSkipGoing={() => setHoldGoing(false)} onMarkDone={done} />
+        <Product
+          item={item}
+          going={holdGoing || (screen === "going" && !looksLive)}
+          onLooksLive={() => setLooksLive(true)}
+          onSkipGoing={endGoing}
+          onMarkDone={done}
+        />
       </main>
     );
   }
@@ -137,12 +151,20 @@ export default function ItemPage() {
 
 // ---------------------------------------------------------------- product page (prototype: renderProduct)
 
-function Product({ item, going, onSkipGoing, onMarkDone }: { item: Item; going: boolean; onSkipGoing: () => void; onMarkDone: () => Promise<void> }) {
+function Product({ item, going, onLooksLive, onSkipGoing, onMarkDone }: {
+  item: Item; going: boolean; onLooksLive: () => void; onSkipGoing: () => void; onMarkDone: () => Promise<void>;
+}) {
   const stage = dealStage(item);
   const closed = stage != null;
   const sold = stage === "sold";
   const entries = chatEntries(item);
-  const adLive = !going && (closed || item.listings.some((l) => l.status === "live") || ["live", "negotiating", "needs_you"].includes(item.status));
+  // Still posting in the background after the optimistic go-live: show the ad as live, but keep the
+  // Marktplaats link honest ("Opening in a moment…") until the real listing URL arrives.
+  const optimistic = item.status === "publishing";
+  const adLive = !going && (closed || optimistic || item.listings.some((l) => l.status === "live") || ["live", "negotiating", "needs_you"].includes(item.status));
+  const listings = optimistic && !item.listings.some((l) => l.platform === "marktplaats")
+    ? [...item.listings, { platform: "marktplaats" as const, status: "pending" as const }]
+    : item.listings;
   const stageIdx = closed ? 3 : entries.length ? 2 : adLive ? 1 : 0;
   const photo = coverFirst(item)[0];
   const title = item.title ?? item.recognition?.name ?? "Your ad";
@@ -152,11 +174,11 @@ function Product({ item, going, onSkipGoing, onMarkDone }: { item: Item; going: 
 
   const neg = entries.find((e) => e.negotiating);
   const talking = neg ?? entries.find((e) => e.c.state === "open" && e.c.messages.some((m) => m.from === "agent"));
-  const nowDoing = talking ? `Poof is negotiating with ${talking.c.buyer.split(" ")[0]}` : adLive ? "Poof is watching for offers" : "Getting ready to go live";
+  const nowDoing = talking ? `Poof is negotiating with ${talking.c.buyer.split(" ")[0]}` : optimistic && !going ? "Poof is finishing the upload on Marktplaats" : adLive ? "Poof is watching for offers" : "Getting ready to go live";
 
   const allRemoved = item.listings.length > 0 && item.listings.every((l) => l.status === "removed");
   // Demo platforms mirror the Marktplaats listing: only shown once it is live or taken offline.
-  const mpShown = item.listings.some((l) => l.platform === "marktplaats" && (l.status === "live" || l.status === "removed"));
+  const mpShown = optimistic || item.listings.some((l) => l.platform === "marktplaats" && (l.status === "live" || l.status === "removed"));
 
   return (
     <div className="body2 has-nav" style={{ padding: 0 }}>
@@ -179,7 +201,7 @@ function Product({ item, going, onSkipGoing, onMarkDone }: { item: Item; going: 
         </div>
 
         {going ? (
-          <div style={{ marginTop: 18 }}><GoingLive item={item} onDone={item.status === "publishing" ? undefined : onSkipGoing} /></div>
+          <div style={{ marginTop: 18 }}><GoingLive item={item} onLive={onLooksLive} onDone={onSkipGoing} /></div>
         ) : closed ? (
           <SoldCard item={item} sold={sold} onMarkDone={onMarkDone} />
         ) : (
@@ -207,24 +229,29 @@ function Product({ item, going, onSkipGoing, onMarkDone }: { item: Item; going: 
           <div className="tile"><b>{chatCount}</b><span>chats</span></div>
         </div>
 
-        {adLive && item.listings.length > 0 && (
+        {adLive && listings.length > 0 && (
           <div style={{ marginTop: 20 }}>
             <p className="sec">{allRemoved ? "Removed from" : "Live on"}</p>
             <ul className="plat-compact">
-              {item.listings.map((l, i) => (
-                <li key={`${l.platform}-${i}`} style={{ animation: "fadeUp .28s var(--out) backwards", animationDelay: `${i * 35}ms` }}>
-                  <PlatIcon platform={l.platform} size={40} />
-                  <span className="grow">
-                    <b>{PLATFORM[l.platform]}</b>
-                    <span className="xs muted">{{ live: "Live", removed: "Taken offline after the sale", pending: "Posting", error: "Posting failed" }[l.status]}</span>
-                  </span>
-                  {l.status === "removed" ? <Ic n="check" /> : l.status === "live" && l.url ? (
-                    <a className="viewlink" href={l.url} target="_blank" rel="noreferrer">View on {PLATFORM[l.platform]} ↗</a>
-                  ) : null}
-                </li>
-              ))}
+              {listings.map((l, i) => {
+                const finishing = optimistic && l.status === "pending";
+                return (
+                  <li key={`${l.platform}-${i}`} style={{ animation: "fadeUp .28s var(--out) backwards", animationDelay: `${i * 35}ms` }}>
+                    <PlatIcon platform={l.platform} size={40} />
+                    <span className="grow">
+                      <b>{PLATFORM[l.platform]}</b>
+                      <span className="xs muted">{finishing ? "Live" : { live: "Live", removed: "Taken offline after the sale", pending: "Posting", error: "Posting failed" }[l.status]}</span>
+                    </span>
+                    {l.status === "removed" ? <Ic n="check" /> : l.status === "live" && l.url ? (
+                      <a className="viewlink" href={l.url} target="_blank" rel="noreferrer">View on {PLATFORM[l.platform]} ↗</a>
+                    ) : finishing ? (
+                      <span className="viewlink golive-pending" aria-disabled>Opening in a moment…</span>
+                    ) : null}
+                  </li>
+                );
+              })}
               {DEMO_PLATFORMS && mpShown && SOON_PLATFORMS.map((p, i) => (
-                <li key={p.key} style={{ animation: "fadeUp .28s var(--out) backwards", animationDelay: `${(item.listings.length + i) * 35}ms` }}>
+                <li key={p.key} style={{ animation: "fadeUp .28s var(--out) backwards", animationDelay: `${(listings.length + i) * 35}ms` }}>
                   <SoonPlatIcon platform={p.key} size={40} />
                   <span className="grow">
                     <b>{p.name}</b>

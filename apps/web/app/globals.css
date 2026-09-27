@@ -882,3 +882,19 @@ body {
 .soon-strip{display:flex;align-items:center;gap:7px;margin:0;font-size:12px;line-height:1.3;color:var(--moss);opacity:.8}
 .soon-logos{display:inline-flex;gap:3px}
 .soon-logos > span{filter:grayscale(1);opacity:.55}
+
+/* ---- go-live: instant + poof cloud ---- */
+.sf .golive-poof{position:absolute;z-index:9;pointer-events:none;transition:transform .35s var(--out),opacity .35s var(--out)}
+.sf .golive-poof.out{transform:scale(.4) translateY(-20px);opacity:0}
+.sf .golive-hero{transition:height .5s var(--out),margin .5s var(--out)}
+.sf .golive-hero.faded{opacity:0;transition:opacity .4s var(--out)}
+.sf .golive-hero.gone{height:0;margin-bottom:-22px}
+.sf .golive-view{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:22px;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .35s var(--out) .15s,transform .35s var(--spring) .15s}
+.sf .golive-view.show{opacity:1;transform:none;pointer-events:auto}
+.sf .golive-view .btn{min-width:230px;text-decoration:none}
+.sf .golive-view .btn:disabled{background:var(--surface);color:var(--moss);box-shadow:var(--shadow-soft);cursor:default}
+.sf .golive-view .btn:disabled:hover{transform:none}
+.sf .golive-view .sf-spin{width:14px;height:14px;border-width:2px}
+.sf .golive-fine{font-size:12px;color:var(--moss);margin:0;max-width:260px}
+.pv2 .viewlink.golive-pending{text-decoration:none;color:var(--moss);font-weight:600;cursor:default}
+@media (prefers-reduced-motion: reduce){.sf .golive-poof{display:none}}
