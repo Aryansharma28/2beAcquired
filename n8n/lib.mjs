@@ -201,13 +201,14 @@ const safe = (inner) => inner.replace(/\}\}/g, "} }").replace(/\}\}/g, "} }").re
 
 // reasoning: 'low' | 'medium' | 'high' for reasoning models (gpt-oss). Their thinking counts toward maxTokens, so a tight
 // budget leaves no room for the JSON answer (Groq: json_validate_failed) and burns retries.
+// On OpenRouter, route to the lowest-latency provider (gpt-oss-120b: ~0.5 s on Groq/Cerebras instead of 2-3 s by default).
 export const llm = (env, { system, content, tool, maxTokens = 1500, vision = false, reasoning = null }) => [
   "n8n-nodes-base.httpRequest", 4.2,
   {
     method: "POST", url: `${env.LLM_BASE_URL}/chat/completions`,
     authentication: "genericCredentialType", genericAuthType: "httpHeaderAuth",
     sendBody: true, specifyBody: "json",
-    jsonBody: "={{ " + safe(`JSON.stringify({ model: "${vision ? env.LLM_VISION_MODEL || env.LLM_MODEL : env.LLM_MODEL}", max_tokens: ${maxTokens}, temperature: 0.3,${reasoning ? ` reasoning_effort: "${reasoning}",` : ""}
+    jsonBody: "={{ " + safe(`JSON.stringify({ model: "${vision ? env.LLM_VISION_MODEL || env.LLM_MODEL : env.LLM_MODEL}", max_tokens: ${maxTokens}, temperature: 0.3,${reasoning ? ` reasoning_effort: "${reasoning}",` : ""}${/openrouter.ai/.test(env.LLM_BASE_URL) ? ` provider: { sort: "latency" },` : ""}
       messages: [{ role: "system", content: ${system} + ${JSON.stringify(" Respond with JSON only: " + tool.description + ".")} }, { role: "user", content: ${content} }],
       response_format: { type: "json_schema", json_schema: ${JSON.stringify({ name: tool.name, schema: tool.input_schema })} } })`) + " }}",
     options: { timeout: 120000 },
@@ -319,8 +320,9 @@ for (const l of listings) {
 }
 return out.length ? out : [{ json: {} }];`;
 
-// Comparable matching: knock-offs ("AirPods Pro 2 nieuw" for €20) drag the market price down.
-export const FAKES = "Also exclude likely replicas/fakes: listings of branded electronics priced far below the typical price for that exact product.";
+// Comparable matching rules shared by intake and rename: generations (a name without one matched only 1st-gen listings in
+// one run and 2nd/3rd-gen in the next) and knock-offs ("AirPods Pro 2 nieuw" for €20 drags the market price down).
+export const FAKES = "If the item's name has no generation or version (e.g. 'Apple AirPods Pro'), every generation of that product line counts as the same product; if it names one, keep only that one. Also exclude likely replicas/fakes: listings of branded electronics priced far below the typical price for that exact product.";
 
 // Apify REST call (generic)
 export const apify = (method, url, extra = {}) => [
