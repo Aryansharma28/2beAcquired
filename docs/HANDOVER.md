@@ -5,14 +5,14 @@ For the next Claude Code session on **poof** (repo `Desktop\2beAcquired`, github
 ## What poof is
 Snap a photo, confirm what it is, set a minimum; an agent prices it from real Marktplaats listings, writes and posts the ad, negotiates with buyers, books the pickup, sends a payment link and takes the ad down.
 
-- `apps/web` Next.js PWA, production **https://poof-lovat.vercel.app** (Vercel project `poof`, root dir `apps/web`; **every push to `main` deploys production**).
+- `apps/web` Next.js PWA, production **https://poof-lovat.vercel.app** (Vercel project `poof`, root dir `apps/web`; **every push to `main` deploys production**, so changes go through PRs only).
 - `n8n/src/*.mjs` workflows as code on **aryansharma28.app.n8n.cloud**, deploy with `node n8n/deploy.mjs [key]` (key = file name without number, e.g. `publish`, `inbox`).
 - `actors/marktplaats` Apify actor `jadelike_loyalty~marktplaats` (push with `npx -y apify-cli push` from that folder) and the **laptop runner** `local-runner.mjs`.
 - Data lives in **n8n Data Tables** (items, users, events, messages, conversations, decisions, pairings). No Supabase (user decided).
 
 ## How it runs right now (important)
 - **Marktplaats-session actions run on this laptop**, not Apify: n8n → Cloudflare quick tunnel → `local-runner.mjs` → the actor in a visible **CloakBrowser** window. Cloud-posted ads got hidden by Marktplaats 3/3; laptop posts stay public.
-- Running now: runner on `localhost:8787` (with the 15 s chat watcher) and a tunnel, URL in `.env` `LOCAL_RUNNER_URL`, and n8n is deployed with it.
+- Running now: runner on `localhost:8787` (with the 15 s chat watcher) and a tunnel, URL in `.env` `LOCAL_RUNNER_URL`, and n8n is deployed with it. A quick tunnel can die on its own; if `curl $LOCAL_RUNNER_URL/health` fails but `localhost:8787/health` is ok, open a new tunnel (`npx -y cloudflared tunnel --url http://localhost:8787`), put its URL in `.env` and run `node n8n/deploy.mjs`.
 - **If the laptop slept, the session ended or the tunnel died**: stop old `local-runner.mjs`/`cloudflared` processes, then `node actors/marktplaats/start-local.mjs` and keep it running (it rebuilds, starts runner + tunnel, writes `.env`, redeploys n8n). Check: `curl $LOCAL_RUNNER_URL/health` → `ok`. Starting it twice gives `EADDRINUSE :8787` (harmless if the first runner is alive).
 - **Demo mode** `DEMO_MP_STORE=mp-session`: every poof account sells on the owner's Marktplaats session (account "Teije Keesmaat"), stored in Apify KV store `mp-session` (key `state`). No connect step for users.
 - Live posting: `MP_DRY_RUN=0`, fallback postcode `MP_POSTCODE=1318DJ` (Almere).
@@ -49,4 +49,4 @@ Snap a photo, confirm what it is, set a minimum; an agent prices it from real Ma
 All in `.env` (gitignored): n8n API key, Apify token, Stripe `sk_test_…`, Groq LLM key, `POOF_APP_KEY`, `RUNNER_KEY`. Vercel env has its own copies (production `NEXT_PUBLIC_MOCK="0"`). Never commit `.env`.
 
 ## How the user works
-Wants it done without clarifying questions, everything real (no fake data in production), commits + pushes to `main` directly for this repo, and short plain updates. They asked for parallel subagents when work can be split.
+Wants it done without clarifying questions, everything real (no fake data in production), and short plain updates. **Never commit or push to `main`**: work on a branch (or worktree) and open a PR; the user merges (`main` auto-deploys production). They asked for parallel subagents when work can be split.
