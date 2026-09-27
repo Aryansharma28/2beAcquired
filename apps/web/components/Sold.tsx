@@ -1,25 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { PLATFORM, eur, pickupWhen, recapOf } from "@/lib/format";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import {
+  PLATFORM, dealBuyer, dealConversation, dealPrice, dealStage, eur, handoverLabel, isPaid, pickupWhen, recapOf,
+} from "@/lib/format";
 import { coverFirst } from "@/lib/useItem";
 import type { Item, Pickup, Platform } from "@/lib/types";
-import { Thread } from "./Chats";
-import { Button, Eyebrow, PlatformLogo, Tick, cx } from "./ui";
+import { ChatAvatar, Ic, PlatIcon, PoofLine, Sticker, TYPING } from "./Chats";
+import { cx } from "./ui";
 
-type Phase = "sticker" | "poof" | "done";
+// Markup, class names and copy follow design/visual/prototype.html › renderSold (styles under .pv2 in globals.css).
 
-/** Whether this item's sold moment already played in this tab (so going back and forth doesn't replay it). */
-function firstPhase(id: string): Phase {
-  if (typeof window === "undefined") return "sticker";
-  try {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "done";
-    if (sessionStorage.getItem(`poof:sold:${id}`)) return "done";
-  } catch { /* storage blocked: just play it */ }
-  return "sticker";
+const KEY = (id: string) => `poof:sold:${id}`;
+
+/** Whether this item's poof moment already played in this browser. */
+export function soldRevealed(id: string) {
+  try { return !!localStorage.getItem(KEY(id)); } catch { return false; }
+}
+function markRevealed(id: string) {
+  try { localStorage.setItem(KEY(id), "1"); } catch { /* storage blocked: it just plays again */ }
 }
 
-function play(src: string, volume: number) {
+function sound(src: string, volume: number) {
   try {
     const a = new Audio(src);
     a.volume = volume;
@@ -27,113 +30,136 @@ function play(src: string, volume: number) {
   } catch { /* no audio: fine */ }
 }
 
-/** 14 · Sold. While status is deal / pickup_scheduled it's the
- *  "Sold, pickup planned" variant; at `sold` everything is wrapped up.
- *  The ad photo poofs away (sprite + sound from the waitlist page), then the result shows. */
-export function Sold({ item, onOverview }: { item: Item; onOverview: () => void }) {
-  const sale = item.sale;
-  const [now] = useState(() => Date.now());
-  const done = item.status === "sold" || item.status === "delisted";
-  const conv = item.conversations.find((c) => c.state === "deal" || c.state === "pickup_scheduled");
-  const buyer = (sale?.buyer ?? item.pickup?.buyer ?? conv?.buyer)?.split(" ")[0];
-  // Only platforms we really listed on.
-  const platforms: Platform[] = item.listings.length ? [...new Set(item.listings.map((l) => l.platform))] : ["marktplaats"];
+/** Handover step label on the button (pickup only for now). */
+export const HANDOVER_DONE_LABEL = "Mark as picked up & paid";
+
+/** Platforms the ad was really on. */
+export function platformsOf(item: Item): Platform[] {
+  return item.listings.length ? [...new Set(item.listings.map((l) => l.platform))] : ["marktplaats"];
+}
+
+type Fx = { left: number; top: number; size: number; out: boolean };
+
+/**
+ * The sold poof moment. While the deal waits for the handover ("pending") the panel shows the next steps
+ * and "Mark as picked up & paid"; once done, the same steps are ticked off.
+ */
+export function Sold({ item, onProduct, onMarkDone }: { item: Item; onProduct: () => void; onMarkDone: () => Promise<void> }) {
+  const done = dealStage(item) === "sold";
+  const buyer = dealBuyer(item) ?? "the buyer";
+  const price = dealPrice(item);
+  const conv = dealConversation(item);
   const recap = recapOf(item);
   const photo = coverFirst(item)[0];
+  const lastMsg = conv?.messages.at(-1);
+  const paidLine = isPaid(item) ? `${buyer} already paid` : `${buyer} pays at pickup`;
 
-  const [phase, setPhase] = useState<Phase>(() => firstPhase(item.id));
+  const stage = useRef<HTMLDivElement>(null);
+  const sticker = useRef<HTMLSpanElement>(null);
+  const [settled] = useState(() => soldRevealed(item.id));
+  const [showText, setShowText] = useState(settled);
+  const [showPanel, setShowPanel] = useState(settled);
+  const [fx, setFx] = useState<Fx | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  // playSoldReveal / poofSticker
   useEffect(() => {
-    if (phase !== "sticker") return;
-    const t1 = setTimeout(() => { setPhase("poof"); play("/brand/poof-item.mp3", 0.5); }, 450);
-    const t2 = setTimeout(() => {
-      setPhase("done");
-      play("/brand/poof-success.mp3", 0.6);
-      try { sessionStorage.setItem(`poof:sold:${item.id}`, "1"); } catch { /* ignore */ }
-    }, 1300);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-    // Runs once per mount: the phase only moves forward.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (settled) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const finish = () => {
+      setShowText(true);
+      at(250, () => { setShowPanel(true); markRevealed(item.id); });
+    };
+    at(260, () => {
+      const el = sticker.current, host = stage.current;
+      if (!el || !host) return finish();
+      if (reduce) { el.style.visibility = "hidden"; sound("/brand/poof-success.mp3", 0.6); return finish(); }
+      el.animate([
+        { transform: "scale(1,1)", opacity: 1 },
+        { transform: "scale(1.14,.84)", opacity: 1, offset: 0.45 },
+        { transform: "scale(.86,1.18)", opacity: 1, offset: 0.75 },
+        { transform: "scale(0,0)", opacity: 0 },
+      ], { duration: 300, easing: "ease-in", fill: "forwards" });
+      at(190, () => {
+        sound("/brand/poof-item.mp3", 0.5);
+        const r = el.getBoundingClientRect(), h = host.getBoundingClientRect();
+        const size = Math.max(90, Math.min(260, Math.max(r.width, r.height) * 1.8));
+        setFx({ size, left: r.left + r.width / 2 - h.left - size / 2, top: r.top + r.height / 2 - h.top - size / 2, out: false });
+      });
+      at(850, () => { sound("/brand/poof-success.mp3", 0.6); finish(); });
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [settled, item.id]);
 
-  const shown = phase === "done";
+  const markDone = async () => {
+    setBusy(true); setErr(null);
+    try { await onMarkDone(); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Could not mark it as done"); }
+    finally { setBusy(false); }
+  };
 
   return (
-    <div className="-mx-5 -mt-2">
-      {/* The poof stage */}
-      <div className="relative flex h-[280px] items-center justify-center overflow-hidden">
-        {phase !== "done" && photo && (
-          <div
-            className={cx("sticker w-[52%] max-w-[210px] overflow-hidden rounded-[12px] transition-[transform,opacity] duration-300 ease-in",
-              phase === "poof" && "!scale-0 opacity-0")}
-            style={{ ["--tilt" as string]: "-3deg" }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo} alt="" className="aspect-square w-full object-cover" />
-          </div>
-        )}
-        {phase === "poof" && <span className="poof-fx absolute left-1/2 top-1/2 size-[260px] -translate-x-1/2 -translate-y-1/2" aria-hidden />}
-
-        <div className={cx("absolute inset-x-0 px-6 text-center transition-opacity duration-500", shown ? "opacity-100" : "opacity-0")} aria-live="polite">
-          <h2 className="text-[32px] font-extrabold leading-[1.15] tracking-[-0.02em]">
-            {done ? <><span className="marker">Sold</span> for {eur(sale?.price)}</> : <><span className="marker">Sold</span>, pickup planned</>}
-          </h2>
-          <p className="mt-2 text-[15px] text-moss">
-            {done
-              ? [buyer && `to ${buyer}`, sale && `on ${PLATFORM[sale.platform]}`].filter(Boolean).join(" ")
-              : [`Deal at ${eur(sale?.price)}`, buyer, sale && PLATFORM[sale.platform]].filter(Boolean).join(" · ")}
-          </p>
-        </div>
-      </div>
-
-      {/* Next panel */}
-      <div className={cx("relative -mb-28 min-h-[60dvh] rounded-t-[28px] bg-card px-5 pb-36 pt-5 shadow-float transition-transform duration-500", shown ? "translate-y-0" : "translate-y-3")}>
-        {item.pickup && (
-          <section>
-            <Eyebrow className="mb-2.5">Next</Eyebrow>
-            <PickupCard pickup={item.pickup} done={new Date(item.pickup.end).getTime() < now} light />
-          </section>
-        )}
-
-        <div className={cx("rounded-[20px] bg-card px-4 py-1 shadow-soft", item.pickup && "mt-3")}>
-          {[
-            ["Time to sell", recap.duration],
-            ["Messages handled", String(recap.messages)],
-            ["Counter offers", String(recap.counters)],
-          ].map(([k, v]) => (
-            <div key={k} className="flex min-h-11 items-center justify-between border-b border-line last:border-0">
-              <span>{k}</span>
-              <b className="font-bold tabular">{v}</b>
-            </div>
-          ))}
-        </div>
-
-        <Eyebrow className="mb-2.5 mt-[22px]">Removed from</Eyebrow>
-        <ul className="flex flex-wrap gap-2">
-          {platforms.map((p, i) => {
-            const gone = item.listings.find((l) => l.platform === p)?.status === "removed";
-            return (
-              <li key={p} className="inline-flex items-center gap-2 rounded-full bg-page py-1 pl-1 pr-3 text-[13px] font-semibold">
-                <PlatformLogo platform={p} className="!size-6" />
-                {gone ? <Tick className="size-3.5" delay={i * 120} /> : <span className="size-3 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />}
-                {PLATFORM[p]}
-                <span className="font-normal text-moss">{gone ? "ad taken down" : "taking the ad down…"}</span>
-              </li>
-            );
-          })}
-        </ul>
-
-        <Button href="/new" className="mt-[18px] w-full">Sell something else</Button>
-        <button onClick={onOverview} className="mt-1 min-h-11 w-full text-center text-[15px] font-semibold text-ink underline underline-offset-4">
-          How this ad went
+    <div className="pv2 soldphone" style={{ position: "fixed", inset: 0, zIndex: 40, maxWidth: 440, margin: "0 auto", display: "flex", flexDirection: "column" }}>
+      <div className="soldstage" ref={stage}>
+        <button className="icon-btn" type="button" aria-label="Back to the ad" onClick={onProduct} style={{ position: "absolute", top: "calc(env(safe-area-inset-top,0px) + 16px)", left: 16, zIndex: 3, background: "var(--surface)" }}>
+          <Ic n="back" />
         </button>
-
-        {conv && (
-          <div className="mt-4">
-            <div className="puff-line mb-3" />
-            <Eyebrow className="mb-1">How Poof closed it</Eyebrow>
-            <Thread c={conv} />
-          </div>
+        <Sticker spanRef={sticker} src={photo} tilt={0} size={210} style={settled ? { visibility: "hidden" } : undefined} />
+        {fx && (
+          <span
+            className={cx("poof-fx", fx.out && "out")}
+            style={{ width: fx.size, height: fx.size, left: fx.left, top: fx.top }}
+            onAnimationEnd={() => {
+              setTimeout(() => setFx((f) => f && { ...f, out: true }), 200);
+              setTimeout(() => setFx(null), 600);
+            }}
+          />
         )}
+        <div className={cx("sold-text", showText && "show")} aria-live="polite">
+          <p className="big"><span className="pb">Sold</span> for {eur(price)}</p>
+          <p className="muted">{item.title ?? item.recognition?.name}, to {buyer}</p>
+        </div>
+        <div className={cx("next-panel", showPanel && "show")}>
+          <p className="sec" style={{ marginTop: 0 }}>{done ? "Done" : "Next"}</p>
+          <ol className="timeline">
+            <li className={done ? "done" : ""}><div><b>{handoverLabel(item)}</b><span>with {buyer}</span></div></li>
+            <li className={done ? "done" : ""}><div><b>Get paid {eur(price)}</b><span>{paidLine}</span></div></li>
+          </ol>
+          {!done && (
+            <button className="btn" type="button" disabled={busy} onClick={markDone} style={{ marginTop: 14 }}>{HANDOVER_DONE_LABEL}</button>
+          )}
+          {err && <p className="xs" style={{ color: "var(--alert)", marginTop: 6 }}>{err}</p>}
+          <div className="card recap divided pad" style={{ boxShadow: "var(--shadow-soft)", marginTop: 10 }}>
+            <div><span>Time to sell</span><b>{recap.duration}</b></div>
+            <div><span>Messages handled</span><b>{recap.messages}</b></div>
+            <div><span>Counter offers</span><b>{recap.counters}</b></div>
+          </div>
+          {conv && (
+            <>
+              <p className="sec">Conversation with {conv.buyer.split(" ")[0]}</p>
+              <Link href={`/item/${item.id}/chats/${encodeURIComponent(conv.id)}`} className="chat-row calm" style={{ marginTop: 2 }}>
+                <ChatAvatar letter={conv.buyer[0]?.toUpperCase() ?? "?"} platform={conv.platform} />
+                <span className="grow">
+                  <span className="top-line"><b className="normal">{conv.buyer}</b></span>
+                  <span className="last">{lastMsg ? (lastMsg.from === "agent" ? <PoofLine text={lastMsg.text} /> : lastMsg.text) : ""}</span>
+                </span>
+                <Ic n="right" />
+              </Link>
+            </>
+          )}
+          <p className="sec">Removed from</p>
+          <div className="rchips" style={{ marginTop: 2 }}>
+            {platformsOf(item).map((p) => {
+              const gone = done || item.listings.find((l) => l.platform === p)?.status === "removed";
+              return <span key={p}><PlatIcon platform={p} size={20} />{gone ? <Ic n="check" /> : TYPING}{PLATFORM[p]}</span>;
+            })}
+          </div>
+          <button className="btn secondary" type="button" onClick={onProduct} style={{ marginTop: 18 }}>See the ad and all chats</button>
+          <Link className="btn ghost" href="/new" style={{ marginTop: 4 }}>Sell something else</Link>
+        </div>
       </div>
     </div>
   );
@@ -164,12 +190,6 @@ export function PickupCard({ pickup, done, light }: { pickup: Pickup; done?: boo
         <p className="text-[13.5px] text-moss">
           {first} picks up{pickup.addressShared && <> · address shared with {first}</>}
         </p>
-        {pickup.calendarEventId && (
-          <p className="mt-0.5 flex items-center gap-1 text-[12.5px] font-bold text-ink">
-            <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></svg>
-            In your calendar
-          </p>
-        )}
       </div>
     </section>
   );

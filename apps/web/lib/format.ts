@@ -153,3 +153,69 @@ export function nowLine(item: Item) {
 }
 
 export const lastTs = (c: Conversation) => c.messages.at(-1)?.ts ?? "";
+
+// ---------------------------------------------------------------- deal / sold (prototype v2)
+
+/** Payment as the backend may report it (Stripe payment link); not in the v2 contract yet. */
+type WithPayment = { payment?: { status?: string } | null };
+export const isPaid = (item: Item) => (item as Item & WithPayment).payment?.status === "paid";
+
+/**
+ * "pending": the deal is agreed but the item isn't handed over (prototype: "Deal done").
+ * "sold": handed over / paid. null: still selling.
+ */
+export function dealStage(item: Item): "pending" | "sold" | null {
+  if (item.status === "sold" || item.status === "delisted" || isPaid(item)) return "sold";
+  if (item.status === "deal" || item.status === "pickup_scheduled") return "pending";
+  return null;
+}
+
+/** The conversation the deal was made in. */
+export function dealConversation(item: Item) {
+  const first = (s?: string) => s?.split(" ")[0]?.toLowerCase();
+  const who = first(item.sale?.buyer ?? item.pickup?.buyer);
+  return (
+    item.conversations.find((c) => c.state === "deal" || c.state === "pickup_scheduled") ??
+    (who ? item.conversations.find((c) => first(c.buyer) === who) : undefined)
+  );
+}
+
+/** Buyer's first name for the deal, if known. */
+export function dealBuyer(item: Item) {
+  return (item.sale?.buyer ?? item.pickup?.buyer ?? dealConversation(item)?.buyer)?.split(" ")[0];
+}
+
+/** Final price of the deal. */
+export const dealPrice = (item: Item) => item.sale?.price ?? dealConversation(item)?.lastOffer ?? item.askPrice;
+
+/** "Pickup Saturday" (prototype handoverLabel). */
+export function handoverLabel(item: Item) {
+  if (!item.pickup?.start) return "Pickup";
+  const d = new Date(item.pickup.start);
+  if (Number.isNaN(d.getTime())) return "Pickup";
+  return `Pickup ${d.toLocaleDateString("en-GB", { weekday: "long" })}`;
+}
+
+/** "Saturday 14:00" */
+export function pickupLong(startIso: string) {
+  const d = new Date(startIso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.toLocaleDateString("en-GB", { weekday: "long" })} ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+/** Whole days since an ISO time (0 = today). */
+export function daysSince(iso?: string, now = Date.now()) {
+  if (!iso) return 0;
+  const t = new Date(iso).getTime();
+  return Number.isNaN(t) ? 0 : Math.max(0, Math.floor((now - t) / 86400_000));
+}
+
+/** Chat day separator: "Today", "Yesterday", "Sat 3 Oct". */
+export function dayLabel(ts: string, now = new Date()) {
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (d.toDateString() === now.toDateString()) return "Today";
+  if (d.toDateString() === y.toDateString()) return "Yesterday";
+  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
