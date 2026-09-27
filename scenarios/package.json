@@ -1,0 +1,16 @@
+{
+  "name": "poof-scenarios",
+  "private": true,
+  "type": "module",
+  "description": "LangWatch Scenario tests for the poof negotiator (runs against the n8n test-negotiator webhook, no side effects)",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.119",
+    "@langwatch/scenario": "^1.6.0",
+    "ai": "^6.0.293",
+    "dotenv": "^18.0.4",
+    "vitest": "^5.0.2"
+  }
+}
