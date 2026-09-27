@@ -241,6 +241,30 @@ export const actor = (env, inputExpr, { timeout = 280, soft = false, local = fal
         { ...cred("apify", "httpHeaderAuth"), ...(soft ? { onError: "continueRegularOutput" } : {}) },
       ];
 
+// Post-sale delist (W5 after the pickup is booked, W1d when the owner marks it picked up & paid): take every live
+// Marktplaats ad of the sold items down on the owner's session, then mark all their listings removed. Runs after
+// `after`; `source` is a node whose items are { itemId, item } (item = parsed data incl. listings + mpStore).
+// Nothing live → the branch stops at "Listings to remove" (no actor run, no event).
+export function delistAfter(w, env, after, source) {
+  w.add("Listings to remove", code(`
+return $('${source}').all().filter(i => i.json.item.mpStore).flatMap(i => (i.json.item.listings || []).filter(l => l.status === 'live' && l.listingId)
+  .map(l => ({ json: { itemId: i.json.itemId, platform: l.platform, listingId: l.listingId, sessionStore: i.json.item.mpStore } })));`));
+  w.add("Delist on Marktplaats (Apify)", actor(env, "={{ JSON.stringify({ action: 'delist', delistReason: 'sold_on_marktplaats', useProxy: true, sessionStore: $json.sessionStore, listingId: $json.listingId, dryRun: " + (env.MP_DRY_RUN === "1") + " }) }}", { soft: true, local: true }));
+  // Re-read the items: other workflows (payments) may have saved to them meanwhile.
+  w.add("Fresh items", tableGet("items"), { executeOnce: true });
+  w.add("All removed", code(`
+const fresh = Object.fromEntries($('Fresh items').all().map(r => [r.json.itemId, r.json]));
+const ids = new Set($('Listings to remove').all().map(i => i.json.itemId));
+return $('${source}').all().filter(i => ids.has(i.json.itemId)).map(i => {
+  const item = fresh[i.json.itemId] ? JSON.parse(fresh[i.json.itemId].data) : i.json.item;
+  item.listings = (item.listings || []).map(l => ({ ...l, status: 'removed' }));
+  return { json: { itemId: i.json.itemId, data: JSON.stringify(item) } };
+});`));
+  w.add("Save removed", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { data: "={{ $json.data }}" }));
+  w.chain(after, "Listings to remove", "Delist on Marktplaats (Apify)", "Fresh items", "All removed", "Save removed");
+  w.log("Save removed", "=Removed from every platform", { type: "notify" });
+}
+
 // Stripe REST call: form fields as [name, value] pairs (values may be n8n expressions). Test mode with an sk_test_ key
 // from .env at deploy time.
 export const stripe = (env, method, urlExpr, fields) => [
