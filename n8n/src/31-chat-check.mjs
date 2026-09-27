@@ -4,10 +4,12 @@ import { Workflow, code, CREDS } from "../lib.mjs";
 // with the owner's session from the laptop, never from the cloud). When it goes up, run the inbox (W3) right away;
 // W3's own schedule stays the safety net. Soft-fails while the laptop is offline. Successful runs are not saved
 // (5,760 a day would bury the execution list).
+// OFF since the laptop runner checks every second itself (local-runner.mjs chat watcher) and pokes the inbox only when a
+// message arrives: no n8n execution per check. Kept for a laptop without that watcher (set CHAT_CHECK_N8N=1).
 export default (env) => {
   const w = new Workflow("poof · 3b Chat check (every 15 s)");
   w.settings.saveDataSuccessExecution = "none";
-  w.active = !!env.LOCAL_RUNNER_URL;
+  w.active = !!env.LOCAL_RUNNER_URL && env.CHAT_CHECK_N8N === "1";
   w.add("Every 15 s", ["n8n-nodes-base.scheduleTrigger", 1.2, { rule: { interval: [{ field: "seconds", secondsInterval: 15 }] } }]);
   w.add("Unread on Marktplaats (laptop)", [
     "n8n-nodes-base.httpRequest", 4.2,

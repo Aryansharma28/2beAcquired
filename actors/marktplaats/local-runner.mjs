@@ -134,3 +134,39 @@ const server = http.createServer((req, res) => {
   });
 });
 server.listen(PORT, () => console.log(`poof local runner on http://localhost:${PORT}${WATCH_STORE ? ` (unread counter for '${WATCH_STORE}')` : ""}`));
+
+// Chat watcher: check the unread counter every WATCH_SECONDS (default 1) right here on the laptop and run the n8n inbox
+// (tba/inbox-now) as soon as it rises. Local, so a 1 s check costs no n8n executions (n8n's own chat check is off).
+// One inbox run at a time: a message that lands within 20 s of the last run is not dropped, it gets its own run as soon
+// as that window has passed. If Marktplaats pushes back, wait longer (up to 60 s) and speed up again once it answers.
+const N8N = process.env.N8N_BASE_URL;
+const APP_KEY = process.env.POOF_APP_KEY;
+if (WATCH_STORE && N8N && APP_KEY) {
+  const EVERY = Math.max(1, Number(process.env.WATCH_SECONDS) || 1) * 1000;
+  let lastCount = null, lastPoke = 0, pending = false, wait = EVERY, warned = 0;
+  const tick = async () => {
+    let count;
+    try { count = await unreadCount(); }
+    catch (e) {
+      wait = Math.min(60_000, Math.max(wait * 2, 5_000));
+      if (/HTTP 40[13]/.test(e.message)) session = null; // a run may have refreshed the cookies: reload them
+      if (Date.now() - warned > 60_000) { warned = Date.now(); console.warn(`watcher: ${e.message}, next check in ${wait / 1000} s`); }
+      return;
+    }
+    wait = EVERY;
+    if (typeof count !== "number") return;
+    // First check: messages already waiting count as new.
+    if ((lastCount === null && count > 0) || (lastCount !== null && count > lastCount)) pending = true;
+    lastCount = count;
+    if (pending && Date.now() - lastPoke > 20_000) {
+      lastPoke = Date.now(); pending = false;
+      console.log(`
+✉ ${count} unread on Marktplaats → running the inbox now`);
+      await fetch(`${N8N}/webhook/tba/inbox-now`, { method: "POST", headers: { "X-Poof-Key": APP_KEY, "Content-Type": "application/json" }, body: "{}" })
+        .catch((e) => console.warn("watcher: inbox poke failed", e.message));
+    }
+  };
+  const loop = () => tick().finally(() => setTimeout(loop, wait));
+  loop();
+  console.log(`chat watcher on for '${WATCH_STORE}' (every ${EVERY / 1000} s)`);
+}
