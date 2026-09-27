@@ -397,9 +397,15 @@ export const agent = ({ text, system }) => [
   { promptType: "define", text, hasOutputParser: true, options: { systemMessage: system, maxIterations: 3 } },
 ];
 
+// On OpenRouter, ":nitro" routes to the fastest providers (gpt-oss-120b: ~0.3-1.7 s on Cerebras instead of 1.6-10 s by
+// default), which is most of the negotiator's reply time.
+const fastModel = (env) => {
+  const m = env.LLM_MODEL || "set-LLM_MODEL";
+  return /openrouter.ai/.test(env.LLM_BASE_URL || "") && !m.includes(":") ? `${m}:nitro` : m;
+};
 export const chatModel = (env) => [
   "@n8n/n8n-nodes-langchain.lmChatOpenAi", 1.2,
-  { model: { __rl: true, mode: "id", value: env.LLM_MODEL || "set-LLM_MODEL" }, options: { baseURL: env.LLM_BASE_URL, temperature: 0.4, maxTokens: 900 } },
+  { model: { __rl: true, mode: "id", value: fastModel(env) }, options: { baseURL: env.LLM_BASE_URL, temperature: 0.4, maxTokens: 900 } },
   cred("llm", "openAiApi"),
 ];
 
