@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { approve } from "@/lib/api";
 import { getAccount } from "@/lib/account";
-import { coverFirst } from "@/lib/useItem";
+import { stickerSrc } from "@/lib/useItem";
 import type { Item } from "@/lib/types";
 import { ConnectMarktplaats } from "./Connect";
 import { CtaArrow, Ic, MpIcon, SfScreen, Sticker } from "./Wizard";
@@ -15,7 +15,7 @@ export function NeedsConnection({ item, onApproved }: { item: Item; onApproved: 
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const photo = coverFirst(item)[0];
+  const photo = stickerSrc(item);
   const name = item.title ?? item.recognition?.name ?? "Your item";
 
   useEffect(() => {

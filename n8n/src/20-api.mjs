@@ -44,7 +44,7 @@ return [{ json: item }];`));
 const me = $('GET items').first().json.headers['x-poof-user'];
 const items = $input.all().map(i => i.json).filter(r => r.itemId).filter(r => JSON.parse(r.data || '{}').ownerId === me).map(r => {
   const d = JSON.parse(r.data || '{}');
-  return { id: r.itemId, status: r.status, title: d.title || d.name || 'New item', photo: d.photos?.[0], askPrice: d.askPrice,
+  return { id: r.itemId, status: r.status, title: d.title || d.name || 'New item', photo: d.photos?.[0], cutout: d.cutout, askPrice: d.askPrice,
            floorPrice: d.floorPrice, goal: d.goal, sale: d.sale, createdAt: d.createdAt,
            listings: (d.listings || []).map(l => ({ platform: l.platform, status: l.status, url: l.url })) };
 }).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));

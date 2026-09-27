@@ -85,6 +85,7 @@ export async function listItems(): Promise<ItemSummary[]> {
       ...i,
       status: normStatus(i.status),
       photo: photoUrl(i.photo ?? i.photos?.[i.coverIndex ?? 0] ?? i.photos?.[0]),
+      cutout: photoUrl(i.cutout),
       conversations: Array.isArray(i.conversations) ? i.conversations.map((c) => ({ ...c, messages: c.messages ?? [] })) : undefined,
     }))
     .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
@@ -119,6 +120,7 @@ function normalize(item: Item): Item {
     status: normStatus(item.status),
     createdAt: item.createdAt ?? new Date().toISOString(),
     photos: arr<string>(item.photos).map((p) => photoUrl(p) ?? p),
+    cutout: photoUrl(item.cutout),
     floorPrice: num(item.floorPrice),
     askPrice: num(item.askPrice),
     priceRange: pr && num(pr.low) != null && num(pr.high) != null

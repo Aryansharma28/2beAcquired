@@ -63,6 +63,26 @@ function savePhotos(id: string, photos: string[]) {
   try { localStorage.setItem(PHOTO_KEY(id), JSON.stringify(photos)); } catch { /* memory only */ }
 }
 
+// Cutouts in mock mode: `next dev` makes a real one from the first photo via /api/cutout (development-only mode),
+// kept as a data URL next to the photos. Without the dev route (static mock build) items keep their photo.
+const CUTOUT_KEY = (id: string) => `poof:mock:cutout:${id}`;
+const memCutouts = new Map<string, string>();
+const cutoutOf = (id: string) => {
+  if (!memCutouts.has(id)) { try { const c = localStorage.getItem(CUTOUT_KEY(id)); if (c) memCutouts.set(id, c); } catch { /* ignore */ } }
+  return memCutouts.get(id);
+};
+const askedCutout = new Set<string>();
+function requestCutout(id: string, photo?: string) {
+  if (askedCutout.has(id) || !photo?.startsWith("data:") || typeof window === "undefined") return;
+  askedCutout.add(id);
+  fetch("/api/cutout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: photo }) })
+    .then((r) => (r.ok && r.headers.get("content-type")?.includes("image/png") ? r.blob() : null))
+    .then((b) => b && new Promise<string>((ok) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result)); fr.readAsDataURL(b); }))
+    .then((url) => { if (!url) return; memCutouts.set(id, url); try { localStorage.setItem(CUTOUT_KEY(id), url); } catch { /* full: memory only */ } })
+    .catch(() => undefined);
+}
+const withCutout = <T extends { id: string }>(it: T) => { const c = cutoutOf(it.id); return c ? { ...it, cutout: c } : it; };
+
 function photosFor(item: Item): string[] {
   if (item.photos.length) return item.photos;
   const m = memPhotos.get(item.id);
@@ -155,6 +175,7 @@ function apply(s: Store, item: Item, step: Step) {
       break;
     case "needsDetails":
       item.status = "needs_details";
+      requestCutout(item.id, photosFor(item)[0]);
       ev(item, at, "step", "Waiting for your answers");
       break;
 
@@ -473,7 +494,7 @@ export async function getItem(id: string): Promise<Item> {
   save(s);
   const item = s.items[id];
   if (!item) throw new Error("This item doesn't exist in the demo data. Start a new one.");
-  return structuredClone(withStats(s, { ...item, photos: photosFor(item) }));
+  return structuredClone(withCutout(withStats(s, { ...item, photos: photosFor(item) })));
 }
 
 export async function listItems(): Promise<ItemSummary[]> {
@@ -484,7 +505,7 @@ export async function listItems(): Promise<ItemSummary[]> {
   return Object.values(s.items)
     .map((it) => {
       const photos = photosFor(it);
-      return { ...withStats(s, it), photos, photo: photos[it.coverIndex ?? 0] ?? photos[0] };
+      return withCutout({ ...withStats(s, it), photos, photo: photos[it.coverIndex ?? 0] ?? photos[0] });
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

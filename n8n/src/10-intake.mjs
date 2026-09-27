@@ -152,5 +152,29 @@ return [{ json: { itemId: n.itemId, status: 'needs_details', data: JSON.stringif
   w.add("Save market", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { status: "needs_details", data: "={{ $json.data }}" }));
   w.link("Market", "Save market");
   w.log("Market", "={{ $json.priceRange ? $json.compsCount + ' similar listings found (€' + $json.priceRange.low + '–€' + $json.priceRange.high + ')' : 'Few similar listings found' }}");
+
+  // Sticker cutout of the cover photo (item only, transparent) for the app's home grid and stickers. A second branch of
+  // "Save recognition", placed below the pricing branch so n8n runs it after pricing: it takes ~10 s and nobody waits on it.
+  // The app (/api/cutout) does the image work; we only save the result on the item as it is by then. On failure the app
+  // keeps showing the photo.
+  const appUrl = String(env.APP_URL || "https://poof-lovat.vercel.app").split("/").filter((s, i, a) => s || i < a.length - 1).join("/");
+  w.add("Make cutout (app)", ["n8n-nodes-base.httpRequest", 4.2, {
+    method: "POST", url: `${appUrl}/api/cutout`,
+    sendHeaders: true, headerParameters: { parameters: [{ name: "X-Poof-Key", value: env.POOF_APP_KEY || "" }] },
+    sendBody: true, specifyBody: "json",
+    jsonBody: "={{ JSON.stringify({ itemId: $('New item').first().json.itemId, photo: $('New item').first().json.item.photos[0] }) }}",
+    options: { timeout: 90000 },
+  }, { onError: "continueRegularOutput", executeOnce: true }], { position: [1560 + 16 * 260, 420] });
+  w.link("Save recognition", "Make cutout (app)");
+  w.add("Item for cutout", tableGet("items", { itemId: "={{ $('New item').first().json.itemId }}" }), { executeOnce: true, position: [1820 + 16 * 260, 420] });
+  w.add("Add cutout", code(`
+const n = $('New item').first().json;
+const cutout = $('Make cutout (app)').first().json.cutout;
+const row = $input.all().map(i => i.json).find(x => x.itemId === n.itemId);
+if (!cutout || !row) return [];
+const cur = JSON.parse(row.data);
+return [{ json: { itemId: n.itemId, data: JSON.stringify({ ...cur, cutout }) } }];`), { position: [2080 + 16 * 260, 420] });
+  w.add("Save cutout", tableUpdate("items", { itemId: "={{ $json.itemId }}" }, { data: "={{ $json.data }}" }), { position: [2340 + 16 * 260, 420] });
+  w.chain("Make cutout (app)", "Item for cutout", "Add cutout", "Save cutout");
   return w;
 };

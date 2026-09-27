@@ -6,7 +6,7 @@ import { Fragment, useEffect, useRef, type CSSProperties, type Ref } from "react
 import {
   PLATFORM, dayLabel, dealConversation, dealPrice, dealStage, eur, lastTs, offerIn, pickupLong, pickupWhen,
 } from "@/lib/format";
-import { coverFirst } from "@/lib/useItem";
+import { stickerSrc } from "@/lib/useItem";
 import type { Conversation, Item, Platform } from "@/lib/types";
 
 // Markup, class names and copy follow design/visual/prototype.html (styles: globals.css › "prototype v2", under .pv2).
@@ -177,7 +177,7 @@ function chatSummary(item: Item, entries: Entry[]) {
 /** Chats: this ad as one group, what needs you first. */
 export function ChatList({ item }: { item: Item }) {
   const entries = chatEntries(item);
-  const photo = coverFirst(item)[0];
+  const photo = stickerSrc(item);
   return (
     <div className="body2 has-nav" style={{ paddingTop: 28 }}>
       <h1 className="q" style={{ fontSize: 28 }}>Chats</h1>
@@ -202,7 +202,7 @@ const KIND = { offer: "Offer", counter: "Counter", deal: "Accepted" } as const;
 
 /** One chat: Poof handles it, low offers included. */
 export function Negotiation({ item, c }: { item: Item; c: Conversation }) {
-  const photo = coverFirst(item)[0];
+  const photo = stickerSrc(item);
   const stage = dealStage(item);
   const isDeal = stage != null && dealConversation(item) === c;
   const pickup = isDeal ? item.pickup : undefined;
