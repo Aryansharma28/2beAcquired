@@ -9,34 +9,54 @@ export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
+/** Poof cloud mark (styleguide "Mark"). */
+export function CloudMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="34 24 138 116" className={className} aria-hidden fill="currentColor">
+      <circle cx="66" cy="88" r="32" /><circle cx="100" cy="62" r="38" /><circle cx="134" cy="84" r="32" />
+      <circle cx="150" cy="106" r="22" /><circle cx="100" cy="110" r="30" /><circle cx="60" cy="112" r="20" />
+    </svg>
+  );
+}
+
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={cx("font-display font-extrabold lowercase tracking-[-0.05em]", className)}>
-      poof<span className="text-cobalt">.</span>
+    <span className={cx("inline-flex items-center gap-[0.3em] font-brand font-extrabold leading-none tracking-[-0.02em]", className)}>
+      <CloudMark className="h-[0.8em] w-auto" />
+      Poof
+    </span>
+  );
+}
+
+/** The "POOF" tag that marks what Poof said or suggested. */
+export function PoofTag({ className }: { className?: string }) {
+  return (
+    <span className={cx("inline-flex h-[18px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[4px] bg-ink px-1.5 text-[11px] font-extrabold text-lime", className)}>
+      <CloudMark className="h-[9px] w-auto" />POOF
     </span>
   );
 }
 
 const TONES = {
-  cobalt: "bg-cobalt-soft text-cobalt-deep",
-  tag: "bg-tag text-ink",
-  go: "bg-go-soft text-go",
+  cobalt: "bg-limetint text-ink",
+  tag: "bg-lime text-ink",
+  go: "bg-card text-ink shadow-soft",
   alert: "bg-alert text-white",
-  mute: "bg-line text-ink-2",
+  mute: "bg-card text-moss shadow-soft",
 };
 
 export function StatusPill({ status, className }: { status: Status; className?: string }) {
   const s = STATUS[status] ?? STATUS.error;
   const live = status === "live" || status === "negotiating" || status === "needs_you";
   return (
-    <span className={cx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold", TONES[s.tone], className)}>
-      {live && <span className="size-1.5 animate-blink rounded-full bg-current" />}
+    <span className={cx("inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[12px] font-bold", TONES[s.tone], className)}>
+      {s.tone !== "alert" && <span className={cx("size-[7px] rounded-full", s.tone === "mute" ? "bg-moss" : "bg-ink", live && "animate-blink")} />}
       {s.label}
     </span>
   );
 }
 
-const PLATFORM_DOT: Record<Platform, string> = { marktplaats: "bg-[#f59a23]", ebay: "bg-[#3665f3]" };
+const PLATFORM_DOT: Record<Platform, string> = { marktplaats: "bg-[#f59a23]", ebay: "bg-[#e53238]" };
 
 export function PlatformDot({ platform, className }: { platform: Platform; className?: string }) {
   return <span className={cx("inline-block size-2 shrink-0 rounded-full", PLATFORM_DOT[platform], className)} />;
@@ -52,15 +72,15 @@ export function ListingPill({ platform, status }: { platform: Platform; status: 
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors duration-500",
-        status === "live" && "border-go/30 bg-go-soft text-go",
-        status === "pending" && "border-line bg-card text-ink-2",
-        status === "removed" && "border-line bg-paper text-mute line-through decoration-1",
-        status === "error" && "border-alert/40 bg-alert-soft text-alert",
+        "inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors duration-500",
+        status === "live" && "bg-limetint text-ink",
+        status === "pending" && "bg-card text-moss shadow-soft",
+        status === "removed" && "bg-page text-moss line-through decoration-1",
+        status === "error" && "bg-alert-soft text-alert",
       )}
     >
       {status === "pending" ? (
-        <span className="size-3 animate-spin rounded-full border-2 border-line border-t-cobalt" />
+        <span className="size-3 animate-spin rounded-full border-2 border-line border-t-ink" />
       ) : (
         <PlatformDot platform={platform} className={status === "live" ? "animate-blink" : ""} />
       )}
@@ -69,29 +89,15 @@ export function ListingPill({ platform, status }: { platform: Platform; status: 
   );
 }
 
-/** The signature: a yellow swing-tag sticker with a punched hole. */
+/** The signature: a lime paper price tag with a notch, a punched hole and (optionally) its string. */
 export function PriceTag({
-  amount, label, size = "md", className, tilt = -3,
-}: { amount?: number; label?: string; size?: "sm" | "md" | "lg" | "xl"; className?: string; tilt?: number }) {
-  const sz = {
-    sm: "pl-5 pr-2.5 py-1 text-[15px]",
-    md: "pl-7 pr-3.5 py-1.5 text-[22px]",
-    lg: "pl-10 pr-5 py-2.5 text-[40px]",
-    xl: "pl-14 pr-7 py-4 text-[76px]",
-  }[size];
-  const hole = { sm: "left-2 size-1.5", md: "left-2.5 size-2.5", lg: "left-3.5 size-3.5", xl: "left-5 size-5" }[size];
+  amount, label, size = "md", className, tilt = -3, string, dark,
+}: { amount?: number; label?: string; size?: "sm" | "md" | "lg" | "xl"; className?: string; tilt?: number; string?: boolean; dark?: boolean }) {
+  const sz = { sm: "text-[13px]", md: "text-[18px]", lg: "text-[30px]", xl: "text-[54px]" }[size];
   return (
-    <span
-      className={cx("relative inline-flex flex-col items-start bg-tag font-mono font-bold leading-none text-ink shadow-[0_2px_0_rgba(11,13,18,0.18)]", sz, className)}
-      style={{
-        transform: `rotate(${tilt}deg)`,
-        clipPath: "polygon(14% 0, 100% 0, 100% 100%, 14% 100%, 0 50%)",
-        borderRadius: 4,
-      }}
-    >
-      <span className={cx("absolute top-1/2 -translate-y-1/2 rounded-full bg-paper shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)]", hole)} />
-      {label && <span className="mb-1 font-sans text-[0.32em] font-bold uppercase tracking-[0.14em] text-ink/70">{label}</span>}
-      <span className="tabular tracking-[-0.03em]">{eur(amount)}</span>
+    <span className={cx("pricetag", string && "string", dark && "dark", sz, className)} style={{ ["--tilt" as string]: `${tilt}deg` }}>
+      {label && <span className="mb-[0.15em] text-[0.5em] font-bold opacity-70">{label}</span>}
+      <span className="tabular">{eur(amount)}</span>
     </span>
   );
 }
@@ -103,12 +109,10 @@ export function Button({
   className?: string; disabled?: boolean; type?: "button" | "submit"; href?: string;
 }) {
   const cls = cx(
-    "relative inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-[16px] font-semibold transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100",
-    variant === "primary" && "bg-cobalt text-white shadow-[0_6px_20px_-6px_rgba(43,59,255,0.7)]",
-    variant === "ink" && "bg-ink text-white",
-    variant === "go" && "bg-go text-white",
+    "relative inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full px-5 py-3 text-[16px] font-bold transition-all duration-200 active:scale-[0.97] disabled:bg-line disabled:text-moss disabled:shadow-none disabled:active:scale-100",
+    (variant === "primary" || variant === "ink" || variant === "go") && "bg-ink text-lime",
     variant === "danger" && "bg-alert-soft text-alert",
-    variant === "ghost" && "bg-card text-ink ring-1 ring-line",
+    variant === "ghost" && "bg-card text-ink shadow-soft",
     className,
   );
   if (href) return <Link href={href} className={cls}>{children}</Link>;
@@ -120,9 +124,9 @@ export function Segmented<T extends string>({
 }: { value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode; dot?: boolean }[] }) {
   const idx = Math.max(0, options.findIndex((o) => o.value === value));
   return (
-    <div className="relative grid rounded-2xl bg-line/70 p-1" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
+    <div className="relative grid rounded-full bg-card p-1 shadow-soft" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
       <span
-        className="absolute inset-y-1 left-1 rounded-xl bg-card shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.3,1.2,0.5,1)]"
+        className="absolute inset-y-1 left-1 rounded-full bg-lime transition-transform duration-300 ease-[cubic-bezier(0.3,1.2,0.5,1)]"
         style={{ width: `calc((100% - 8px) / ${options.length})`, transform: `translateX(${idx * 100}%)` }}
       />
       {options.map((o) => (
@@ -131,8 +135,8 @@ export function Segmented<T extends string>({
           type="button"
           onClick={() => onChange(o.value)}
           className={cx(
-            "relative z-10 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[14px] font-semibold transition-colors",
-            o.value === value ? "text-ink" : "text-mute",
+            "relative z-10 flex min-h-[44px] items-center justify-center gap-1.5 rounded-full text-[14px] font-semibold transition-colors",
+            o.value === value ? "text-ink" : "text-moss",
           )}
         >
           {o.label}
@@ -151,61 +155,70 @@ export function Tick({ className, delay = 0 }: { className?: string; delay?: num
   );
 }
 
+/** Round white icon button (styleguide "Icon buttons"). */
+export const ICON_BTN = "grid size-11 shrink-0 place-items-center rounded-full bg-card text-ink shadow-soft transition active:scale-95";
+
 export function BackButton({ href = "/" }: { href?: string }) {
   return (
-    <Link href={href} aria-label="Back" className="grid size-10 place-items-center rounded-full bg-card ring-1 ring-line transition active:scale-95">
-      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 5l-7 7 7 7" />
+    <Link href={href} aria-label="Back" className={ICON_BTN}>
+      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m15 18-6-6 6-6" />
       </svg>
     </Link>
   );
 }
 
-/** Small square platform mark. */
+const LOGO_PATH = {
+  vinted: ["#09B1BA", "M19.316 0c-.258 0-.571.217-1.415.953-.3.108-.627.027-1.008.613-2.15 3.09-3.825 14.648-5.255 17.984-.286-1.444-.885-10.837-1.116-13.41-.028-.477.027-1.076.027-1.43 0-2.368-.516-3.567-2.886-3.567-1.198 0-2.382.436-3.008 1.226-.299.408-.409.708-.409 1.443 0 4.915 1.171 12.973 2.478 18.228C7.132 23.688 8.603 24 9.99 24c.654 0 1.307-.081 2.233-.544 3.212-1.567 4.07-5.84 4.9-9.993.15-.749.899-4.37 1.253-6.275.476-2.6 1.02-5.54 1.347-6.617C19.833.245 19.63 0 19.317 0z"],
+  ebay: ["#E53238", "M6.056 12.132v-4.92h1.2v3.026c.59-.703 1.402-.906 2.202-.906 1.34 0 2.828.904 2.828 2.855 0 .233-.015.457-.06.668.24-.953 1.274-1.305 2.896-1.344.51-.018 1.095-.018 1.56-.018v-.135c0-.885-.556-1.244-1.53-1.244-.72 0-1.245.3-1.305.81h-1.275c.136-1.29 1.5-1.62 2.686-1.62 1.064 0 1.995.27 2.415 1.02l-.436-.84h1.41l2.055 4.125 2.055-4.126H24l-3.72 7.305h-1.346l1.07-2.04-2.33-4.38c.13.255.2.555.2.93v2.46c0 .346.01.69.04 1.005H16.8a6.543 6.543 0 01-.046-.765c-.603.734-1.32.96-2.32.96-1.48 0-2.272-.78-2.272-1.695 0-.15.015-.284.037-.405-.3 1.246-1.36 2.086-2.767 2.086-.87 0-1.694-.315-2.2-.93 0 .24-.015.494-.04.734h-1.18c.02-.39.04-.855.04-1.245v-1.05h-4.83c.065 1.095.818 1.74 1.853 1.74.718 0 1.355-.3 1.568-.93h1.24c-.24 1.29-1.61 1.725-2.79 1.725C.95 15.009 0 13.822 0 12.232c0-1.754.982-2.91 3.116-2.91 1.688 0 2.93.886 2.94 2.806v.005zm9.137.183c-1.095.034-1.77.233-1.77.95 0 .465.36.97 1.305.97 1.26 0 1.935-.69 1.935-1.814v-.13c-.45 0-.99.006-1.484.022h.012zm-6.06 1.875c1.11 0 1.876-.806 1.876-2.02s-.768-2.02-1.893-2.02c-1.11 0-1.89.806-1.89 2.02s.765 2.02 1.875 2.02h.03zm-4.35-2.514c-.044-1.125-.854-1.546-1.725-1.546-.944 0-1.694.474-1.815 1.546z"],
+  facebook: ["#0866FF", "M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"],
+} as const;
+
+/** Platform app icon: the real Marktplaats icon, Simple Icons for the others. Size it with a `size-*` class. */
 export function PlatformLogo({ platform, className, muted }: { platform: Platform | "vinted" | "facebook"; className?: string; muted?: boolean }) {
-  const m = {
-    marktplaats: ["M", "bg-[#f59a23] text-white"],
-    ebay: ["e", "bg-[#3665f3] text-white"],
-    vinted: ["V", "bg-[#09b1ba] text-white"],
-    facebook: ["f", "bg-[#1877f2] text-white"],
-  }[platform];
+  const base = cx("inline-grid size-5 shrink-0 place-items-center overflow-hidden rounded-[28%]", muted && "opacity-35 grayscale", className);
+  if (platform === "marktplaats") {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src="/brand/logos/marktplaats.png" alt="" aria-hidden className={cx(base, "object-cover")} />;
+  }
+  const [bg, d] = LOGO_PATH[platform];
   return (
-    <span
-      aria-hidden
-      className={cx("inline-grid size-5 shrink-0 place-items-center rounded-[6px] font-display text-[12px] font-extrabold leading-none", m[1], muted && "opacity-35 grayscale", className)}
-    >
-      {m[0]}
+    <span aria-hidden className={base} style={{ background: bg }}>
+      <svg viewBox="0 0 24 24" className="size-[56%]" fill="#fff"><path d={d} /></svg>
     </span>
   );
 }
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cx("font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-mute", className)}>{children}</p>;
+  return <p className={cx("text-[12px] font-bold text-moss", className)}>{children}</p>;
 }
 
 export function Soon({ className }: { className?: string }) {
-  return <span className={cx("rounded-full bg-line px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-mute", className)}>soon</span>;
+  return <span className={cx("whitespace-nowrap rounded-[4px] bg-limetint px-1.5 py-px text-[12px] font-bold text-ink", className)}>Soon</span>;
 }
 
-/** Bottom navbar shown on every screen after the ad went live. */
+/** Floating navbar: ink pill, active tab in lime, white Sell button. */
 export function NavBar({ active = "ads" }: { active?: "ads" | "none" }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[440px] px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-2">
-      <div className="flex items-center gap-2 rounded-[26px] bg-ink p-1.5 shadow-[0_18px_40px_-14px_rgba(11,13,18,0.55)]">
+    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[440px] px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-2">
+      <div className="flex h-16 items-center gap-1.5 rounded-full bg-ink px-2 shadow-float">
         <Link
           href="/"
-          className={cx("flex flex-1 items-center justify-center gap-2 rounded-[20px] py-3 text-[15px] font-semibold transition active:scale-95", active === "ads" ? "text-white" : "text-white/60")}
+          className={cx(
+            "flex h-12 flex-1 items-center justify-center gap-2 rounded-full text-[15px] font-bold transition active:scale-95",
+            active === "ads" ? "bg-lime text-ink" : "bg-white/12 text-white",
+          )}
         >
-          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round">
-            <rect x="4" y="4" width="7" height="7" rx="2" /><rect x="13" y="4" width="7" height="7" rx="2" /><rect x="4" y="13" width="7" height="7" rx="2" /><rect x="13" y="13" width="7" height="7" rx="2" />
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
           </svg>
           Ads
         </Link>
         <Link
           href="/new"
-          className="flex flex-[1.4] items-center justify-center gap-2 rounded-[20px] bg-tag py-3 font-display text-[17px] font-extrabold tracking-[-0.02em] text-ink transition active:scale-95"
+          className="flex h-12 items-center justify-center gap-1.5 rounded-full bg-white pl-4 pr-5 text-[15px] font-bold text-ink transition active:scale-95"
         >
-          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          <svg viewBox="0 0 24 24" className="size-[22px]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
           Sell
         </Link>
       </div>
@@ -216,7 +229,7 @@ export function NavBar({ active = "ads" }: { active?: "ads" | "none" }) {
 /** Sticky primary action at the bottom of a wizard-style screen. */
 export function BottomAction({ children }: { children: ReactNode }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[440px] bg-gradient-to-t from-paper via-paper/95 to-transparent px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-8">
+    <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-[440px] bg-card px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-3.5">
       {children}
     </div>
   );
@@ -234,12 +247,12 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal>
       <button aria-label="Close" onClick={onClose} className="absolute inset-0 animate-fade bg-ink/50" />
-      <div className="no-scrollbar relative max-h-[80dvh] w-full max-w-[440px] animate-rise overflow-y-auto rounded-t-[30px] bg-paper px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-3">
+      <div className="no-scrollbar relative max-h-[80dvh] w-full max-w-[440px] animate-rise overflow-y-auto rounded-t-[28px] bg-page px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-3 shadow-float">
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line" />
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-display text-[22px] font-extrabold tracking-[-0.03em]">{title}</h3>
-          <button onClick={onClose} className="grid size-9 place-items-center rounded-full bg-card ring-1 ring-line" aria-label="Close">
-            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          <h3 className="text-[22px] font-extrabold tracking-[-0.02em]">{title}</h3>
+          <button onClick={onClose} className="grid size-10 place-items-center rounded-full bg-card shadow-soft" aria-label="Close">
+            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
         {children}

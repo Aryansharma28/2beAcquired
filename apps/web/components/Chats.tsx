@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PLATFORM, eur, lastTs, offerIn, pickupWhen, timeAgo, unreadIn } from "@/lib/format";
 import type { Conversation, Item } from "@/lib/types";
-import { Eyebrow, PlatformLogo, cx } from "./ui";
+import { Eyebrow, PlatformLogo, PoofTag, cx } from "./ui";
 
 // ---------------------------------------------------------------- 11
 
@@ -18,9 +18,9 @@ export function ChatList({ item }: { item: Item }) {
 
   if (!item.conversations.length) {
     return (
-      <div className="rounded-3xl border-2 border-dashed border-line px-5 py-10 text-center">
-        <p className="font-display text-[22px] font-bold tracking-[-0.02em]">No chats yet</p>
-        <p className="mt-1 text-[14.5px] text-ink-2">When a buyer messages, your agent answers within minutes. The chat shows up here.</p>
+      <div className="rounded-[20px] bg-card px-5 py-10 text-center shadow-soft">
+        <p className="text-[20px] font-extrabold">No chats yet</p>
+        <p className="mt-1 text-[14.5px] text-moss">When a buyer messages, Poof answers within minutes. The chat shows up here.</p>
       </div>
     );
   }
@@ -33,14 +33,14 @@ export function ChatList({ item }: { item: Item }) {
         <section>
           <button
             onClick={() => setOpenFolded((o) => !o)}
-            className="flex w-full items-center justify-between rounded-[22px] bg-card/60 px-4 py-3.5 text-left ring-1 ring-line/60"
+            className="flex min-h-12 w-full items-center gap-2 px-3.5 text-left"
             aria-expanded={openFolded}
           >
-            <span className="text-[15px] font-semibold text-ink-2">Lowballers and scams ({folded.length})</span>
-            <svg viewBox="0 0 24 24" className={cx("size-5 text-mute transition-transform", openFolded && "rotate-180")} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
+            <span className="flex-1 text-[15px] font-semibold text-moss">Lowballers and scams ({folded.length})</span>
+            <svg viewBox="0 0 24 24" className={cx("size-5 text-moss transition-transform", openFolded && "rotate-180")} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
           </button>
           {openFolded && (
-            <ul className="mt-2 animate-fade overflow-hidden rounded-[22px] bg-card opacity-80 ring-1 ring-line/60">
+            <ul className="mt-1 animate-fade space-y-2 opacity-80">
               {folded.map((c) => <ChatRow key={c.id} item={item} c={c} />)}
             </ul>
           )}
@@ -58,8 +58,8 @@ function bestOffer(c: Conversation) {
 function Group({ title, item, convs }: { title: string; item: Item; convs: Conversation[] }) {
   return (
     <section>
-      <Eyebrow className="mb-2 px-1">{title}</Eyebrow>
-      <ul className="overflow-hidden rounded-[22px] bg-card ring-1 ring-line/60">
+      <Eyebrow className="mb-2">{title}</Eyebrow>
+      <ul className="space-y-2">
         {convs.map((c) => <ChatRow key={c.id} item={item} c={c} />)}
       </ul>
     </section>
@@ -71,27 +71,27 @@ function ChatRow({ item, c }: { item: Item; c: Conversation }) {
   const offer = bestOffer(c);
   const unread = unreadIn(c) > 0 && c.state !== "declined";
   return (
-    <li className="border-b border-line/70 last:border-0">
-      <Link href={`/item/${item.id}/chats/${c.id}`} className="flex items-center gap-3 px-3.5 py-3 transition active:bg-paper">
-        <span className="relative grid size-11 shrink-0 place-items-center rounded-full bg-paper font-display text-[18px] font-bold">
+    <li>
+      <Link href={`/item/${item.id}/chats/${c.id}`} className="flex min-h-[74px] items-center gap-3 rounded-[20px] bg-card px-3.5 py-3 shadow-soft transition active:scale-[0.98]">
+        <span className="relative grid size-10 shrink-0 place-items-center rounded-full bg-limetint text-[15px] font-extrabold">
           {c.buyer[0]?.toUpperCase()}
-          <PlatformLogo platform={c.platform} className="absolute -bottom-0.5 -right-0.5 !size-[18px] !rounded-[5px] !text-[10px] ring-2 ring-card" />
+          <PlatformLogo platform={c.platform} className="absolute -bottom-1 -right-1 !size-5 !rounded-[6px] shadow-soft" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-[15.5px] font-bold">{c.buyer}</span>
+          <div className="flex items-center gap-1.5">
+            <span className={cx("truncate text-[15px]", unread ? "font-bold" : "font-semibold")}>{c.buyer}</span>
             <Badge state={c.state} />
-            <span className="ml-auto shrink-0 text-[11.5px] text-mute">{timeAgo(last?.ts)}</span>
+            <span className="ml-auto shrink-0 text-[12px] text-moss">{timeAgo(last?.ts)}</span>
           </div>
           <div className="mt-0.5 flex items-center gap-2">
-            <p className={cx("min-w-0 flex-1 truncate text-[13.5px]", unread ? "font-semibold text-ink" : "text-mute")}>
-              {last?.from === "agent" && <span className="text-cobalt">Agent: </span>}
+            <p className={cx("min-w-0 flex-1 truncate text-[14px]", unread ? "font-semibold text-ink" : "text-moss")}>
+              {last?.from === "agent" && <span className="font-bold text-ink">Poof: </span>}
               {last?.text}
             </p>
             {offer != null && c.state !== "declined" && (
-              <span className="shrink-0 rounded-full bg-tag px-2 py-0.5 font-mono text-[11.5px] font-bold">{eur(offer)}</span>
+              <span className="shrink-0 rounded-full bg-limetint px-2.5 py-1 text-[13px] font-extrabold tabular">{eur(offer)}</span>
             )}
-            {unread && <span className="size-2.5 shrink-0 rounded-full bg-cobalt" aria-label="New message" />}
+            {unread && <span className="size-2.5 shrink-0 rounded-full bg-ink" aria-label="New message" />}
           </div>
         </div>
       </Link>
@@ -102,11 +102,11 @@ function ChatRow({ item, c }: { item: Item; c: Conversation }) {
 export function Badge({ state }: { state: Conversation["state"] }) {
   if (state === "open") return null;
   const s = {
-    deal: ["Deal", "bg-go-soft text-go"],
-    pickup_scheduled: ["Pickup planned", "bg-go-soft text-go"],
-    declined: ["Declined", "bg-line text-mute"],
+    deal: ["Deal", "bg-lime text-ink"],
+    pickup_scheduled: ["Pickup planned", "bg-lime text-ink"],
+    declined: ["Declined", "bg-line text-moss"],
   }[state];
-  return <span className={cx("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold", s[1])}>{s[0]}</span>;
+  return <span className={cx("shrink-0 whitespace-nowrap rounded-[4px] px-1.5 py-px text-[12px] font-bold", s[1])}>{s[0]}</span>;
 }
 
 // ---------------------------------------------------------------- 12
@@ -121,38 +121,46 @@ export function Negotiation({ item, c }: { item: Item; c: Conversation }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3 px-1">
-        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-card font-display text-[20px] font-bold ring-1 ring-line">{c.buyer[0]?.toUpperCase()}</span>
+      <div className="flex items-center gap-3">
+        <span className="relative grid size-12 shrink-0 place-items-center rounded-full bg-limetint text-[18px] font-extrabold">
+          {c.buyer[0]?.toUpperCase()}
+          <PlatformLogo platform={c.platform} className="absolute -bottom-1 -right-1 !size-5 !rounded-[6px] shadow-soft" />
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 font-display text-[24px] font-extrabold leading-none tracking-[-0.03em]">
-            {c.buyer}
-            <PlatformLogo platform={c.platform} />
-          </p>
-          <p className="mt-1 text-[13px] text-mute">{PLATFORM[c.platform]}</p>
+          <p className="truncate text-[20px] font-extrabold leading-tight">{c.buyer}</p>
+          <p className="text-[13px] text-moss">{PLATFORM[c.platform]}</p>
         </div>
         {c.state === "declined" ? <Badge state="declined" /> : serious && (
-          <span className="rounded-full bg-go-soft px-2.5 py-1 text-[12px] font-bold text-go">Serious buyer</span>
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-card px-3 py-1.5 text-[13px] font-bold shadow-soft">Serious buyer</span>
         )}
       </div>
 
-      <p className="flex items-center gap-2 rounded-[18px] bg-ink px-4 py-3 text-[14px] font-semibold text-white">
-        <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-tag" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3.5" /></svg>
+      <p className="flex items-center gap-2 rounded-[16px] bg-limetint px-3.5 py-3 text-[14px] font-semibold">
+        <PoofTag />
         Aiming for {eur(item.askPrice)}, never below {eur(item.floorPrice)}
       </p>
 
       <Thread c={c} />
 
       {dealAt != null && (
-        <div className="animate-pop rounded-[24px] bg-go p-4 text-white">
-          <p className="font-display text-[26px] font-extrabold leading-none tracking-[-0.03em]">Deal at {eur(dealAt)}</p>
-          {pickup ? (
-            <p className="mt-1.5 text-[14.5px] text-white/90">
-              Pickup {pickupWhen(pickup.start).day}, {pickupWhen(pickup.start).time}
-              {pickup.addressShared && <> · address shared with {c.buyer.split(" ")[0]}</>}
-            </p>
-          ) : (
-            <p className="mt-1.5 text-[14.5px] text-white/90">Your agent is planning the pickup.</p>
+        <div className="flex animate-pop items-center gap-3 rounded-[20px] bg-limetint p-3.5">
+          {pickup && (
+            <span className="w-[52px] shrink-0 rounded-[12px] bg-card py-1.5 text-center leading-[1.1] shadow-soft">
+              <b className="block text-[20px] font-extrabold">{pickupWhen(pickup.start).date}</b>
+              <small className="text-[10px] font-bold text-moss">{pickupWhen(pickup.start).month}</small>
+            </span>
           )}
+          <div className="min-w-0">
+            <p className="text-[17px] font-extrabold leading-tight">Deal at {eur(dealAt)}</p>
+            {pickup ? (
+              <p className="mt-0.5 text-[14px] text-moss">
+                Pickup {pickupWhen(pickup.start).day}, {pickupWhen(pickup.start).time}
+                {pickup.addressShared && <> · address shared with {c.buyer.split(" ")[0]}</>}
+              </p>
+            ) : (
+              <p className="mt-0.5 text-[14px] text-moss">Poof is planning the pickup.</p>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -163,6 +171,10 @@ export function Thread({ c }: { c: Conversation }) {
   const end = useRef<HTMLDivElement>(null);
   const count = c.messages.length;
   const seen = useRef(count);
+  // Open at the newest message; afterwards follow new ones smoothly.
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end" });
+  }, []);
   useEffect(() => {
     if (count > seen.current) end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     seen.current = count;
@@ -170,7 +182,7 @@ export function Thread({ c }: { c: Conversation }) {
   const typing = c.state !== "declined" && c.messages.at(-1)?.from === "buyer";
 
   return (
-    <section className="space-y-2.5 rounded-[26px] bg-card p-3 ring-1 ring-line/60">
+    <section className="space-y-2 pt-1.5">
       {c.messages.map((m, i) => {
         const chip = offerIn(m, c);
         const agent = m.from === "agent";
@@ -179,24 +191,22 @@ export function Thread({ c }: { c: Conversation }) {
             {chip && <OfferChip {...chip} />}
             <div
               className={cx(
-                "max-w-[84%] px-3.5 py-2.5 text-[15px] leading-snug",
-                agent ? "rounded-[20px] rounded-br-md bg-cobalt text-white" : "rounded-[20px] rounded-bl-md bg-paper text-ink",
+                "max-w-[80%] rounded-[18px] px-3.5 py-3 text-[15px] leading-snug",
+                agent ? "rounded-br-[6px] bg-lime text-ink" : "rounded-bl-[6px] bg-card text-ink shadow-soft",
               )}
             >
+              {agent && <div className="mb-1.5"><PoofTag /></div>}
               {m.text}
             </div>
-            <span className="flex items-center gap-1.5 px-1 text-[10.5px] text-mute">
-              {agent && <span className="rounded bg-cobalt-soft px-1 py-px font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-cobalt-deep">Agent</span>}
-              {timeAgo(m.ts)}
-            </span>
+            <span className="px-1 text-[12px] text-moss">{timeAgo(m.ts)}</span>
           </div>
         );
       })}
       {typing && (
         <div className="flex animate-fade items-center justify-end gap-2">
-          <span className="text-[11px] text-mute">Agent is replying</span>
-          <div className="flex gap-1 rounded-[20px] rounded-br-md bg-cobalt/12 px-4 py-3">
-            {[0, 150, 300].map((d) => <span key={d} className="size-1.5 animate-blink rounded-full bg-cobalt" style={{ animationDelay: `${d}ms` }} />)}
+          <span className="text-[12px] text-moss">Poof is replying</span>
+          <div className="flex items-center gap-[3px] rounded-[18px] rounded-br-[6px] bg-lime px-4 py-3.5">
+            {[0, 150, 300].map((d) => <span key={d} className="size-[5px] rounded-full bg-moss [animation:tdot_1.1s_ease-in-out_infinite]" style={{ animationDelay: `${d}ms` }} />)}
           </div>
         </div>
       )}
@@ -207,12 +217,12 @@ export function Thread({ c }: { c: Conversation }) {
 
 function OfferChip({ kind, amount }: { kind: "offer" | "counter" | "deal"; amount: number }) {
   const s = {
-    offer: ["Offer", "bg-tag text-ink"],
-    counter: ["Countered", "bg-cobalt-soft text-cobalt-deep"],
-    deal: ["Accepted", "bg-go text-white"],
+    offer: ["Offer", "bg-card text-ink shadow-soft"],
+    counter: ["Countered", "bg-limetint text-ink"],
+    deal: ["Accepted", "bg-ink text-lime"],
   }[kind];
   return (
-    <span className={cx("inline-flex animate-pop items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[12px] font-bold", s[1])}>
+    <span className={cx("inline-flex animate-pop items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-extrabold tabular", s[1])}>
       {kind === "deal" && "✓ "}{s[0]} {eur(amount)}
     </span>
   );

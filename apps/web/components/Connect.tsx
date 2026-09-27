@@ -41,12 +41,12 @@ export function ConnectMarktplaats({
   if (connected) {
     return (
       <div className="animate-rise space-y-5">
-        <div className="flex flex-col items-center rounded-[28px] bg-go px-6 py-8 text-center text-white">
-          <span className="grid size-16 animate-pop place-items-center rounded-full bg-white text-go"><Tick className="size-9" /></span>
-          <p className="mt-4 font-display text-[30px] font-extrabold leading-none tracking-[-0.04em]">Connected as {connected.mpName ?? "you"}</p>
-          <p className="mt-2 text-[15px] text-white/85">Your agent can now post, answer and take ads down on Marktplaats.</p>
+        <div className="flex flex-col items-center rounded-[28px] bg-limetint px-6 py-8 text-center text-ink">
+          <span className="grid size-16 animate-pop place-items-center rounded-full bg-ink text-lime"><Tick className="size-9" /></span>
+          <p className="mt-4 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">Connected as <span className="marker">{connected.mpName ?? "you"}</span></p>
+          <p className="mt-2 text-[15px] text-moss">Poof can now post, answer and take ads down on Marktplaats.</p>
         </div>
-        <Button onClick={() => onConnected(connected)} className="w-full !py-4 !text-[18px]">Continue</Button>
+        <Button onClick={() => onConnected(connected)} className="w-full">Continue</Button>
       </div>
     );
   }
@@ -59,18 +59,18 @@ export function ConnectMarktplaats({
       <PhoneLoginCard />
 
       <Eyebrow className="px-1 pt-2">Or on a laptop, with the poof Connector</Eyebrow>
-      <div className="rounded-[28px] bg-ink px-5 pb-5 pt-4 text-white">
+      <div className="rounded-[28px] bg-ink px-5 pb-5 pt-4 text-white shadow-float">
         <div className="flex items-center justify-between">
-          <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-tag">
-            <PlatformLogo platform="marktplaats" className="!size-4 !text-[9px]" /> Your code
+          <p className="flex items-center gap-2 text-[13px] font-bold text-lime">
+            <PlatformLogo platform="marktplaats" className="!size-5" /> Your code
           </p>
-          {code && <p className="font-mono text-[11.5px] font-bold text-white/50">{Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}</p>}
+          {code && <p className="font-mono text-[12px] font-bold text-white/60">{Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}</p>}
         </div>
         <div className="mt-3 flex justify-between gap-1.5" aria-label={code ? `Code ${code.code}` : "Getting a code"}>
           {(digits.length ? digits : Array(6).fill("")).map((d, i) => (
             <span
               key={`${code?.code}-${i}`}
-              className={cx("grid h-[62px] flex-1 place-items-center rounded-2xl bg-white/10 font-mono text-[34px] font-bold", i === 3 && "ml-2", d ? "animate-pop" : "skeleton !bg-white/10 opacity-40")}
+              className={cx("grid h-[62px] flex-1 place-items-center rounded-[12px] bg-white/12 font-mono text-[32px] font-extrabold text-lime", i === 3 && "ml-2", d ? "animate-pop" : "skeleton !bg-white/10 opacity-40")}
               style={{ animationDelay: `${i * 40}ms` }}
             >
               {d}
@@ -79,24 +79,24 @@ export function ConnectMarktplaats({
         </div>
         <p className="mt-3 flex items-center gap-2 text-[13.5px] text-white/70">
           <span className="relative grid size-3 place-items-center">
-            <span className="absolute size-3 animate-ping rounded-full bg-tag/50" />
-            <span className="size-1.5 rounded-full bg-tag" />
+            <span className="absolute size-3 animate-ping rounded-full bg-lime/50" />
+            <span className="size-1.5 rounded-full bg-lime" />
           </span>
           Waiting for the poof Connector…
         </p>
       </div>
 
-      {error && <p className="rounded-2xl bg-alert-soft p-3 text-[14px] text-alert">Couldn&apos;t get a code: {error}</p>}
+      {error && <p className="rounded-[20px] bg-alert-soft p-3 text-[14px] text-alert">Couldn&apos;t get a code: {error}</p>}
 
       <section>
-        <ol className="overflow-hidden rounded-[24px] bg-card ring-1 ring-line/60">
+        <ol className="overflow-hidden rounded-[20px] bg-card shadow-soft">
           {[
-            <>Install <Link href="/connector" className="font-bold text-cobalt underline decoration-cobalt/30 underline-offset-2">poof Connector</Link> in Chrome</>,
+            <>Install <Link href="/connector" className="font-bold text-ink underline underline-offset-2">poof Connector</Link> in Chrome</>,
             <>Log in to <b>marktplaats.nl</b> as usual</>,
             <>Open poof Connector, enter this code and tap <b>Allow</b></>,
           ].map((t, i) => (
-            <li key={i} className="flex items-center gap-3 border-b border-line/70 px-4 py-3.5 last:border-0">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-cobalt font-mono text-[13px] font-bold text-white">{i + 1}</span>
+            <li key={i} className="flex items-center gap-3 border-b border-line px-4 py-3.5 last:border-0">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-lime text-[13px] font-extrabold text-ink">{i + 1}</span>
               <span className="text-[15px] leading-snug">{t}</span>
             </li>
           ))}
@@ -106,7 +106,7 @@ export function ConnectMarktplaats({
       {!compact && <Consent />}
 
       {onSkip && (
-        <button onClick={onSkip} className="w-full py-2 text-center text-[15px] font-semibold text-mute underline decoration-line underline-offset-4">
+        <button onClick={onSkip} className="min-h-11 w-full text-center text-[15px] font-semibold text-ink underline underline-offset-4">
           {skipLabel}
         </button>
       )}
@@ -146,22 +146,22 @@ function PhoneLoginCard() {
   };
 
   return (
-    <section className="rounded-[28px] bg-card p-5 ring-1 ring-line/60">
-      <p className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-mute">
-        <PlatformLogo platform="marktplaats" className="!size-4 !text-[9px]" /> On this phone
+    <section className="rounded-[28px] bg-card p-5 shadow-soft">
+      <p className="flex items-center gap-2 text-[17px] font-bold">
+        <PlatformLogo platform="marktplaats" className="!size-8" /> On this phone
       </p>
-      <p className="mt-2 text-[15px] leading-snug text-ink-2">
-        Log in to Marktplaats in a secure window. You type your password and SMS code yourself; poof never sees them.
+      <p className="mt-2 text-[15px] leading-snug text-moss">
+        Log in to Marktplaats in a secure window. You type your password and SMS code yourself; Poof never sees them.
       </p>
-      <Button onClick={start} disabled={busy} className="mt-4 w-full !py-4 !text-[17px]">
+      <Button onClick={start} disabled={busy} className="mt-4 w-full">
         {busy ? "Opening a secure browser… (~30 s)" : "Log in to Marktplaats"}
       </Button>
-      {error && <p className="mt-3 rounded-2xl bg-alert-soft p-3 text-[14px] text-alert">{error}</p>}
+      {error && <p className="mt-3 rounded-[20px] bg-alert-soft p-3 text-[14px] text-alert">{error}</p>}
       {url && createPortal(
-        <div className="fixed inset-0 z-[100] flex flex-col bg-paper">
+        <div className="fixed inset-0 z-[100] flex flex-col bg-page">
           <div className="flex items-center justify-between px-4 py-2">
-            <span className="text-[13px] font-semibold text-mute">Secure Marktplaats login</span>
-            <button onClick={() => { if (login) stopPhoneLogin(login); setUrl(null); setLogin(null); }} className="rounded-full px-3 py-1.5 text-[14px] font-bold text-ink ring-1 ring-line">Close</button>
+            <span className="text-[13px] font-semibold text-moss">Secure Marktplaats login</span>
+            <button onClick={() => { if (login) stopPhoneLogin(login); setUrl(null); setLogin(null); }} className="h-[34px] rounded-full border border-ink px-3.5 text-[13px] font-bold text-ink">Close</button>
           </div>
           <iframe src={url} title="Marktplaats login" className="w-full flex-1 border-0" allow="clipboard-read; clipboard-write" />
         </div>,
@@ -173,11 +173,14 @@ function PhoneLoginCard() {
 
 export function Consent({ className }: { className?: string }) {
   return (
-    <section className={cx("rounded-[22px] bg-tag/30 px-4 py-3.5", className)}>
-      <Eyebrow className="!text-ink/60">What you&apos;re allowing</Eyebrow>
+    <section className={cx("rounded-[16px] bg-limetint px-4 py-3.5", className)}>
+      <p className="flex items-center gap-2 text-[14px] font-bold">
+        <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg>
+        What you&apos;re allowing
+      </p>
       <ul className="mt-2 space-y-1.5">
         {CONSENT.map((c) => (
-          <li key={c} className="flex gap-2 text-[13.5px] leading-snug text-ink-2">
+          <li key={c} className="flex gap-2 text-[13.5px] leading-snug text-moss">
             <span className="mt-[7px] size-1 shrink-0 rounded-full bg-ink/50" />
             {c}
           </li>
@@ -212,8 +215,8 @@ export function ProfileFields({ value, onChange, showName = true }: { value: Pro
               type="button"
               onClick={() => toggle(h)}
               aria-pressed={hours.includes(h)}
-              className={cx("rounded-full px-4 py-2 text-[14.5px] font-semibold transition active:scale-95",
-                hours.includes(h) ? "bg-ink text-white" : "bg-card text-ink ring-1 ring-line")}
+              className={cx("min-h-11 rounded-full px-[18px] text-[14.5px] font-semibold transition active:scale-95",
+                hours.includes(h) ? "bg-ink text-white" : "bg-card text-ink shadow-soft")}
             >
               {h}
             </button>
@@ -224,15 +227,15 @@ export function ProfileFields({ value, onChange, showName = true }: { value: Pro
   );
 }
 
-const INPUT = "w-full rounded-2xl bg-card px-4 py-3.5 text-[17px] font-semibold outline-none ring-1 ring-line placeholder:font-normal placeholder:text-mute focus:ring-2 focus:ring-cobalt";
+const INPUT = "min-h-12 w-full rounded-[12px] border border-line bg-card px-4 py-3 text-[16px] font-semibold outline-none placeholder:font-normal placeholder:text-moss/70 focus:border-ink";
 
 function Field({ label, hint, children, as = "label" }: { label: string; hint?: string; children: React.ReactNode; as?: "label" | "div" }) {
   const Tag = as;
   return (
     <Tag className="block">
-      <span className="mb-1.5 block px-1 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-mute">{label}</span>
+      <span className="mb-1.5 block text-[13px] font-semibold text-moss">{label}</span>
       {children}
-      {hint && <span className="mt-1.5 block px-1 text-[13px] text-mute">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-[13px] text-moss">{hint}</span>}
     </Tag>
   );
 }

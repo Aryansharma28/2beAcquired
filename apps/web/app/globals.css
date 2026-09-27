@@ -1,21 +1,32 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #eceef2;
+  /* Poof styleguide (design/visual/poof-styleguide.html). */
+  --color-lime: #d7f57a;
+  --color-limetint: #eefbc8;
+  --color-moss: #4a5f50;
+  --color-page: #f4f6f4;
+  --color-surface: #ffffff;
+
+  /* Legacy token names, pointed at the Poof palette so every screen follows. */
+  --color-paper: #f4f6f4;
   --color-card: #ffffff;
-  --color-ink: #0b0d12;
-  --color-ink-2: #3a3f4b;
-  --color-mute: #6a707c;
-  --color-line: #dadde4;
-  --color-cobalt: #2b3bff;
-  --color-cobalt-deep: #1a24b8;
-  --color-cobalt-soft: #e4e7ff;
-  --color-tag: #ffd84d;
-  --color-tag-deep: #e8b800;
-  --color-go: #0e9f63;
-  --color-go-soft: #dcf5ea;
-  --color-alert: #ff4f5e;
-  --color-alert-soft: #ffe3e6;
+  --color-ink: #0f2a18;
+  --color-ink-2: #4a5f50;
+  --color-mute: #4a5f50;
+  --color-line: #e1e8e3;
+  --color-cobalt: #0f2a18;
+  --color-cobalt-deep: #0f2a18;
+  --color-cobalt-soft: #eefbc8;
+  --color-tag: #d7f57a;
+  --color-tag-deep: #b8dc48;
+  --color-go: #0f2a18;
+  --color-go-soft: #eefbc8;
+  --color-alert: #d93a3f;
+  --color-alert-soft: #fbe5e5;
+
+  --shadow-soft: 0 1px 3px rgba(15, 42, 24, 0.08);
+  --shadow-float: 0 10px 30px rgba(15, 42, 24, 0.18);
 
   --animate-rise: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-fade: fade 0.4s ease both;
@@ -26,9 +37,10 @@
 }
 
 @theme inline {
-  --font-display: var(--font-bricolage);
-  --font-sans: var(--font-instrument);
-  --font-mono: var(--font-jetbrains);
+  --font-display: var(--font-figtree);
+  --font-sans: var(--font-figtree);
+  --font-mono: var(--font-figtree);
+  --font-brand: var(--font-baloo);
 }
 
 @keyframes rise {
@@ -80,6 +92,13 @@
   0% { transform: translateX(-110%); }
   100% { transform: translateX(320%); }
 }
+@keyframes sprite {
+  to { background-position: 100% 0; }
+}
+@keyframes tdot {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
 @keyframes confetti {
   0% { transform: translate3d(0, -20px, 0) rotate(0); opacity: 1; }
   100% { transform: translate3d(var(--dx), 110vh, 0) rotate(var(--rot)); opacity: 0.9; }
@@ -94,16 +113,90 @@ html, body {
 }
 body {
   font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
 
 .tabular { font-variant-numeric: tabular-nums; }
+/* Poof uses tabular figures everywhere a number sits in a price or counter. */
+.font-mono { font-variant-numeric: tabular-nums; }
+
+/* Hand marker: the one highlight. Lime, uneven corners, tilted like a real highlighter. */
+.marker {
+  background: var(--color-lime);
+  padding: 0 0.35em;
+  border-radius: 14px 5px 16px 7px / 9px 15px 7px 13px;
+  display: inline-block;
+  transform: rotate(-1.5deg);
+}
+
+/* Puff divider: replaces a plain hairline between sections. */
+.puff-line {
+  height: 14px;
+  background: radial-gradient(circle at 50% 0, var(--color-line) 62%, transparent 66%) top left / 20px 14px round no-repeat;
+}
+
+/* Sticker photo: white die-cut edge, slight tilt. */
+.sticker {
+  transform: rotate(var(--tilt, -2deg));
+  border: 4px solid #fff;
+  box-shadow: 0 6px 14px rgba(15, 42, 24, 0.14);
+}
+
+/* Paper price tag: notch, punched hole, string loop. Sized in em, so font-size scales the whole tag. */
+.pricetag {
+  position: relative;
+  z-index: 0;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.38em 0.77em 0.38em 1.46em;
+  color: var(--color-ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  white-space: nowrap;
+  transform: rotate(var(--tilt, 8deg));
+  filter: drop-shadow(0 2px 3px rgba(15, 42, 24, 0.2));
+}
+.pricetag::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 0.23em;
+  background: radial-gradient(circle at 0.7em 50%, #fff 0 0.18em, var(--color-ink) 0.19em 0.28em, transparent 0.29em), var(--color-lime);
+  clip-path: polygon(0 50%, 0.77em 0, 100% 0, 100% 100%, 0.77em 100%);
+}
+.pricetag.string::after {
+  content: "";
+  position: absolute;
+  left: -1em;
+  top: -0.54em;
+  width: 1.7em;
+  height: 1.23em;
+  border: 1.5px solid var(--color-ink);
+  border-color: var(--color-ink) transparent transparent var(--color-ink);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+.pricetag.dark { color: var(--color-lime); }
+.pricetag.dark::before {
+  background: radial-gradient(circle at 0.7em 50%, #fff 0 0.18em, var(--color-lime) 0.19em 0.28em, transparent 0.29em), var(--color-ink);
+}
+
+.poof-fx {
+  pointer-events: none;
+  background: url(/brand/poof-sprite.webp) 0 0 / 2600% 100% no-repeat;
+  animation: sprite 0.867s steps(25) forwards;
+}
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
 .skeleton {
-  background: linear-gradient(90deg, #e3e6ec 25%, #f3f4f7 50%, #e3e6ec 75%);
+  background: linear-gradient(90deg, #e1e8e3 25%, #f4f6f4 50%, #e1e8e3 75%);
   background-size: 200% 100%;
   animation: shine 1.4s linear infinite;
 }
@@ -111,7 +204,7 @@ body {
 .tick path { stroke-dasharray: 24; animation: draw 0.5s ease-out both; }
 
 @layer base {
-  :focus-visible { outline: 2.5px solid var(--color-cobalt); outline-offset: 2px; }
+  :focus-visible { outline: 3px solid var(--color-ink); outline-offset: 2px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -120,4 +213,9 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* iOS Safari zooms into inputs under 16px; keep phones at 16px so tapping a field doesn't zoom the page. */
+@media (pointer: coarse) {
+  input, textarea, select { font-size: 16px !important; }
 }

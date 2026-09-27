@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { MOCK, intake } from "@/lib/api";
 import { downscale } from "@/lib/image";
-import { cx } from "@/components/ui";
+import { ICON_BTN, PoofTag, cx } from "@/components/ui";
 
 type Photo = { dataUrl: string; base64: string };
 const MAX_PHOTOS = 5;
@@ -94,29 +94,31 @@ export default function SnapIt() {
   const tip = photos.length === 0 ? "Show the whole item, good light" : photos.length === 1 ? "Add one of the back?" : null;
 
   return (
-    <main className="relative flex min-h-dvh flex-1 flex-col bg-ink text-white">
+    <main className="relative flex min-h-dvh flex-1 flex-col bg-page text-ink">
       <input ref={camRef} type="file" accept="image/*" capture="environment" multiple hidden onChange={(e) => { add([...(e.target.files ?? [])]); e.target.value = ""; }} />
       <input ref={libRef} type="file" accept="image/*" multiple hidden onChange={(e) => { add([...(e.target.files ?? [])]); e.target.value = ""; }} />
 
       {/* Top bar */}
-      <header className="relative z-10 flex items-center gap-3 px-4 pb-2 pt-[max(14px,env(safe-area-inset-top))]">
-        <Link href="/" aria-label="Close" className="grid size-10 place-items-center rounded-full bg-white/10 transition active:scale-95">
-          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      <header className="relative z-10 flex min-h-16 items-center gap-2.5 px-5 pb-2 pt-[max(18px,env(safe-area-inset-top))]">
+        <Link href="/" aria-label="Close" className={ICON_BTN}>
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </Link>
-        <h1 className="whitespace-nowrap font-display text-[19px] font-bold tracking-[-0.03em]">Sell something</h1>
-        {MOCK && !photos.length && (
+        <h1 className="flex-1 whitespace-nowrap text-center text-[17px] font-bold">Sell something</h1>
+        {MOCK && !photos.length ? (
           <button
             type="button"
             onClick={() => add(["/demo/poang.jpg"])}
-            className="ml-auto whitespace-nowrap rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-semibold text-white/80"
+            className="h-[34px] whitespace-nowrap rounded-full border border-ink px-3 text-[12px] font-bold text-ink"
           >
             Use sample photo
           </button>
+        ) : (
+          <span className="size-11 shrink-0" aria-hidden />
         )}
       </header>
 
       {/* Viewfinder */}
-      <section className="relative mx-3 flex-1 overflow-hidden rounded-[30px] bg-[#16181f]">
+      <section className="relative mx-4 min-h-[300px] flex-1 overflow-hidden rounded-[20px] bg-ink text-white">
         <video
           ref={videoRef}
           playsInline
@@ -139,51 +141,66 @@ export default function SnapIt() {
         <Corners />
         {flash > 0 && <span key={flash} className="pointer-events-none absolute inset-0 bg-white [animation:fade_0.35s_ease_reverse_both]" />}
 
-        {tip && (
-          <div key={tip} className="absolute inset-x-0 top-4 flex justify-center px-4">
-            <span className={cx("flex animate-rise items-center gap-2 rounded-full px-3.5 py-2 text-[14px] font-semibold shadow-lg backdrop-blur",
-              photos.length ? "bg-tag text-ink" : "bg-ink/70 text-white")}>
-              {photos.length > 0 && <span className="rounded-full bg-ink px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.12em] text-tag">Agent</span>}
-              {tip}
-            </span>
+        {photos.length === 0 && tip && (
+          <div className="absolute inset-x-0 top-3 z-10 flex justify-center px-4">
+            <span className="animate-rise whitespace-nowrap rounded-full bg-white/92 px-3.5 py-1.5 text-[13px] font-semibold text-ink">{tip}</span>
           </div>
         )}
-
-        {/* Photo strip */}
-        {photos.length > 0 && (
-          <div className="absolute inset-x-0 bottom-3 flex justify-center gap-2 px-3">
-            {photos.map((p, i) => (
-              <button
-                key={p.dataUrl.slice(-40) + i}
-                type="button"
-                aria-label={`Remove photo ${i + 1}`}
-                onClick={() => setPhotos((ps) => ps.filter((_, j) => j !== i))}
-                className="relative size-[48px] shrink-0 animate-pop overflow-hidden rounded-xl ring-2 ring-white"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.dataUrl} alt="" className="size-full object-cover" />
-                <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-ink/80">
-                  <svg viewBox="0 0 24 24" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-                </span>
-              </button>
-            ))}
+        {photos.length > 0 && tip && (
+          <div key={tip} className="absolute inset-x-3 bottom-3 z-10 flex animate-rise items-start gap-2.5 rounded-[16px] bg-card px-3.5 py-3 text-[14px] text-ink">
+            <PoofTag className="mt-0.5" />
+            <b className="font-bold">{tip}</b>
           </div>
         )}
       </section>
 
-      {error && <p className="mx-4 mt-3 rounded-2xl bg-alert-soft p-3 text-[14px] text-alert">{error}</p>}
+      {/* Photo slots: tap a photo to remove it */}
+      <div className="flex gap-2 px-5 pb-1 pt-3.5">
+        {SLOTS.map((label, i) => {
+          const p = photos[i];
+          return (
+            <div key={label} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+              {p ? (
+                <button
+                  type="button"
+                  aria-label={`Remove photo ${i + 1}`}
+                  onClick={() => setPhotos((ps) => ps.filter((_, j) => j !== i))}
+                  className="relative aspect-square w-full animate-pop rounded-[12px] bg-limetint"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.dataUrl} alt="" className="size-full rounded-[12px] object-cover" />
+                  <span className="absolute -right-1.5 -top-1.5 grid size-[22px] place-items-center rounded-full bg-ink text-white">
+                    <svg viewBox="0 0 24 24" className="size-3" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                  </span>
+                </button>
+              ) : (
+                <span className={cx("grid aspect-square w-full place-items-center rounded-[12px] border-[1.5px] bg-card text-moss",
+                  i === photos.length ? "border-solid border-ink" : "border-dashed border-line")}>
+                  <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                </span>
+              )}
+              <span className="text-[12px] font-semibold text-moss">{label}</span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-1.5 text-center text-[13px] font-semibold text-moss">
+        {photos.length} of {MAX_PHOTOS} photos{photos.length ? " · tap one to remove" : " · one is enough"}
+      </p>
+
+      {error && <p className="mx-5 mt-3 rounded-[20px] bg-alert-soft p-3 text-[14px] text-alert">{error}</p>}
 
       {/* Controls */}
-      <footer className="grid grid-cols-3 items-center px-6 pb-[max(22px,env(safe-area-inset-bottom))] pt-5">
+      <footer className="grid grid-cols-3 items-center px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-2.5">
         <button
           type="button"
           onClick={() => libRef.current?.click()}
           disabled={full}
           aria-label="Choose from gallery"
-          className="grid size-12 place-items-center justify-self-start rounded-2xl bg-white/10 transition active:scale-95 disabled:opacity-30"
+          className={cx(ICON_BTN, "!size-12 justify-self-start disabled:opacity-30")}
         >
-          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-            <rect x="3.5" y="4.5" width="17" height="15" rx="3" /><circle cx="9" cy="10" r="1.8" /><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5" />
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
           </svg>
         </button>
         <button
@@ -191,9 +208,9 @@ export default function SnapIt() {
           onClick={shoot}
           disabled={full || busy === "sending"}
           aria-label="Take photo"
-          className="group grid size-[78px] place-items-center justify-self-center rounded-full ring-[5px] ring-white transition active:scale-90 disabled:opacity-30"
+          className="group grid size-[76px] place-items-center justify-self-center rounded-full border-4 border-ink bg-white transition active:scale-90 disabled:opacity-40"
         >
-          <span className="grid size-[62px] place-items-center rounded-full bg-white transition group-active:bg-tag">
+          <span className="grid size-[58px] place-items-center rounded-full bg-lime transition group-active:bg-limetint">
             {busy === "photo" && <span className="size-6 animate-spin rounded-full border-[3px] border-ink/15 border-t-ink" />}
           </span>
         </button>
@@ -202,28 +219,27 @@ export default function SnapIt() {
           onClick={done}
           disabled={!photos.length || busy !== null}
           className={cx(
-            "justify-self-end rounded-2xl px-4 py-3 font-display text-[17px] font-extrabold tracking-[-0.02em] transition active:scale-95",
-            photos.length ? "bg-tag text-ink" : "bg-white/10 text-white/40",
+            "h-[38px] justify-self-end rounded-full px-4 text-[14px] font-bold transition active:scale-95",
+            photos.length ? "bg-ink text-lime" : "border border-line text-moss",
           )}
         >
-          {busy === "sending" ? <span className="inline-block size-5 animate-spin rounded-full border-[3px] border-ink/20 border-t-ink align-middle" /> : "Done"}
+          {busy === "sending" ? <span className="inline-block size-4 animate-spin rounded-full border-[3px] border-lime/25 border-t-lime align-middle" /> : "Done"}
         </button>
       </footer>
-      <p className="-mt-3 pb-[max(10px,env(safe-area-inset-bottom))] text-center font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
-        {photos.length}/{MAX_PHOTOS} photos{photos.length ? " · tap one to remove" : ""}
-      </p>
     </main>
   );
 }
 
+const SLOTS = ["Front", "Back", "Side", "Detail", "Label"];
+
 function Corners() {
-  const c = "pointer-events-none absolute size-8 border-tag";
+  const c = "pointer-events-none absolute z-[1] size-[34px] border-lime";
   return (
     <>
-      <span className={cx(c, "left-4 top-4 rounded-tl-xl border-l-[3px] border-t-[3px]")} />
-      <span className={cx(c, "right-4 top-4 rounded-tr-xl border-r-[3px] border-t-[3px]")} />
-      <span className={cx(c, "bottom-4 left-4 rounded-bl-xl border-b-[3px] border-l-[3px]")} />
-      <span className={cx(c, "bottom-4 right-4 rounded-br-xl border-b-[3px] border-r-[3px]")} />
+      <span className={cx(c, "left-[22px] top-14 rounded-tl-[10px] border-l-[3px] border-t-[3px]")} />
+      <span className={cx(c, "right-[22px] top-14 rounded-tr-[10px] border-r-[3px] border-t-[3px]")} />
+      <span className={cx(c, "bottom-[84px] left-[22px] rounded-bl-[10px] border-b-[3px] border-l-[3px]")} />
+      <span className={cx(c, "bottom-[84px] right-[22px] rounded-br-[10px] border-b-[3px] border-r-[3px]")} />
     </>
   );
 }

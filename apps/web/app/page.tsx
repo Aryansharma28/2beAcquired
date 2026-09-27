@@ -6,10 +6,10 @@ import { useEffect, useState } from "react";
 import { getAccount, type Account } from "@/lib/account";
 import { SettingsSheet } from "@/components/Settings";
 import { MOCK, listItems } from "@/lib/api";
-import { eur, isClosed, isSetup, recentBuyerMessages } from "@/lib/format";
+import { isClosed, isSetup, recentBuyerMessages } from "@/lib/format";
 import { reset } from "@/lib/mock";
 import type { ItemSummary } from "@/lib/types";
-import { Button, NavBar, PriceTag, StatusPill, Wordmark } from "@/components/ui";
+import { Button, NavBar, PlatformLogo, PriceTag, StatusPill } from "@/components/ui";
 
 /** 09 · Your ads (home). */
 export default function Home() {
@@ -48,34 +48,37 @@ export default function Home() {
 
   return (
     <main className="flex flex-1 flex-col px-5 pb-32 pt-[max(18px,env(safe-area-inset-top))]">
-      <header className="flex items-center justify-between py-2">
-        <Wordmark className="text-[20px]" />
+      <header className="flex items-center justify-between gap-3 py-2">
+        <h1 className="animate-rise text-[30px] font-extrabold leading-tight tracking-[-0.02em]">Your ads</h1>
         <div className="flex items-center gap-2">
           {MOCK && (
             <button
               onClick={() => { reset(); location.reload(); }}
-              className="rounded-full bg-card px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-mute ring-1 ring-line"
+              className="h-[34px] whitespace-nowrap rounded-full border border-ink px-3.5 text-[13px] font-bold text-ink"
             >
-              Demo · reset
+              Demo reset
             </button>
           )}
           {account && (
             <button
               onClick={() => setSettings(true)}
               aria-label="Settings"
-              className="relative grid size-10 place-items-center rounded-full bg-ink font-display text-[17px] font-bold text-white transition active:scale-95"
+              className="relative grid size-11 place-items-center rounded-full bg-limetint text-[16px] font-extrabold text-ink transition active:scale-95"
             >
               {(account.name ?? "?")[0]?.toUpperCase()}
-              <span className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full ring-2 ring-paper ${account.mpConnected ? "bg-go" : "bg-tag"}`} />
+              <span className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full ring-2 ring-page ${account.mpConnected ? "bg-ink" : "bg-lime"}`} />
             </button>
           )}
         </div>
       </header>
 
+      {summary && <p className="-mt-1 text-[13px] font-semibold text-moss">{summary}</p>}
+
       {account && !account.mpConnected && (
-        <button onClick={() => setSettings(true)} className="mt-3 flex w-full animate-rise items-center gap-3 rounded-[22px] bg-tag px-4 py-3.5 text-left">
-          <span className="flex-1 text-[14.5px] font-semibold leading-snug">Connect Marktplaats so your agent can put ads online.</span>
-          <span className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-[13px] font-bold text-white">Connect</span>
+        <button onClick={() => setSettings(true)} className="mt-4 flex w-full animate-rise items-center gap-3 rounded-[20px] bg-lime px-4 py-3.5 text-left">
+          <PlatformLogo platform="marktplaats" className="!size-9" />
+          <span className="flex-1 text-[14.5px] font-semibold leading-snug">Connect Marktplaats so Poof can put your ads online.</span>
+          <span className="shrink-0 rounded-full bg-ink px-3.5 py-2 text-[13px] font-bold text-lime">Connect</span>
         </button>
       )}
 
@@ -83,37 +86,34 @@ export default function Home() {
         <SettingsSheet key={String(settings)} open={settings} onClose={() => setSettings(false)} account={account} onChange={setAccount} />
       )}
 
-      <section className="animate-rise pb-5 pt-5">
-        <h1 className="font-display text-[46px] font-extrabold leading-[0.92] tracking-[-0.05em]">Your ads</h1>
-        {summary && <p className="mt-2 font-mono text-[13px] font-bold tracking-[0.02em] text-ink-2">{summary}</p>}
-      </section>
+      <div className="h-6" />
 
       {error && (
-        <p className="mb-4 rounded-2xl bg-alert-soft p-4 text-[14px] text-alert">
+        <p className="mb-4 rounded-[20px] bg-alert-soft p-4 text-[14px] text-alert">
           Can&apos;t load your ads: {error}
         </p>
       )}
 
       {items === null && !error && (
-        <div className="space-y-3">
-          {[0, 1].map((i) => <div key={i} className="skeleton h-[96px] rounded-[26px]" />)}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8">
+          {[0, 1].map((i) => <div key={i} className="skeleton aspect-square rounded-[12px]" />)}
         </div>
       )}
 
       {items && items.length === 0 && (
-        <div className="flex flex-col items-center rounded-[28px] border-2 border-dashed border-line px-6 py-10 text-center">
-          <PriceTag amount={0} size="md" tilt={-6} label="no ads yet" />
-          <p className="mt-5 font-display text-[22px] font-bold tracking-[-0.02em]">Snap it. poof. Sold.</p>
-          <p className="mt-1 max-w-[28ch] text-[15px] text-ink-2">Snap the thing that&apos;s been in the hallway too long. Your agent does the rest.</p>
-          <Button href="/new" className="mt-5">Sell something</Button>
+        <div className="flex flex-col items-center rounded-[28px] bg-card px-6 py-10 text-center shadow-soft">
+          <PriceTag amount={0} size="md" tilt={-6} label="no ads yet" string />
+          <p className="mt-6 text-[24px] font-extrabold leading-tight tracking-[-0.02em]">Sell <span className="marker">anything</span></p>
+          <p className="mt-2 max-w-[28ch] text-[15px] text-moss">Snap the thing that&apos;s been in the hallway too long. Poof does the rest.</p>
+          <Button href="/new" className="mt-6 px-7">Sell something</Button>
         </div>
       )}
 
       {items && items.length > 0 && (
-        <ul className="space-y-2.5">
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-8">
           {items.map((it, i) => (
             <li key={it.id} className="animate-rise" style={{ animationDelay: `${i * 50}ms` }}>
-              <AdCard item={it} />
+              <AdCard item={it} tilt={i % 2 ? 2 : -2} />
             </li>
           ))}
         </ul>
@@ -124,38 +124,35 @@ export default function Home() {
   );
 }
 
-function AdCard({ item }: { item: ItemSummary }) {
+function AdCard({ item, tilt }: { item: ItemSummary; tilt: number }) {
   const photo = item.photo ?? item.photos?.[0];
   const sold = item.sale?.price;
   const unread = isClosed(item.status) ? 0 : recentBuyerMessages(item);
   const title = item.title ?? item.recognition?.name;
   return (
-    <Link
-      href={`/item/${item.id}`}
-      className="relative flex items-center gap-3.5 rounded-[26px] bg-card p-2.5 pr-4 ring-1 ring-line/60 transition active:scale-[0.98]"
-    >
-      <div className="relative size-[76px] shrink-0 overflow-hidden rounded-[18px] bg-paper">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {photo && <img src={photo} alt="" className="size-full object-cover" />}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 font-display text-[16.5px] font-bold leading-[1.15] tracking-[-0.02em]">
-          {title ?? "Looking at your photos…"}
-        </p>
-        <div className="mt-1.5 flex items-center gap-1.5">
-          <StatusPill status={item.status} />
-          {!!unread && (
-            <span className="rounded-full bg-cobalt px-2 py-0.5 text-[11.5px] font-bold text-white" aria-label={`${unread} new messages`}>
-              {unread} new
-            </span>
-          )}
+    <Link href={`/item/${item.id}`} className="block transition active:scale-[0.97]">
+      <div className="relative pt-2">
+        <div className="sticker aspect-square overflow-hidden rounded-[12px] bg-limetint" style={{ ["--tilt" as string]: `${tilt}deg` }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {photo && <img src={photo} alt="" className="size-full object-cover" />}
         </div>
+        {sold != null ? (
+          <PriceTag amount={sold} size="sm" tilt={8} string dark className="!absolute -right-1 top-0" />
+        ) : item.askPrice != null ? (
+          <PriceTag amount={item.askPrice} size="sm" tilt={8} string className="!absolute -right-1 top-0" />
+        ) : null}
       </div>
-      {sold != null ? (
-        <span className="font-mono text-[15px] font-bold text-go">{eur(sold)}</span>
-      ) : item.askPrice != null ? (
-        <PriceTag amount={item.askPrice} size="sm" />
-      ) : null}
+      <p className="mt-3 line-clamp-2 text-[14px] font-bold leading-[1.3]">
+        {title ?? "Looking at your photos…"}
+      </p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <StatusPill status={item.status} />
+        {!!unread && (
+          <span className="inline-grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1.5 text-[11px] font-bold text-white" aria-label={`${unread} new messages`}>
+            {unread} new
+          </span>
+        )}
+      </div>
     </Link>
   );
 }

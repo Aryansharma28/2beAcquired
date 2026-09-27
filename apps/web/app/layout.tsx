@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Baloo_2, Figtree } from "next/font/google";
 import { SwRegister } from "@/components/SwRegister";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"] });
-const body = Instrument_Sans({ variable: "--font-instrument", subsets: ["latin"] });
-const mono = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], weight: ["500", "700"] });
+// Poof styleguide: Figtree for everything, Baloo 2 (800) for the wordmark only.
+const body = Figtree({ variable: "--font-figtree", subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
+const brand = Baloo_2({ variable: "--font-baloo", subsets: ["latin"], weight: ["800"] });
 
 export const metadata: Metadata = {
   title: "poof — Snap it. poof. Sold.",
@@ -20,12 +20,12 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#2b3bff",
+  themeColor: "#f4f6f4",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}>
+    <html lang="en" className={`${body.variable} ${brand.variable} antialiased`}>
       <body>
         <div className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col">{children}</div>
         <SwRegister />
