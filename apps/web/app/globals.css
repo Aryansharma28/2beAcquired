@@ -537,6 +537,9 @@ body {
 .grid-ads{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:32px 16px}
 .gtile{display:block;width:100%;border:0;background:none;padding:0;text-align:left;cursor:pointer}
 .gtile .ph{width:100%;aspect-ratio:1;border-radius:0;background:none;overflow:visible}
+/* Deviation from the prototype: the wrap is a block so the price tag's containing block is the photo box.
+   As an inline span (prototype) WebKit/iOS Safari anchors the tag to the left edge instead of top-right. */
+.gtile .stickerwrap{display:block}
 .gtile .ph img{object-fit:contain}
 .gtile span.t{display:block;margin-top:10px;font-weight:700;line-height:1.3;font-size:14px}
 .tile-status{display:block;margin-top:4px}
