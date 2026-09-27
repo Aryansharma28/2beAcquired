@@ -3,7 +3,7 @@
 import { readdirSync, writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
-import { loadEnv } from "./lib.mjs";
+import { loadEnv, setPushWorkflow } from "./lib.mjs";
 import { lintWorkflow } from "./lint.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -40,6 +40,8 @@ for (const { file, build } of mods) {
   }
   ids[key(file)] = found.id;
 }
+
+setPushWorkflow(ids.push); // log() events of type notify/decision also push to the owner's phone
 
 // Pass 2: build with real ids, write JSON, update + activate. Retry until sub-workflows are published first.
 let queue = mods.filter(({ file }) => !filter || file.includes(filter));

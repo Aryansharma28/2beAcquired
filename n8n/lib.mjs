@@ -29,6 +29,12 @@ export const CREDS = existsSync(credFile) ? JSON.parse(readFileSync(credFile, "u
 const cred = (key, type) => (CREDS[key] ? { credentials: { [type]: { id: CREDS[key].id, name: CREDS[key].name } } } : {});
 
 
+// Phone push (W7 "poof · Push"): deploy.mjs sets its workflow id before building, then every log() event of type
+// "notify" (live, paid, sold, removed) or "decision" (offers answered, deal, pickup, price drop) also goes to the
+// owner's phone. Unset (tests, first deploy pass) = no push nodes.
+let PUSH_WF = null;
+export const setPushWorkflow = (id) => { PUSH_WF = id && id !== "pending" ? id : null; };
+
 export class Workflow {
   constructor(name, { errorWorkflow } = {}) {
     this.name = name;
@@ -53,6 +59,11 @@ export class Workflow {
     this.add(label, tableInsert("events", { itemId, ts: "={{ $now.toISO() }}", type, text, meta: "{}" }),
       { position: [node.position[0], node.position[1] - 200] });
     this.link(after, label);
+    if (PUSH_WF && (type === "notify" || type === "decision")) {
+      const push = `${label} → phone`;
+      this.add(push, callWorkflow(PUSH_WF), { position: [node.position[0] + 130, node.position[1] - 400] });
+      this.link(label, push);
+    }
     return label;
   }
 

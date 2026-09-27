@@ -16,6 +16,27 @@ export default (env, ids) => {
   let y = 0;
   const lane = () => { w.x = 0; y += 360; return y; };
 
+  // POST /tba/push-subscribe { subscription, remove? } — remember (or forget) this phone for push notifications
+  // (W7 sends them). Keyed by the subscription endpoint; at most 5 phones per account.
+  w.add("Push subscribe", webhook("tba/push-subscribe"), { y });
+  w.add("User for push", tableGet("users", { userId: "={{ $json.headers['x-poof-user'] }}" }), { y, executeOnce: true });
+  w.add("Add phone", code(`
+const req = $('Push subscribe').first().json;
+const userId = req.headers['x-poof-user'];
+if (!userId) throw new Error('No user');
+const b = req.body || {};
+const s = b.subscription || {};
+if (!s.endpoint || !String(s.endpoint).startsWith('https://') || !s.keys || !s.keys.p256dh || !s.keys.auth) throw new Error('Not a push subscription');
+const row = $input.all().map(i => i.json).find(r => r.userId === userId);
+const d = row && row.data ? JSON.parse(row.data) : {};
+const rest = (d.push || []).filter(x => x.endpoint !== s.endpoint);
+d.push = b.remove ? rest : [...rest, { endpoint: s.endpoint, keys: { p256dh: s.keys.p256dh, auth: s.keys.auth }, at: new Date().toISOString() }].slice(-5);
+return [{ json: { userId, data: JSON.stringify(d), count: d.push.length } }];`), { y });
+  w.add("Save phone", tableUpsert("users", { userId: "={{ $json.userId }}" }, { userId: "={{ $json.userId }}", status: "active", data: "={{ $json.data }}" }), { y });
+  w.add("Phone saved", respond("={{ { ok: true, phones: $('Add phone').first().json.count } }}"), { y });
+  w.chain("Push subscribe", "User for push", "Add phone", "Save phone", "Phone saved");
+  lane();
+
   // POST /tba/users — create the account row (idempotent)
   w.add("Create account", webhook("tba/users"), { y });
   w.add("Existing?", tableGet("users", { userId: "={{ $json.headers['x-poof-user'] }}" }), { y, executeOnce: true });
