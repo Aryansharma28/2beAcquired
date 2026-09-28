@@ -4,7 +4,12 @@ import { fetchAccount } from "./account";
 import { n8n } from "./n8n";
 import { linkPoofId, linkedPoofId, type AuthUser } from "./supabase";
 
-type Done = { ok: true; onboarded: boolean } | { ok: false; status: number; error: string };
+/** Login-changing POSTs only from our own pages (stops another site logging you in to their account). */
+export function sameOrigin(req: Request) {
+  return req.headers.get("origin") === new URL(req.url).origin;
+}
+
+type Done ={ ok: true; onboarded: boolean } | { ok: false; status: number; error: string };
 
 export async function completeLogin(user: AuthUser): Promise<Done> {
   const known = await linkedPoofId(user.id);

@@ -2,7 +2,7 @@
 // /login?done=… which plays the poof and moves on.
 import { cookies } from "next/headers";
 import { completeLogin } from "@/lib/server/login";
-import { PKCE_COOKIE, exchangeGoogleCode } from "@/lib/server/supabase";
+import { PKCE_COOKIE, endSupabaseSession, exchangeGoogleCode } from "@/lib/server/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +17,9 @@ export async function GET(req: Request) {
   if (!code) return back(url.searchParams.get("error") === "access_denied" ? "error=cancelled" : "error=google");
   if (!verifier) return back("error=expired");
 
-  const user = await exchangeGoogleCode(code, verifier);
-  if (!user.ok) return back("error=google");
-  const done = await completeLogin(user.data);
+  const got = await exchangeGoogleCode(code, verifier);
+  if (!got.ok) return back("error=google");
+  const done = await completeLogin(got.data.user);
+  await endSupabaseSession(got.data.accessToken);
   return done.ok ? back(`done=${done.onboarded ? "home" : "welcome"}`) : back("error=account");
 }
