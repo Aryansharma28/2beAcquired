@@ -126,8 +126,11 @@ h1 .w{display:block}
 .coffee{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 15px;border-radius:18px;background:var(--lime);color:var(--ink);font-size:14px;font-weight:800;text-decoration:none;transition:transform .35s var(--spring)}
 .coffee:hover{transform:translateY(-2px) rotate(-2deg)}
 .coffee:focus-visible{outline:3px solid var(--lime);outline-offset:3px}
-.done .coffee-line{margin:10px 0 0;font-size:14px;color:var(--moss)}
-.done .coffee-line a{color:var(--ink);font-weight:800;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--lime);text-decoration-thickness:3px}
+.done .coffee-line{margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line);font-size:14px;color:var(--moss)}
+.done .coffee{margin-top:10px}
+/* Same pill as the footer; wiggles once after the card pops in so it gets noticed */
+.is-done .done .coffee{animation:wiggle .9s var(--out) 1.1s backwards}
+@keyframes wiggle{0%{transform:scale(.6);opacity:0}35%{transform:scale(1.08) rotate(-4deg);opacity:1}55%{transform:rotate(3deg)}75%{transform:rotate(-2deg)}100%{transform:none}}
 
 @media (max-width:380px){ .hero{padding-top:300px} }
 @media (min-width:560px){
@@ -219,7 +222,8 @@ h1 .w{display:block}
       <div>
         <h2 tabindex="-1" id="doneTitle">You're on the list!</h2>
         <p>We'll email you the moment Poof can sell your stuff.</p>
-        <p class="coffee-line">Like what we're building? <a href="https://buymeacoffee.com/aryansharma28" target="_blank" rel="noopener">Buy us a coffee ☕</a></p>
+        <p class="coffee-line">Want Poof sooner? Speed things up by supporting us.</p>
+        <a class="coffee" href="https://buymeacoffee.com/aryansharma28" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2"/><path d="M10 2v2"/><path d="M14 2v2"/></svg>Buy us a coffee</a>
       </div>
     </div>
   </div>
