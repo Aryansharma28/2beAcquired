@@ -594,6 +594,34 @@ body {
 .welcome-mark{font-size:22px;flex:none}
 .welcome-hero{height:170px;border-radius:20px;background:var(--limetint);display:grid;place-items:center;margin:8px 0 22px}
 .welcome .step span.small{display:block;margin-top:2px}
+/* Login (app/login): welcome hero + Google / email code. Tokens only. */
+.login-hero{position:relative;height:170px;overflow:visible}
+.login-hero .golive-poof{position:absolute;z-index:9;pointer-events:none;transition:transform .35s var(--out),opacity .35s var(--out)}
+.login-hero .golive-poof.out{transform:scale(.4) translateY(-20px);opacity:0}
+.login-in{position:absolute;inset:0;margin:auto;width:64px;height:64px;border-radius:50%;background:var(--ink);color:var(--lime);display:grid;place-items:center;animation:pop .45s var(--spring) .75s backwards}
+.login-in .icon{width:30px;height:30px;stroke-width:2.8}
+.btn.login-google{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.login-google:disabled{background:var(--surface);color:var(--moss)}
+.login-input{width:100%;min-height:56px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);padding:0 18px;font:inherit;font-size:18px;font-weight:600;color:var(--ink);outline:none;transition:border-color .2s}
+.login-input::placeholder{color:var(--moss);opacity:.6;font-weight:400}
+.login-input:focus{border-color:var(--ink)}
+.login-email{color:var(--ink);display:inline-block;max-width:100%;overflow-wrap:anywhere}
+.login-code{position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:4px}
+.login-code input{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;padding:0;color:transparent;caret-color:transparent;z-index:1}
+.login-code span{aspect-ratio:5/6;max-height:68px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow-soft);border:1.5px solid transparent;display:grid;place-items:center;font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);transition:border-color .15s,transform .2s var(--spring)}
+.login-code span:not(:empty){background:var(--limetint);transform:translateY(-2px)}
+.login-code span.on{border-color:var(--ink)}
+.login-code span.on:empty::after{content:"";width:2px;height:26px;border-radius:1px;background:var(--ink);animation:loginCaret 1s steps(1) infinite}
+.login-code.busy span{opacity:.55}
+.login-code.bad{animation:loginShake .4s ease}
+.login-code.bad span{border-color:var(--alert)}
+@keyframes loginCaret{50%{opacity:0}}
+@keyframes loginShake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.login-resend{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px}
+.login-resend button{background:none;border:0;padding:6px 0;font:inherit;font-weight:700;color:var(--ink);text-decoration:underline;cursor:pointer}
+.login-resend button:disabled{color:var(--moss);cursor:default}
+.login-error{color:var(--alert);margin-top:16px;font-weight:600}
+@media (prefers-reduced-motion: reduce){.login-code.bad{animation:none}.login-in{animation:none}}
 /* Overview (components/Overview.tsx): prototype product page body, verbatim. */
 .ov-hero{position:relative;height:230px}
 .ov-hero .ph{width:100%;height:100%;border-radius:20px}

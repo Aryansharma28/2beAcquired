@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { disconnectMarktplaats, updateAccount, type Account, type Profile } from "@/lib/account";
+import { logout } from "@/lib/auth";
 import { ConnectMarktplaats, ProfileFields } from "./Connect";
 import { PushCard } from "./Push";
 import { PlatformLogo, Sheet } from "./ui";
@@ -12,7 +13,7 @@ export function SettingsSheet({ open, onClose, account, onChange }: {
 }) {
   const [connecting, setConnecting] = useState(false);
   const [profile, setProfile] = useState<Profile>(() => pick(account));
-  const [busy, setBusy] = useState<null | "save" | "disconnect">(null);
+  const [busy, setBusy] = useState<null | "save" | "disconnect" | "logout">(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +42,14 @@ export function SettingsSheet({ open, onClose, account, onChange }: {
     } finally {
       setBusy(null);
     }
+  }
+
+  async function signOut() {
+    setBusy("logout");
+    await logout().catch(() => {});
+    // A full load, so nothing of this account stays in memory.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    location.href = "/login";
   }
 
   return (
@@ -81,6 +90,9 @@ export function SettingsSheet({ open, onClose, account, onChange }: {
           {error && <p className="xs" style={{ color: "var(--alert)", marginTop: 12 }}>{error}</p>}
           <button type="button" className="btn" onClick={save} disabled={busy !== null} style={{ marginTop: 20 }}>
             {busy === "save" ? "Saving…" : saved ? "Saved" : "Save"}
+          </button>
+          <button type="button" className="btn ghost" onClick={signOut} disabled={busy !== null} style={{ marginTop: 8 }}>
+            {busy === "logout" ? "Logging out…" : "Log out"}
           </button>
         </section>
       )}

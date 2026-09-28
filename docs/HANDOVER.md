@@ -8,7 +8,7 @@ Snap a photo, confirm what it is, set a minimum; an agent prices it from real Ma
 - `apps/web` Next.js PWA, production **https://poof-lovat.vercel.app** (Vercel project `poof`, root dir `apps/web`; **every push to `main` deploys production**, so changes go through PRs only).
 - `n8n/src/*.mjs` workflows as code on **aryansharma28.app.n8n.cloud**, deploy with `node n8n/deploy.mjs [key]` (key = file name without number, e.g. `publish`, `inbox`).
 - `actors/marktplaats` Apify actor `jadelike_loyalty~marktplaats` (push with `npx -y apify-cli push` from that folder) and the **laptop runner** `local-runner.mjs`.
-- Data lives in **n8n Data Tables** (items, users, events, messages, conversations, decisions, pairings). No Supabase (user decided).
+- Data lives in **n8n Data Tables** (items, users, events, messages, conversations, decisions, pairings). **Supabase is only the login** (Google + 6-digit email code, `supabase/`, `apps/web/app/login`): it maps a login to the poof `usr_…` id (table `poof_accounts`), then the usual `poof_uid` cookie takes over.
 
 ## How it runs right now (important)
 - **Marktplaats-session actions run on this laptop**, not Apify: n8n → Cloudflare quick tunnel → `local-runner.mjs` → the actor in a visible **CloakBrowser** window. Cloud-posted ads got hidden by Marktplaats 3/3; laptop posts stay public.
