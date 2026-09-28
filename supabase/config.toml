@@ -245,11 +245,11 @@ otp_expiry = 900
 
 # The login email: poof's own design, showing the 6-digit code (apps/web/app/login types it in).
 [auth.email.template.magic_link]
-subject = "Your poof code: {{ .Token }}"
+subject = "{{ .Token }} is your poof code"
 content_path = "./supabase/templates/login-code.html"
 
 [auth.email.template.confirmation]
-subject = "Your poof code: {{ .Token }}"
+subject = "{{ .Token }} is your poof code"
 content_path = "./supabase/templates/login-code.html"
 
 # Uncomment to customize email template

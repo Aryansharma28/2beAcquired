@@ -4,28 +4,69 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
 <title>Your poof code</title>
 </head>
 <body style="margin:0;padding:0;background:#f4f6f4;">
-<span style="display:none;max-height:0;overflow:hidden;">Your code is {{ .Token }}. It works for 15 minutes.</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f4;">
-  <tr><td align="center" style="padding:40px 16px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:24px;">
-      <tr><td style="padding:32px 32px 8px;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f2a18;">
-        <div style="font-size:24px;font-weight:800;letter-spacing:-0.02em;">&#9729;&#xFE0E; Poof</div>
+<!-- Inbox preview line -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">Type {{ .Token }} in the app and poof, you're in. Gone in 15 minutes.&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f6f4;">
+  <tr><td align="center" style="padding:28px 12px 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:460px;">
+
+      <!-- wordmark + sticker -->
+      <tr><td style="padding:0 8px 14px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="font-family:'Baloo 2',Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:26px;font-weight:800;color:#0f2a18;letter-spacing:-0.02em;">&#9729;&#xFE0E; Poof</td>
+          <td align="right"><span style="display:inline-block;background:#0f2a18;color:#d7f57a;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:800;letter-spacing:0.06em;padding:6px 12px;border-radius:999px;">&#9679; LOGIN CODE</span></td>
+        </tr></table>
       </td></tr>
-      <tr><td style="padding:16px 32px 0;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f2a18;">
-        <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-0.02em;">Here&rsquo;s your code</h1>
-        <p style="margin:0;font-size:16px;line-height:1.5;color:#4a5f50;">Type it in the poof app to log in.</p>
+
+      <!-- card -->
+      <tr><td style="background:#ffffff;border-radius:28px;overflow:hidden;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <!-- the poof moment: chair gets a Sold sticker, then poof -->
+          <tr><td style="background:#eefbc8;padding:0;line-height:0;font-size:0;">
+            <img src="https://muzlezbqkvctlfwcwobf.supabase.co/storage/v1/object/public/email/step-poof.gif" width="460" alt="A chair gets a Sold sticker, then goes poof" style="display:block;width:100%;max-width:460px;height:auto;border:0;">
+          </td></tr>
+
+          <tr><td style="padding:26px 28px 6px;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f2a18;">
+            <h1 style="margin:0;font-size:28px;line-height:1.15;font-weight:800;letter-spacing:-0.02em;">Your code is here.<br><span style="background:#d7f57a;padding:0 8px;border-radius:10px;">Then poof,</span> you&rsquo;re in.</h1>
+          </td></tr>
+
+          <tr><td style="padding:10px 28px 0;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.5;color:#4a5f50;">
+            Type it in the app. No password, no hassle.
+          </td></tr>
+
+          <!-- the code, on a sold tag -->
+          <tr><td style="padding:22px 28px 8px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr><td align="center" style="background:#0f2a18;border-radius:18px;padding:20px 8px 18px;">
+                <div style="font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.14em;color:#9db3a3;padding-bottom:6px;">YOUR CODE</div>
+                <div style="font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:42px;line-height:1.1;font-weight:800;letter-spacing:0.22em;color:#d7f57a;padding-left:0.22em;">{{ .Token }}</div>
+              </td></tr>
+            </table>
+          </td></tr>
+
+          <tr><td align="center" style="padding:8px 28px 26px;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4a5f50;">
+            &#9203;&#xFE0E; This code goes poof in <b style="color:#0f2a18;">15 minutes</b>.
+          </td></tr>
+
+          <!-- what poof does, three stickers -->
+          <tr><td style="padding:0 20px 26px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td width="33%" align="center" style="padding:0 4px;"><div style="background:#f4f6f4;border-radius:14px;padding:12px 6px;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:800;color:#0f2a18;">Snap it</div></td>
+              <td width="33%" align="center" style="padding:0 4px;"><div style="background:#d7f57a;border-radius:14px;padding:12px 6px;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:800;color:#0f2a18;">poof.</div></td>
+              <td width="33%" align="center" style="padding:0 4px;"><div style="background:#0f2a18;border-radius:14px;padding:12px 6px;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:800;color:#ffffff;">Sold</div></td>
+            </tr></table>
+          </td></tr>
+        </table>
       </td></tr>
-      <tr><td style="padding:24px 32px;">
-        <div style="background:#d7f57a;border-radius:16px;padding:18px 0;text-align:center;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:36px;font-weight:800;letter-spacing:0.28em;color:#0f2a18;">{{ .Token }}</div>
-      </td></tr>
-      <tr><td style="padding:0 32px 32px;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4a5f50;">
-        It works for 15 minutes. Didn&rsquo;t ask for it? Then you can ignore this email.
+
+      <tr><td align="center" style="padding:20px 24px 0;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#4a5f50;">
+        Didn&rsquo;t ask for this? Then someone typed your email by mistake. Ignore it and nothing happens.
       </td></tr>
     </table>
-    <p style="margin:20px 0 0;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#4a5f50;">Snap it. poof. Sold.</p>
   </td></tr>
 </table>
 </body>
