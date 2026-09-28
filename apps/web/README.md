@@ -31,11 +31,25 @@ npm run build && npm start   # production (service worker only registers here)
 | `POOF_SESSION_SECRET` | server | HMAC key for the `poof_uid` cookie and the Connector `deviceToken`. Required in production. |
 | `APIFY_TOKEN` | server | Photos (`/api/photo`) and the per-user Marktplaats session stores `mp-session-<userId>`. |
 | `APIFY_PHOTO_STORE` | server | Private KV store holding the photos. |
+| `NEXT_PUBLIC_SUPABASE_URL` | client + server | Supabase project URL. Supabase is only the login (see below). |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client + server | Supabase anon key: public by design (the browser asks for and checks the email code with it); it can't read any data. |
+| `SUPABASE_SERVICE_ROLE_KEY` | server | Supabase service-role key (reads/writes `poof_accounts`). Never in the browser. |
 | `NEXT_PUBLIC_MOCK` | client, build-time | `1` = simulated backend in the browser (demo video). Unset in production. |
 
 ## Accounts and Marktplaats (v3)
 
-No passwords. `POST /api/account` creates `usr_<random>` and sets the httpOnly cookie `poof_uid=<userId>.<hmac>` (1 year, SameSite=Lax, Secure in production). `GET /api/account` reads `n8n GET /tba/me`; `PATCH /api/account` → `n8n POST /tba/me`. First run goes to `/welcome` (what poof does → name + pickup city/address/hours → Connect Marktplaats). Settings (avatar on `/`) shows the Marktplaats status and pickup details.
+Log in with **Google** or a **6-digit email code** on `/login` (poof's own screens; only Google's account picker is Google's). Supabase Auth does the checking (plain fetch, no SDK). For the email code the browser talks to Supabase itself (`lib/auth.ts`: `/auth/v1/otp`, `/auth/v1/verify`), so Supabase's per-IP limits apply to each person (30 wrong codes per 5 min, one code per 60 s per email); the server never takes the browser's word for it:
+
+| Route | Does |
+|---|---|
+| `POST /api/auth/session {accessToken}` | asks Supabase whose token it is (`/auth/v1/user`) → signs in → ends that Supabase session → `{onboarded}`. Same-origin only. |
+| `GET /api/auth/google` | PKCE verifier in an httpOnly cookie → Supabase → Google |
+| `GET /api/auth/google/callback` | swaps the code for the user → signs in → `/login?done=home\|welcome` (plays the poof) |
+| `POST /api/auth/logout` | clears the cookie (same-origin only) |
+
+Signing in (`lib/server/login.ts`) looks the login up in Supabase table `poof_accounts` (`auth_id` ↔ `poof_uid`, one to one). First login: a poof account already on this device (made before logins existed) is adopted, else a new `usr_<random>`; `n8n POST /tba/users` makes the profile row (idempotent, with the Google name). Then the httpOnly cookie `poof_uid=<userId>.<hmac>` (1 year, SameSite=Lax, Secure in production) is the session, exactly as before; n8n only ever sees the `usr_…` id. `GET /api/account` reads `n8n GET /tba/me`; `PATCH /api/account` → `n8n POST /tba/me`. Not signed in → `/login`; signed in but not onboarded → `/welcome` (name + pickup city/address/hours → Connect Marktplaats). Settings (avatar on `/`) shows the Marktplaats status, pickup details and Log out.
+
+Supabase project **poof** (`muzlezbqkvctlfwcwobf`, Frankfurt). Setup lives in `supabase/` (config, migration, email template): `npx supabase link --project-ref muzlezbqkvctlfwcwobf`, `npx supabase db push`, `npx supabase config push`. The branded code email needs a custom SMTP sender (free-tier rule); Google needs the OAuth client in `[auth.external.google]`.
 
 Connecting uses the **poof Connector** Chrome extension (`/connector` explains the install; zip at `/poof-connector.zip`):
 
@@ -52,7 +66,7 @@ An item in status `needs_connection` (approved while not connected) shows "Conne
 ## Deploy (Vercel)
 
 1. New project → import the repo → **Root Directory `apps/web`** (framework: Next.js, default build).
-2. Set the env vars above (Production + Preview): `N8N_WEBHOOK_BASE`, `POOF_APP_KEY`, `POOF_SESSION_SECRET`, `APIFY_TOKEN`, `APIFY_PHOTO_STORE`. Leave `NEXT_PUBLIC_MOCK` unset (set it to `1` only on a separate demo deployment).
+2. Set the env vars above (Production + Preview): `N8N_WEBHOOK_BASE`, `POOF_APP_KEY`, `POOF_SESSION_SECRET`, `APIFY_TOKEN`, `APIFY_PHOTO_STORE`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Leave `NEXT_PUBLIC_MOCK` unset (set it to `1` only on a separate demo deployment).
 3. API routes run on the Node runtime; `/api/tba/*` and `/api/connect/claim` export `maxDuration = 60`. Serverless request bodies are capped at 4.5 MB, so intake photos are downscaled client-side (max 5).
 4. Put the Connector zip at `public/poof-connector.zip`, and point the extension at the deployment URL.
 

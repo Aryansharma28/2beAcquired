@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Your poof code</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f6f4;">
+<span style="display:none;max-height:0;overflow:hidden;">Your code is {{ .Token }}. It works for 15 minutes.</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f4;">
+  <tr><td align="center" style="padding:40px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:24px;">
+      <tr><td style="padding:32px 32px 8px;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f2a18;">
+        <div style="font-size:24px;font-weight:800;letter-spacing:-0.02em;">&#9729;&#xFE0E; Poof</div>
+      </td></tr>
+      <tr><td style="padding:16px 32px 0;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f2a18;">
+        <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-0.02em;">Here&rsquo;s your code</h1>
+        <p style="margin:0;font-size:16px;line-height:1.5;color:#4a5f50;">Type it in the poof app to log in.</p>
+      </td></tr>
+      <tr><td style="padding:24px 32px;">
+        <div style="background:#d7f57a;border-radius:16px;padding:18px 0;text-align:center;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:36px;font-weight:800;letter-spacing:0.28em;color:#0f2a18;">{{ .Token }}</div>
+      </td></tr>
+      <tr><td style="padding:0 32px 32px;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;color:#4a5f50;">
+        It works for 15 minutes. Didn&rsquo;t ask for it? Then you can ignore this email.
+      </td></tr>
+    </table>
+    <p style="margin:20px 0 0;font-family:Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#4a5f50;">Snap it. poof. Sold.</p>
+  </td></tr>
+</table>
+</body>
+</html>

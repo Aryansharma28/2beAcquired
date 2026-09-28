@@ -34,7 +34,8 @@ export default function Home() {
   useEffect(() => {
     getAccount()
       .then((a) => {
-        if (!a?.onboarded) return router.replace("/welcome");
+        if (!a) return router.replace("/login");
+        if (!a.onboarded) return router.replace("/welcome");
         setAccount(a);
         if (new URLSearchParams(location.search).has("profile")) {
           setSettings(true);

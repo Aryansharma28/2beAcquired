@@ -20,10 +20,10 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const text = await res.text();
   let data: unknown = null;
   try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
-  if (res.status === 401 && typeof window !== "undefined" && location.pathname !== "/welcome") {
-    // Outside React (plain fetch helper): the session is gone, restart onboarding.
+  if (res.status === 401 && typeof window !== "undefined" && location.pathname !== "/login") {
+    // Outside React (plain fetch helper): the session is gone, sign in again.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    location.href = "/welcome";
+    location.href = "/login";
   }
   if (!res.ok) {
     const msg = (data as { error?: string } | null)?.error ?? `Request failed (${res.status})`;

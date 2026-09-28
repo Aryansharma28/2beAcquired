@@ -60,3 +60,7 @@ export async function setSessionCookie(userId: string) {
     maxAge: ONE_YEAR,
   });
 }
+
+export async function clearSessionCookie() {
+  (await cookies()).delete(SESSION_COOKIE);
+}
